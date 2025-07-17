@@ -17,19 +17,20 @@ dayjs.extend(duration);
 // Firebase Imports
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, doc, updateDoc } from 'firebase/firestore'; // Import doc and updateDoc
 
 import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
 
 
-function NewClassroomForm() {
-    const [formData, setFormData] = useState({
+function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) { // Added classroomToEdit and setClassroomToEdit props
+    const initialFormData = {
         grade: '',
         specialization: '',
         subject: '',
         maxStudents: 5,
         schedule: [{ id: Date.now(), day: '', startTime: null, endTime: null, editingStage: 'start' }],
-    });
+    };
+    const [formData, setFormData] = useState(initialFormData);
 
     const [availableSpecializations, setAvailableSpecializations] = useState([]);
     const [availableSubjects, setAvailableSubjects] = useState([]);
@@ -37,28 +38,48 @@ function NewClassroomForm() {
     const [auth, setAuth] = useState(null); // State for Auth instance
     const [userId, setUserId] = useState(null); // State for user ID
 
+    // Populate form if classroomToEdit is provided (for editing)
+    useEffect(() => {
+        if (classroomToEdit) {
+            setFormData({
+                grade: classroomToEdit.grade || '',
+                specialization: classroomToEdit.specialization || '',
+                subject: classroomToEdit.subject || '',
+                maxStudents: classroomToEdit.maxStudents || 5,
+                // Map schedule from string times back to Dayjs objects for TimeClock
+                schedule: classroomToEdit.schedule.map(slot => ({
+                    id: slot.id || Date.now(), // Use existing ID or generate new
+                    day: slot.day || '',
+                    startTime: slot.startTime ? dayjs(slot.startTime, 'HH:mm') : null,
+                    endTime: slot.endTime ? dayjs(slot.endTime, 'HH:mm') : null,
+                    editingStage: 'done' // Assume existing slots are done editing
+                })),
+            });
+        } else {
+            setFormData(initialFormData); // Reset form for new entry
+        }
+    }, [classroomToEdit]); // Re-run when classroomToEdit changes
+
     // Initialize Firebase and authenticate
     useEffect(() => {
         try {
-            // Read Firebase config from environment variables for local development
-            // In the Canvas environment, __firebase_config and __app_id are provided globally.
-            // For local VS Code development, use .env variables prefixed with VITE_
             const firebaseConfigString = typeof __firebase_config !== 'undefined'
-                ? __firebase_config // Use Canvas global variable if available
-                : import.meta.env.VITE_FIREBASE_CONFIG; // Use Vite .env variable locally
+                ? __firebase_config
+                : import.meta.env.VITE_FIREBASE_CONFIG;
 
             const appId = typeof __app_id !== 'undefined'
-                ? __app_id // Use Canvas global variable if available
-                : import.meta.env.VITE_APP_ID || 'default-local-app-id'; // Use Vite .env variable or fallback
+                ? __app_id
+                : import.meta.env.VITE_APP_ID || 'default-local-app-id';
 
             const initialAuthToken = typeof __initial_auth_token !== 'undefined'
-                ? __initial_auth_token // Use Canvas global variable if available
-                : import.meta.env.VITE_INITIAL_AUTH_TOKEN; // Use Vite .env variable for local mock token
+                ? __initial_auth_token
+                : import.meta.env.VITE_INITIAL_AUTH_TOKEN;
 
             const parsedFirebaseConfig = firebaseConfigString ? JSON.parse(firebaseConfigString) : {};
 
-            if (Object.keys(parsedFirebaseConfig).length === 0) {
-                console.error("Firebase config is missing. Please ensure VITE_FIREBASE_CONFIG is set in your .env file or provided by the Canvas environment.");
+            if (Object.keys(parsedFirebaseConfig).length === 0 || !parsedFirebaseConfig.apiKey) {
+                console.error("Firebase config is missing or incomplete.");
+                alert("Firebase config is missing or incomplete. Check console for details.");
                 return;
             }
 
@@ -70,20 +91,26 @@ function NewClassroomForm() {
             setAuth(firebaseAuth);
 
             const authenticate = async () => {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(firebaseAuth, initialAuthToken);
-                } else {
-                    await signInAnonymously(firebaseAuth);
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(firebaseAuth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(firebaseAuth);
+                    }
+                    const currentUserId = firebaseAuth.currentUser?.uid || crypto.randomUUID();
+                    setUserId(currentUserId);
+                } catch (authError) {
+                    console.error("Error during Firebase authentication:", authError);
+                    alert("Authentication failed. Check console for details.");
                 }
-                setUserId(firebaseAuth.currentUser?.uid || crypto.randomUUID());
             };
 
             authenticate();
         } catch (error) {
-            console.error("Error initializing Firebase or authenticating:", error);
+            console.error("Error during Firebase initialization (outside auth block):", error);
             alert("Error initializing Firebase. Check console for details and ensure your .env config is correct.");
         }
-    }, []); // Empty dependency array means this runs once on component mount
+    }, []);
 
 
     useEffect(() => {
@@ -222,7 +249,7 @@ function NewClassroomForm() {
         }
         if (remainingMinutes > 0) {
             if (totalHours > 0) totalDurationString += ' και ';
-            totalDurationString += `${remainingMinutes} λεπτά`;
+            durationString += `${remainingMinutes} λεπτά`;
         }
         if (totalHours === 0 && remainingMinutes === 0 && formData.schedule.some(s => s.editingStage === 'done')) {
             totalDurationString = '0 λεπτά';
@@ -237,11 +264,11 @@ function NewClassroomForm() {
 
         if (!db || !userId) {
             alert("Firebase is not initialized or user not authenticated. Please try again.");
-            console.error("Firestore DB or User ID is null.");
+            console.error("Firestore DB or User ID is null. Cannot submit.");
             return;
         }
 
-        const newClassroom = {
+        const classroomData = {
             grade: formData.grade,
             specialization: formData.specialization,
             subject: formData.subject,
@@ -253,32 +280,41 @@ function NewClassroomForm() {
                 duration: calculateDuration(slot.startTime, slot.endTime)
             })),
             totalDuration: calculateTotalDuration,
-            createdAt: new Date(),
-            createdBy: userId,
+            updatedAt: new Date(), // Add an update timestamp
         };
 
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-local-app-id';
+        const classroomsCollectionRef = collection(db, `artifacts/${appId}/public/data/classrooms`);
+
         try {
-            // Prioritize Canvas's __app_id, fallback to Vite's .env, then a default
-            const currentAppId = typeof __app_id !== 'undefined'
-                ? __app_id
-                : import.meta.env.VITE_APP_ID || 'default-local-app-id';
+            if (classroomToEdit && classroomToEdit.id) {
+                // Update existing classroom
+                const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToEdit.id);
+                await updateDoc(classroomDocRef, classroomData);
+                console.log('Classroom Data Updated in Firestore:', classroomData);
+                alert('Classroom updated successfully!');
+                if (setClassroomToEdit) setClassroomToEdit(null); // Clear editing state
+            } else {
+                // Add new classroom
+                const docRef = await addDoc(classroomsCollectionRef, {
+                    ...classroomData,
+                    createdAt: new Date(), // Add creation timestamp only for new docs
+                    createdBy: userId,
+                });
+                console.log('New Classroom Data Submitted to Firestore:', classroomData);
+                console.log('Document written with ID: ', docRef.id);
+                alert('New classroom created and saved to Firestore!');
+            }
 
-            const classroomsCollectionRef = collection(db, `artifacts/${currentAppId}/public/data/classrooms`);
+            // Reset form after successful submission/update
+            setFormData(initialFormData);
+            // Navigate back to the classrooms list after saving/updating
+            if (navigateTo) {
+                navigateTo('classroomsList');
+            }
 
-            const docRef = await addDoc(classroomsCollectionRef, newClassroom);
-            console.log('New Classroom Data Submitted to Firestore:', newClassroom);
-            console.log('Document written with ID: ', docRef.id);
-            alert('New classroom created and saved to Firestore!');
-
-            setFormData({
-                grade: '',
-                specialization: '',
-                subject: '',
-                maxStudents: 5,
-                schedule: [{ id: Date.now(), day: '', startTime: null, endTime: null, editingStage: 'start' }],
-            });
         } catch (error) {
-            console.error("Error adding document to Firestore: ", error);
+            console.error("Error saving/updating document to Firestore: ", error);
             alert("Failed to save classroom. Please check console for errors.");
         }
     };
@@ -290,7 +326,7 @@ function NewClassroomForm() {
             <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
                 <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', mb: 4 }}>
                     <Typography variant="h5" component="h3" sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: 3, color: '#3f51b5' }}>
-                        <i className="fas fa-plus-circle"></i> Δημιουργία Νέου Τμήματος
+                        <i className="fas fa-plus-circle"></i> {classroomToEdit ? 'Επεξεργασία Τμήματος' : 'Δημιουργία Νέου Τμήματος'}
                     </Typography>
                     <Grid container spacing={3}>
                         <Grid item xs={12} sm={6}>
@@ -474,7 +510,7 @@ function NewClassroomForm() {
                 {/* Submit Button */}
                 <Box sx={{ mt: 3, textAlign: 'right' }}>
                     <Button type="submit" variant="contained" color="primary" sx={{ borderRadius: '8px', padding: '10px 20px' }}>
-                        <i className="fas fa-save" style={{ marginRight: '8px' }}></i> Αποθήκευση Τμήματος
+                        <i className="fas fa-save" style={{ marginRight: '8px' }}></i> {classroomToEdit ? 'Ενημέρωση Τμήματος' : 'Αποθήκευση Τμήματος'}
                     </Button>
                 </Box>
             </Box>

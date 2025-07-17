@@ -8,15 +8,20 @@ import DashboardHeader from './pages/DashboardHeader.jsx';
 import DashboardContent from './pages/DashboardContent.jsx';
 import NewStudentForm from './pages/NewStudentForm.jsx';
 import StudentsList from './pages/StudentsList.jsx';
-import NewClassroomForm from './pages/NewClassroomForm.jsx'; // Import NewClassroomForm
-import Classrooms from './pages/Classrooms.jsx'; // Import Classrooms
+import NewClassroomForm from './pages/NewClassroomForm.jsx';
+import Classrooms from './pages/Classrooms.jsx';
 
 // Main App component
 function App() {
     const [currentPage, setCurrentPage] = useState('dashboard'); // State to manage current page
+    const [classroomToEdit, setClassroomToEdit] = useState(null); // State to hold classroom data for editing
 
     const navigateTo = (page) => {
         setCurrentPage(page);
+        // If navigating away from newClassroom, clear classroomToEdit
+        if (page !== 'newClassroom') {
+            setClassroomToEdit(null);
+        }
     };
 
     const getPageTitle = () => {
@@ -27,9 +32,9 @@ function App() {
                 return 'Προσθήκη Νέου Μαθητή';
             case 'studentsList':
                 return 'Λίστα Μαθητών';
-            case 'newClassroom': // New case for new classroom form
-                return 'Δημιουργία Νέου Τμήματος';
-            case 'classroomsList': // New case for classrooms list
+            case 'newClassroom':
+                return classroomToEdit ? 'Επεξεργασία Τμήματος' : 'Δημιουργία Νέου Τμήματος'; // Dynamic title
+            case 'classroomsList':
                 return 'Λίστα Τμημάτων';
             default:
                 return 'Student Management';
@@ -38,7 +43,6 @@ function App() {
 
     return (
         <Box sx={{ display: 'flex', width: '100%' }}>
-            {/* Pass currentPage to Sidebar */}
             <Sidebar navigateTo={navigateTo} currentPage={currentPage} />
             <Box className="main-content-area">
                 <DashboardHeader
@@ -61,10 +65,17 @@ function App() {
                     <StudentsList />
                 )}
                 {currentPage === 'newClassroom' && (
-                    <NewClassroomForm navigateTo={navigateTo} />
+                    <NewClassroomForm
+                        navigateTo={navigateTo}
+                        classroomToEdit={classroomToEdit} // Pass the classroom to edit
+                        setClassroomToEdit={setClassroomToEdit} // Pass setter to clear after save
+                    />
                 )}
                 {currentPage === 'classroomsList' && (
-                    <Classrooms />
+                    <Classrooms
+                        navigateTo={navigateTo} // Pass navigateTo for edit action
+                        setClassroomToEdit={setClassroomToEdit} // Pass setter for edit action
+                    />
                 )}
             </Box>
         </Box>
