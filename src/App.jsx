@@ -10,17 +10,26 @@ import NewStudentForm from './pages/NewStudentForm.jsx';
 import StudentsList from './pages/StudentsList.jsx';
 import NewClassroomForm from './pages/NewClassroomForm.jsx';
 import Classrooms from './pages/Classrooms.jsx';
+import WeeklyScheduleCalendar from './pages/WeeklyScheduleCalendar.jsx'; // Import the new calendar component
 
 // Main App component
 function App() {
     const [currentPage, setCurrentPage] = useState('dashboard'); // State to manage current page
-    const [classroomToEdit, setClassroomToEdit] = useState(null); // State to hold classroom data for editing
+    const [classroomToEdit, setClassroomToEdit] = useState(null); // State to pass classroom data for editing
+    const [scheduleForNewClassroom, setScheduleForNewClassroom] = useState(null); // State to pass schedule data
 
-    const navigateTo = (page) => {
+    const navigateTo = (page, data = null) => {
         setCurrentPage(page);
-        // If navigating away from newClassroom, clear classroomToEdit
-        if (page !== 'newClassroom') {
-            setClassroomToEdit(null);
+        setClassroomToEdit(null); // Clear previous edit state
+        setScheduleForNewClassroom(null); // Clear previous schedule state
+
+        if (page === 'newClassroom') {
+            if (data && data.classroom) {
+                setClassroomToEdit(data.classroom);
+            }
+            if (data && data.initialSchedule) {
+                setScheduleForNewClassroom(data.initialSchedule);
+            }
         }
     };
 
@@ -32,10 +41,12 @@ function App() {
                 return 'Προσθήκη Νέου Μαθητή';
             case 'studentsList':
                 return 'Λίστα Μαθητών';
-            case 'newClassroom':
-                return classroomToEdit ? 'Επεξεργασία Τμήματος' : 'Δημιουργία Νέου Τμήματος'; // Dynamic title
             case 'classroomsList':
-                return 'Λίστα Τμημάτων';
+                return 'Διαχείριση Τμημάτων'; // Title for classrooms list
+            case 'newClassroom':
+                return classroomToEdit ? 'Επεξεργασία Τμήματος' : 'Δημιουργία Νέου Τμήματος'; // Title for new/edit classroom form
+            case 'weeklySchedule':
+                return 'Εβδομαδιαίο Πρόγραμμα'; // Title for the new calendar
             default:
                 return 'Student Management';
         }
@@ -43,7 +54,7 @@ function App() {
 
     return (
         <Box sx={{ display: 'flex', width: '100%' }}>
-            <Sidebar navigateTo={navigateTo} currentPage={currentPage} />
+            <Sidebar navigateTo={navigateTo} currentPage={currentPage}/>
             <Box className="main-content-area">
                 <DashboardHeader
                     pageTitle={getPageTitle()}
@@ -54,8 +65,8 @@ function App() {
                     <DashboardContent
                         onNewStudentClick={() => navigateTo('newStudent')}
                         onStudentsListClick={() => navigateTo('studentsList')}
-                        onNewClassroomClick={() => navigateTo('newClassroom')}
-                        onClassroomsListClick={() => navigateTo('classroomsList')}
+                        onNewClassroomClick={() => navigateTo('newClassroom')} // Pass navigate for New Classroom button
+                        onClassroomsListClick={() => navigateTo('classroomsList')} // Pass navigate for Classrooms List button
                     />
                 )}
                 {currentPage === 'newStudent' && (
@@ -64,18 +75,19 @@ function App() {
                 {currentPage === 'studentsList' && (
                     <StudentsList />
                 )}
+                {currentPage === 'classroomsList' && (
+                    <Classrooms navigateTo={navigateTo} setClassroomToEdit={setClassroomToEdit} />
+                )}
                 {currentPage === 'newClassroom' && (
                     <NewClassroomForm
                         navigateTo={navigateTo}
-                        classroomToEdit={classroomToEdit} // Pass the classroom to edit
-                        setClassroomToEdit={setClassroomToEdit} // Pass setter to clear after save
+                        classroomToEdit={classroomToEdit}
+                        setClassroomToEdit={setClassroomToEdit}
+                        initialSchedule={scheduleForNewClassroom} // Pass initial schedule
                     />
                 )}
-                {currentPage === 'classroomsList' && (
-                    <Classrooms
-                        navigateTo={navigateTo} // Pass navigateTo for edit action
-                        setClassroomToEdit={setClassroomToEdit} // Pass setter for edit action
-                    />
+                {currentPage === 'weeklySchedule' && (
+                    <WeeklyScheduleCalendar navigateTo={navigateTo} />
                 )}
             </Box>
         </Box>

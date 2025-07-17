@@ -22,7 +22,7 @@ import { getFirestore, collection, addDoc, doc, updateDoc } from 'firebase/fires
 import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
 
 
-function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) { // Added classroomToEdit and setClassroomToEdit props
+function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, initialSchedule, onSaveSuccess }) { // Added onSaveSuccess prop
     const initialFormData = {
         grade: '',
         specialization: '',
@@ -33,14 +33,29 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) {
     const [formData, setFormData] = useState(initialFormData);
 
     const [availableSpecializations, setAvailableSpecializations] = useState([]);
-    const [availableSubjects, setAvailableSubjects] = useState([]);
+    const [currentSubjects, setCurrentSubjects] = useState([]); // Renamed from availableSubjects for clarity
     const [db, setDb] = useState(null); // State for Firestore instance
     const [auth, setAuth] = useState(null); // State for Auth instance
     const [userId, setUserId] = useState(null); // State for user ID
 
-    // Populate form if classroomToEdit is provided (for editing)
+    // Populate form if classroomToEdit or initialSchedule is provided
     useEffect(() => {
-        if (classroomToEdit) {
+        if (initialSchedule && initialSchedule.length > 0) {
+            console.log("initialSchedule received:", initialSchedule);
+            // Pre-fill schedule from initialSchedule
+            setFormData(prev => ({
+                ...prev,
+                schedule: initialSchedule.map(slot => ({
+                    id: slot.id || Date.now(),
+                    day: slot.day || '',
+                    startTime: slot.startTime ? dayjs(slot.startTime, 'HH:mm') : null,
+                    endTime: slot.endTime ? dayjs(slot.endTime, 'HH:mm') : null,
+                    duration: slot.duration || '',
+                    editingStage: 'done'
+                }))
+            }));
+        } else if (classroomToEdit) {
+            console.log("classroomToEdit received:", classroomToEdit);
             setFormData({
                 grade: classroomToEdit.grade || '',
                 specialization: classroomToEdit.specialization || '',
@@ -52,13 +67,15 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) {
                     day: slot.day || '',
                     startTime: slot.startTime ? dayjs(slot.startTime, 'HH:mm') : null,
                     endTime: slot.endTime ? dayjs(slot.endTime, 'HH:mm') : null,
+                    duration: slot.duration || '', // Preserve duration if it exists
                     editingStage: 'done' // Assume existing slots are done editing
                 })),
             });
         } else {
+            console.log("No classroomToEdit or initialSchedule, resetting form.");
             setFormData(initialFormData); // Reset form for new entry
         }
-    }, [classroomToEdit]); // Re-run when classroomToEdit changes
+    }, [classroomToEdit, initialSchedule]); // Re-run when classroomToEdit or initialSchedule changes
 
     // Initialize Firebase and authenticate
     useEffect(() => {
@@ -67,9 +84,14 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) {
                 ? __firebase_config
                 : import.meta.env.VITE_FIREBASE_CONFIG;
 
+            // Log the value of VITE_APP_ID from import.meta.env
+            console.log("VITE_APP_ID from import.meta.env:", import.meta.env.VITE_APP_ID);
+
             const appId = typeof __app_id !== 'undefined'
                 ? __app_id
                 : import.meta.env.VITE_APP_ID || 'default-local-app-id';
+
+            console.log("Final appId being used:", appId); // Log the final appId
 
             const initialAuthToken = typeof __initial_auth_token !== 'undefined'
                 ? __initial_auth_token
@@ -94,11 +116,14 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) {
                 try {
                     if (initialAuthToken) {
                         await signInWithCustomToken(firebaseAuth, initialAuthToken);
+                        console.log("Authenticated with custom token.");
                     } else {
                         await signInAnonymously(firebaseAuth);
+                        console.log("Authenticated anonymously.");
                     }
                     const currentUserId = firebaseAuth.currentUser?.uid || crypto.randomUUID();
                     setUserId(currentUserId);
+                    console.log("Firebase Auth User ID:", currentUserId);
                 } catch (authError) {
                     console.error("Error during Firebase authentication:", authError);
                     alert("Authentication failed. Check console for details.");
@@ -122,7 +147,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) {
         }
 
         const subjects = getSubjects(formData.grade, formData.specialization);
-        setAvailableSubjects(subjects);
+        setCurrentSubjects(subjects); // Update currentSubjects
 
         if (!subjects.includes(formData.subject)) {
             setFormData(prev => ({ ...prev, subject: '' }));
@@ -231,6 +256,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) {
     const calculateTotalDuration = useMemo(() => {
         let totalMinutes = 0;
         formData.schedule.forEach(slot => {
+            // Only calculate duration for slots that are 'done' (i.e., both start and end times confirmed)
             if (slot.startTime && slot.endTime && slot.editingStage === 'done') {
                 const start = dayjs(slot.startTime);
                 const end = dayjs(slot.endTime);
@@ -249,12 +275,13 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) {
         }
         if (remainingMinutes > 0) {
             if (totalHours > 0) totalDurationString += ' και ';
-            durationString += `${remainingMinutes} λεπτά`;
+            totalDurationString += `${remainingMinutes} λεπτά`;
         }
+        // Handle case where total duration is 0 but there are confirmed slots
         if (totalHours === 0 && remainingMinutes === 0 && formData.schedule.some(s => s.editingStage === 'done')) {
             totalDurationString = '0 λεπτά';
         } else if (totalHours === 0 && remainingMinutes === 0) {
-            totalDurationString = '0 ώρες';
+            totalDurationString = '0 ώρες'; // Default for no confirmed slots
         }
         return totalDurationString;
     }, [formData.schedule]);
@@ -274,6 +301,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) {
             subject: formData.subject,
             maxStudents: formData.maxStudents,
             schedule: formData.schedule.map(slot => ({
+                // Ensure times are formatted as strings for Firestore
                 day: slot.day,
                 startTime: slot.startTime ? dayjs(slot.startTime).format('HH:mm') : '',
                 endTime: slot.endTime ? dayjs(slot.endTime).format('HH:mm') : '',
@@ -283,12 +311,15 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) {
             updatedAt: new Date(), // Add an update timestamp
         };
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-local-app-id';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : import.meta.env.VITE_APP_ID || 'default-local-app-id';
         const classroomsCollectionRef = collection(db, `artifacts/${appId}/public/data/classrooms`);
 
         try {
             if (classroomToEdit && classroomToEdit.id) {
                 // Update existing classroom
+                const classroomDocPath = `artifacts/${appId}/public/data/classrooms/${classroomToEdit.id}`;
+                console.log("Attempting to update classroom at path:", classroomDocPath); // Log the full path
+                console.log("Data to update:", classroomData);
                 const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToEdit.id);
                 await updateDoc(classroomDocRef, classroomData);
                 console.log('Classroom Data Updated in Firestore:', classroomData);
@@ -296,6 +327,8 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) {
                 if (setClassroomToEdit) setClassroomToEdit(null); // Clear editing state
             } else {
                 // Add new classroom
+                console.log("Attempting to add new classroom.");
+                console.log("Data to add:", classroomData);
                 const docRef = await addDoc(classroomsCollectionRef, {
                     ...classroomData,
                     createdAt: new Date(), // Add creation timestamp only for new docs
@@ -308,9 +341,11 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) {
 
             // Reset form after successful submission/update
             setFormData(initialFormData);
-            // Navigate back to the classrooms list after saving/updating
-            if (navigateTo) {
-                navigateTo('classroomsList');
+            // Conditional navigation/callback based on how the form is used
+            if (onSaveSuccess) {
+                onSaveSuccess(); // Call the callback if provided (for dialog use)
+            } else if (navigateTo) {
+                navigateTo('classroomsList'); // Navigate if used as a full page
             }
 
         } catch (error) {
@@ -376,7 +411,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit }) {
                                     label="Μάθημα"
                                 >
                                     <MenuItem value="">-- Επιλέξτε Μάθημα --</MenuItem>
-                                    {availableSubjects.map(subjectOption => (
+                                    {currentSubjects.map(subjectOption => ( // Use currentSubjects here
                                         <MenuItem key={subjectOption} value={subjectOption}>{subjectOption}</MenuItem>
                                     ))}
                                 </Select>

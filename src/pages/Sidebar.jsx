@@ -18,7 +18,7 @@ function Sidebar({ navigateTo, currentPage }) {
 
     const navItems = [
         { text: "Αρχική", icon: "fas fa-chart-line", page: "dashboard" },
-        { text: "Πρόγραμμα", icon: "fas fa-calendar-alt", href: "#" },
+        { text: "Πρόγραμμα", icon: "fas fa-calendar-alt", href: "weeklySchedule" },
     ];
 
     const managementItems = [
