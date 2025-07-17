@@ -11,9 +11,13 @@ function ClassroomTableVisual({ classroom }) {
         );
     }
 
-    // Get up to 5 students for the visual representation
-    const studentsToDisplay = classroom.enrolledStudents.slice(0, 5);
-    const remainingStudentsCount = classroom.enrolledStudents.length - studentsToDisplay.length;
+    // Ensure enrolledStudents is an array before trying to slice it
+    const studentsToDisplay = Array.isArray(classroom.enrolledStudents)
+        ? classroom.enrolledStudents.slice(0, 5)
+        : [];
+    const remainingStudentsCount = Array.isArray(classroom.enrolledStudents)
+        ? Math.max(0, classroom.enrolledStudents.length - studentsToDisplay.length)
+        : 0;
 
     return (
         <Box sx={{
@@ -33,7 +37,7 @@ function ClassroomTableVisual({ classroom }) {
             overflow: 'hidden' // Hide overflow if content is too big
         }}>
             <Typography variant="h6" sx={{ mb: 2, color: '#3f51b5' }}>
-                Διάταξη Τμήματος: {classroom.name}
+                Διάταξη Τμήματος: {classroom.grade} - {classroom.subject}
             </Typography>
 
             {/* Top Chairs */}
@@ -70,7 +74,7 @@ function ClassroomTableVisual({ classroom }) {
             {/* Table */}
             <Box sx={{
                 width: '80%',
-                maxWidth: '400px',
+                maxWidth: '500px',
                 height: '120px',
                 backgroundColor: '#87ceeb', // Medium blue for table
                 borderRadius: '60px', // Oval shape
@@ -87,13 +91,13 @@ function ClassroomTableVisual({ classroom }) {
                 position: 'relative',
             }}>
                 <Typography variant="body2" sx={{ mb: 0.5, color: '#fff' }}>
-                    Μάθημα: {classroom.lesson}
+                    Μάθημα: {classroom.subject}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 0.5, color: '#fff' }}>
-                    Πρόγραμμα: {classroom.curriculum.split(',')[0]}...
+                    Τάξη: {classroom.grade} ({classroom.specialization || 'Γενικό'})
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#fff' }}>
-                    Ώρες / Εβδομάδα: {classroom.hoursPerWeek}
+                    Μέγ. Μαθητές: {classroom.maxStudents}
                 </Typography>
             </Box>
 
@@ -105,7 +109,7 @@ function ClassroomTableVisual({ classroom }) {
                 maxWidth: 'calc(500px + 120px)',
                 position: 'absolute',
                 top: '50%',
-                transform: 'translateY(20%)',
+                transform: 'translateY(-50%)',
             }}>
                 {/* Left Chair */}
                 <Box
