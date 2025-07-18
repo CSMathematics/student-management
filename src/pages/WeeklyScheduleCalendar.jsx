@@ -1,5 +1,5 @@
 // src/components/WeeklyScheduleCalendar.jsx
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
     Box, Container, Paper, Typography, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Button, IconButton,
@@ -50,6 +50,93 @@ const calculateDuration = (startTimeStr, endTimeStr) => {
     return durationString;
 };
 
+// FloatingEventBlock Component
+// This component renders an individual event block on the calendar.
+const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, width, height, onEdit, onDelete, onDragStart, onResizeStart }) => {
+    return (
+        <Box
+            id={`event-block-${id}`} // Add an ID for easy lookup
+            sx={{
+                position: 'absolute',
+                left: left,
+                top: top,
+                width: width,
+                height: height,
+                backgroundColor: '#2196f3', // Solid blue for finalized events
+                color: '#fff',
+                borderRadius: '4px',
+                padding: '2px 4px',
+                textAlign: 'left',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                zIndex: 5, // Below the active drag rect, but above table cells
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                fontSize: '0.75rem',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                cursor: 'grab', // Indicate draggable
+                touchAction: 'none', // Prevent default touch actions like scrolling
+            }}
+            onMouseDown={(e) => onDragStart(e, id)} // Handle drag start for the block itself
+        >
+            {/* Top Resize Handle */}
+            <Box
+                sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '8px', // Make it small
+                    cursor: 'ns-resize', // North-south resize cursor
+                    zIndex: 6, // Above the event content
+                    // backgroundColor: 'rgba(255,255,255,0.3)', // For debugging, remove in production
+                }}
+                onMouseDown={(e) => onResizeStart(e, id, 'top')}
+            />
+
+            <Typography variant="caption" sx={{ fontWeight: 'bold', flexShrink: 0 }}>
+                {label}
+            </Typography>
+            <Typography variant="caption" sx={{ flexShrink: 0 }}>
+                {startTime} - {endTime}
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: '2px', flexShrink: 0 }}>
+                <IconButton
+                    size="small"
+                    sx={{ color: '#fff', padding: '2px' }}
+                    onClick={(e) => { e.stopPropagation(); onEdit({ id, day, startTime, endTime, label }); }}
+                >
+                    <Edit sx={{ fontSize: '0.8rem' }} />
+                </IconButton>
+                <IconButton
+                    size="small"
+                    sx={{ color: '#fff', padding: '2px' }}
+                    onClick={(e) => { e.stopPropagation(); onDelete(id); }}
+                >
+                    <Delete sx={{ fontSize: '0.8rem' }} />
+                </IconButton>
+            </Box>
+
+            {/* Bottom Resize Handle */}
+            <Box
+                sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: '8px', // Make it small
+                    cursor: 'ns-resize', // North-south resize cursor
+                    zIndex: 6, // Above the event content
+                    // backgroundColor: 'rgba(255,255,255,0.3)', // For debugging, remove in production
+                }}
+                onMouseDown={(e) => onResizeStart(e, id, 'bottom')}
+            />
+        </Box>
+    );
+};
+
 function WeeklyScheduleCalendar() {
     // Calendar display hours
     const [calendarStartHour, setCalendarStartHour] = useState(8); // Default 8 AM
@@ -58,18 +145,32 @@ function WeeklyScheduleCalendar() {
     // Generated time slots based on selected hours
     const TIME_SLOTS = useMemo(() => generateTimeSlots(calendarStartHour, calendarEndHour), [calendarStartHour, calendarEndHour]);
 
-    // Dragging states
-    const [isDragging, setIsDragging] = useState(false);
+    // Dragging states for new selection
+    const [isDraggingNewSelection, setIsDraggingNewSelection] = useState(false);
     const [startSelection, setStartSelection] = useState(null); // { dayIndex, hourIndex }
     const [endSelection, setEndSelection] = useState(null);   // { dayIndex, hourIndex }
-    const [resizingEntryId, setResizingEntryId] = useState(null); // ID of entry being resized
-    const [resizingStartHourIndex, setResizingStartHourIndex] = useState(null); // Original start hour index for resizing
-    const [resizingEndHourIndex, setResizingEndHourIndex] = useState(null); // Original end hour index for resizing
+    const [tempFloatingSelectionRect, setTempFloatingSelectionRect] = useState(null); // { left, top, width, height }
 
-    // Finalized schedule entries
-    const [scheduleEntries, setScheduleEntries] = useState([]); // { id, day, startTime, endTime, label }
+    // Dragging states for existing event blocks
+    const [isDraggingEvent, setIsDraggingEvent] = useState(false);
+    const [draggedEventId, setDraggedEventId] = useState(null);
+    const [dragStartMousePos, setDragStartMousePos] = useState({ x: 0, y: 0 }); // Mouse position when drag started
+    const [dragStartBlockPos, setDragStartBlockPos] = useState({ left: 0, top: 0 }); // Block position when drag started
 
-    // Dialog states for confirming/editing schedule entry
+    // Resizing states for existing event blocks
+    const [isResizingEvent, setIsResizingEvent] = useState(false);
+    const [resizedEventId, setResizedEventId] = useState(null);
+    const [resizeHandle, setResizeHandle] = useState(null); // 'top' or 'bottom'
+    const [resizeStartMouseY, setResizeStartMouseY] = useState(0); // Mouse Y position when resize started
+    const [resizeStartBlockTop, setResizeStartBlockTop] = useState(0); // Block's top when resize started
+    const [resizeStartBlockHeight, setResizeStartBlockHeight] = useState(0); // Block's height when resize started
+    const [resizeStartHourIndex, setResizeStartHourIndex] = useState(null); // Original start hour index for resizing
+    const [resizeEndHourIndex, setResizeEndHourIndex] = useState(null); // Original end hour index for resizing
+
+    // State for the finalized event blocks displayed on the calendar
+    const [displayedEventBlocks, setDisplayedEventBlocks] = useState([]); // { id, day, startTime, endTime, label, left, top, width, height }
+
+    // Dialog states for confirming/editing schedule entry (still used for editing existing)
     const [openDialog, setOpenDialog] = useState(false);
     const [dialogEntry, setDialogEntry] = useState(null); // The entry being confirmed/edited
     const [dialogLabel, setDialogLabel] = useState('');
@@ -82,32 +183,56 @@ function WeeklyScheduleCalendar() {
     // Ref for the table container to calculate cell positions
     const tableRef = useRef(null);
 
-    // Helper to get cell coordinates from mouse event
-    const getCellCoordinates = (e) => {
+    // Helper to get pixel coordinates and dimensions of a specific table cell
+    const getCellPixelRect = useCallback((dayIdx, hourIdx) => {
         const table = tableRef.current;
         if (!table) return null;
 
-        const rect = table.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        // Select the correct cell. +1 for 1-based indexing of tr, +2 for 1-based indexing of td (skipping time label column)
+        const cellElement = table.querySelector(`tbody tr:nth-child(${hourIdx + 1}) td:nth-child(${dayIdx + 2})`);
+        if (cellElement) {
+            const cellRect = cellElement.getBoundingClientRect();
+            // Get the bounding rect of the TableContainer, which is the positioning context for absolute elements
+            const tableContainerRect = table.closest('.MuiTableContainer-root').getBoundingClientRect();
 
-        // Calculate column (day) index
+            // Return position relative to the TableContainer's top-left corner
+            return {
+                left: cellRect.left - tableContainerRect.left,
+                top: cellRect.top - tableContainerRect.top,
+                width: cellRect.width,
+                height: cellRect.height,
+            };
+        }
+        return null;
+    }, []);
+
+    // Helper to convert pixel coordinates to grid coordinates
+    const getGridCoordinatesFromPixels = useCallback((pixelX, pixelY) => {
+        const table = tableRef.current;
+        if (!table) return null;
+
+        const tableRect = table.getBoundingClientRect();
+        const relativeX = pixelX - tableRect.left;
+        const relativeY = pixelY - tableRect.top;
+
+        // Find dayIndex
+        // Start from 1 to skip the first header cell (time label)
         const headerCells = table.querySelectorAll('thead th');
         let dayIndex = -1;
-        for (let i = 1; i < headerCells.length; i++) { // Start from 1 to skip time labels
+        for (let i = 1; i < headerCells.length; i++) {
             const cellRect = headerCells[i].getBoundingClientRect();
-            if (x >= (cellRect.left - rect.left) && x < (cellRect.right - rect.left)) {
-                dayIndex = i - 1; // Adjust for 0-indexed DAYS_OF_WEEK
+            if (pixelX >= cellRect.left && pixelX < cellRect.right) { // Use absolute pixelX for comparison
+                dayIndex = i - 1; // Adjust for 0-based index of DAYS_OF_WEEK
                 break;
             }
         }
 
-        // Calculate row (hour) index
+        // Find hourIndex
         const bodyRows = table.querySelectorAll('tbody tr');
         let hourIndex = -1;
         for (let i = 0; i < bodyRows.length; i++) {
             const rowRect = bodyRows[i].getBoundingClientRect();
-            if (y >= (rowRect.top - rect.top) && y < (rowRect.bottom - rect.top)) {
+            if (pixelY >= rowRect.top && pixelY < rowRect.bottom) { // Use absolute pixelY for comparison
                 hourIndex = i;
                 break;
             }
@@ -117,124 +242,209 @@ function WeeklyScheduleCalendar() {
             return { dayIndex, hourIndex };
         }
         return null;
-    };
+    }, []);
 
-    // Handle mouse down to start selection or resize
-    const handleMouseDown = (e, dayIdx, hourIdx) => {
+    // Helper to update the temporary floating selection rectangle's state
+    const updateTempFloatingSelectionRect = useCallback((startCoords, endCoords) => {
+        if (!startCoords || !endCoords) {
+            setTempFloatingSelectionRect(null);
+            return;
+        }
+
+        const minDay = Math.min(startCoords.dayIndex, endCoords.dayIndex);
+        const maxDay = Math.max(startCoords.dayIndex, endCoords.dayIndex);
+        const minHour = Math.min(startCoords.hourIndex, endCoords.hourIndex);
+        const maxHour = Math.max(startCoords.hourIndex, endCoords.hourIndex);
+
+        // Ensure selection is within valid data columns (minDay >= 0)
+        // This check is crucial to prevent the rectangle from extending into the time label column
+        if (minDay < 0) {
+            setTempFloatingSelectionRect(null);
+            return;
+        }
+
+        const startCellRect = getCellPixelRect(minDay, minHour);
+        const endCellRect = getCellPixelRect(maxDay, maxHour);
+
+        if (startCellRect && endCellRect) {
+            setTempFloatingSelectionRect({
+                left: startCellRect.left,
+                top: startCellRect.top,
+                width: endCellRect.left + endCellRect.width - startCellRect.left,
+                height: endCellRect.top + endCellRect.height - startCellRect.top,
+            });
+        } else {
+            setTempFloatingSelectionRect(null);
+        }
+    }, [getCellPixelRect]);
+
+    // Function to calculate and add a new displayed event block
+    const addDisplayedEventBlock = useCallback((entry) => {
+        const dayIdx = DAYS_OF_WEEK.indexOf(entry.day);
+        const startHourIdx = TIME_SLOTS.indexOf(entry.startTime);
+        const endHourIdx = TIME_SLOTS.indexOf(entry.endTime) -1 ; // -1 because endTime is exclusive in TIME_SLOTS
+
+        if (dayIdx === -1 || startHourIdx === -1 || endHourIdx === -1) {
+            console.error("Invalid day or time for event block:", entry);
+            return;
+        }
+
+        const startCellRect = getCellPixelRect(dayIdx, startHourIdx);
+        const endCellRect = getCellPixelRect(dayIdx, endHourIdx);
+
+        if (startCellRect && endCellRect) {
+            setDisplayedEventBlocks(prevBlocks => [
+                ...prevBlocks,
+                {
+                    ...entry,
+                    left: startCellRect.left,
+                    top: startCellRect.top,
+                    width: startCellRect.width, // Event block spans one column
+                    height: endCellRect.top + endCellRect.height - startCellRect.top,
+                }
+            ]);
+        }
+    }, [getCellPixelRect, TIME_SLOTS]);
+
+    // Handle mouse down to start a new selection on the grid
+    const handleGridMouseDown = (e, dayIdx, hourIdx) => {
         if (e.button !== 0) return; // Only left mouse button
 
-        const clickedEntry = scheduleEntries.find(entry =>
-            entry.day === DAYS_OF_WEEK[dayIdx] &&
-            TIME_SLOTS.indexOf(entry.startTime) <= hourIdx &&
-            TIME_SLOTS.indexOf(entry.endTime) > hourIdx
-        );
+        // If we're already dragging/resizing an event, do nothing
+        if (isDraggingEvent || isResizingEvent) return;
 
-        if (clickedEntry) {
-            // If clicking on an existing entry, initiate resize
-            setIsDragging(true);
-            setResizingEntryId(clickedEntry.id);
-            setResizingStartHourIndex(TIME_SLOTS.indexOf(clickedEntry.startTime));
-            setResizingEndHourIndex(TIME_SLOTS.indexOf(clickedEntry.endTime) - 1); // End of the last covered slot
-            setStartSelection({ dayIndex: dayIdx, hourIndex: hourIdx }); // Start of drag for visual feedback
-            setEndSelection({ dayIndex: dayIdx, hourIndex: hourIdx });
-        } else {
-            // If clicking on an empty cell, start new selection
-            setIsDragging(true);
-            setStartSelection({ dayIndex: dayIdx, hourIndex: hourIdx });
-            setEndSelection({ dayIndex: dayIdx, hourIndex: hourIdx });
-            setResizingEntryId(null); // Ensure no resizing is active
-        }
+        // Clear any existing temporary floating selection when starting a new drag
+        setTempFloatingSelectionRect(null);
+
+        // Start new selection
+        setIsDraggingNewSelection(true);
+        setStartSelection({ dayIndex: dayIdx, hourIndex: hourIdx });
+        setEndSelection({ dayIndex: dayIdx, hourIndex: hourIdx });
+        updateTempFloatingSelectionRect({ dayIndex: dayIdx, hourIndex: hourIdx }, { dayIndex: dayIdx, hourIndex: hourIdx });
     };
 
-    // Handle mouse enter for individual cells during drag
-    const handleMouseEnter = (dayIdx, hourIdx) => {
-        if (isDragging) {
-            setEndSelection({ dayIndex: dayIdx, hourIndex: hourIdx });
+    // Handle mouse down on an existing event block to start dragging
+    const handleEventDragStart = useCallback((e, id) => {
+        e.stopPropagation(); // Prevent grid's mousedown from firing
+        if (e.button !== 0) return;
 
-            if (resizingEntryId) {
-                // If resizing an existing entry
-                setScheduleEntries(prevEntries => prevEntries.map(entry => {
-                    if (entry.id === resizingEntryId) {
-                        const originalStartHourIndex = resizingStartHourIndex;
-                        const originalEndHourIndex = resizingEndHourIndex;
+        setIsDraggingEvent(true);
+        setDraggedEventId(id);
+        setDragStartMousePos({ x: e.clientX, y: e.clientY });
 
-                        // Determine if dragging to extend/shrink from top or bottom
-                        const isDraggingFromTop = hourIdx < originalStartHourIndex;
-                        const isDraggingFromBottom = hourIdx > originalEndHourIndex;
+        const blockElement = document.getElementById(`event-block-${id}`);
+        if (blockElement) {
+            const blockRect = blockElement.getBoundingClientRect();
+            const tableContainerRect = tableRef.current.closest('.MuiTableContainer-root').getBoundingClientRect(); // Use table container rect
+            setDragStartBlockPos({
+                left: blockRect.left - tableContainerRect.left,
+                top: blockRect.top - tableContainerRect.top
+            });
+        }
+    }, []);
 
-                        let newStartTime = entry.startTime;
-                        let newEndTime = entry.endTime;
+    // Handle mouse down on a resize handle to start resizing
+    const handleEventResizeStart = useCallback((e, id, handle) => {
+        e.stopPropagation(); // Prevent block's drag and grid's mousedown
+        if (e.button !== 0) return;
 
-                        if (isDraggingFromTop) {
-                            // Dragging upwards from original start point
-                            const newStartHour = Math.min(originalEndHourIndex, hourIdx);
-                            newStartTime = TIME_SLOTS[newStartHour];
-                        } else if (isDraggingFromBottom) {
-                            // Dragging downwards from original end point
-                            const newEndHour = Math.max(originalStartHourIndex, hourIdx + 1); // +1 because end is exclusive
-                            newEndTime = TIME_SLOTS[newEndHour] || `${String(calendarEndHour).padStart(2, '0')}:00`;
-                        } else {
-                            // Dragging within the block, adjust based on which end is closer to mouse
-                            const currentEntryStartHourIndex = TIME_SLOTS.indexOf(entry.startTime);
-                            const currentEntryEndHourIndex = TIME_SLOTS.indexOf(entry.endTime) - 1;
+        setIsResizingEvent(true);
+        setResizedEventId(id);
+        setResizeHandle(handle);
+        setResizeStartMouseY(e.clientY);
 
-                            const distToTop = Math.abs(hourIdx - currentEntryStartHourIndex);
-                            const distToBottom = Math.abs(hourIdx - currentEntryEndHourIndex);
+        const blockElement = document.getElementById(`event-block-${id}`);
+        if (blockElement) {
+            const blockRect = blockElement.getBoundingClientRect();
+            const tableContainerRect = tableRef.current.closest('.MuiTableContainer-root').getBoundingClientRect(); // Use table container rect
+            setResizeStartBlockTop(blockRect.top - tableContainerRect.top);
+            setResizeStartBlockHeight(blockRect.height);
 
-                            if (distToTop <= distToBottom) {
-                                // Closer to top, adjust start time
-                                newStartTime = TIME_SLOTS[hourIdx];
-                            } else {
-                                // Closer to bottom, adjust end time
-                                newEndTime = TIME_SLOTS[hourIndex + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`;
-                            }
-                        }
-
-                        // Ensure newStartTime is before newEndTime
-                        const finalStartTimeIndex = TIME_SLOTS.indexOf(newStartTime);
-                        const finalEndTimeIndex = TIME_SLOTS.indexOf(newEndTime);
-
-                        if (finalStartTimeIndex >= finalEndTimeIndex) {
-                            // Prevent invalid time ranges during drag
-                            if (isDraggingFromTop) {
-                                newStartTime = TIME_SLOTS[originalEndHourIndex];
-                            } else if (isDraggingFromBottom) {
-                                newEndTime = TIME_SLOTS[originalStartHourIndex + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`;
-                            } else {
-                                // If dragging inside and it collapses, reset to original or smallest valid
-                                newStartTime = TIME_SLOTS[originalStartHourIndex];
-                                newEndTime = TIME_SLOTS[originalEndHourIndex + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`;
-                            }
-                        }
-
-                        return {
-                            ...entry,
-                            startTime: newStartTime,
-                            endTime: newEndTime,
-                            duration: calculateDuration(newStartTime, newEndTime)
-                        };
-                    }
-                    return entry;
-                }));
+            // Store original hour indices for snapping
+            const originalEntry = displayedEventBlocks.find(block => block.id === id);
+            if (originalEntry) {
+                setResizeStartHourIndex(TIME_SLOTS.indexOf(originalEntry.startTime));
+                setResizeEndHourIndex(TIME_SLOTS.indexOf(originalEntry.endTime) - 1);
             }
         }
-    };
+    }, [displayedEventBlocks, TIME_SLOTS]);
 
 
-    // Handle mouse up to finalize selection or resize
-    const handleMouseUp = () => {
-        if (isDragging) {
-            if (resizingEntryId) {
-                // Resize operation finished, no need for dialog, state is already updated
-                setResizingEntryId(null);
-                setResizingStartHourIndex(null);
-                setResizingEndHourIndex(null);
-            } else if (startSelection && endSelection) {
-                // New selection finished, open dialog to confirm/label
+    // Global mouse move handler for dragging and resizing
+    const handleGlobalMouseMove = useCallback((e) => {
+        if (isDraggingNewSelection) {
+            const coords = getGridCoordinatesFromPixels(e.clientX, e.clientY);
+            // Only update if coords are valid and within the data grid
+            if (coords && coords.dayIndex >= 0) {
+                setEndSelection(coords);
+                updateTempFloatingSelectionRect(startSelection, coords);
+            } else if (coords && coords.dayIndex < 0) {
+                // If mouse moves into the time label column, clear temp rect
+                setTempFloatingSelectionRect(null);
+            }
+        } else if (isDraggingEvent) {
+            const dx = e.clientX - dragStartMousePos.x;
+            const dy = e.clientY - dragStartMousePos.y;
+
+            setDisplayedEventBlocks(prevBlocks => prevBlocks.map(block => {
+                if (block.id === draggedEventId) {
+                    return {
+                        ...block,
+                        left: dragStartBlockPos.left + dx,
+                        top: dragStartBlockPos.top + dy,
+                    };
+                }
+                return block;
+            }));
+        } else if (isResizingEvent) {
+            const dy = e.clientY - resizeStartMouseY;
+
+            setDisplayedEventBlocks(prevBlocks => prevBlocks.map(block => {
+                if (block.id === resizedEventId) {
+                    let newTop = block.top;
+                    let newHeight = block.height;
+
+                    if (resizeHandle === 'top') {
+                        newTop = resizeStartBlockTop + dy;
+                        newHeight = resizeStartBlockHeight - dy;
+                    } else if (resizeHandle === 'bottom') {
+                        newHeight = resizeStartBlockHeight + dy;
+                    }
+
+                    // Prevent negative height
+                    newHeight = Math.max(newHeight, 10); // Minimum height of 10px
+
+                    return {
+                        ...block,
+                        top: newTop,
+                        height: newHeight,
+                    };
+                }
+                return block;
+            }));
+        }
+    }, [isDraggingNewSelection, startSelection, updateTempFloatingSelectionRect, isDraggingEvent, draggedEventId, dragStartMousePos, dragStartBlockPos, isResizingEvent, resizedEventId, resizeHandle, resizeStartMouseY, resizeStartBlockTop, resizeStartBlockHeight, getGridCoordinatesFromPixels]);
+
+
+    // Global mouse up handler to finalize operations
+    const handleGlobalMouseUp = useCallback(() => {
+        if (isDraggingNewSelection) {
+            if (startSelection && endSelection) {
                 const normalizedStartDay = Math.min(startSelection.dayIndex, endSelection.dayIndex);
                 const normalizedEndDay = Math.max(startSelection.dayIndex, endSelection.dayIndex);
                 const normalizedStartHour = Math.min(startSelection.hourIndex, endSelection.hourIndex);
                 const normalizedEndHour = Math.max(startSelection.hourIndex, endSelection.hourIndex);
+
+                // Ensure a valid selection was made (not just a click on the time label column)
+                if (normalizedStartDay < 0 || normalizedStartHour < 0) {
+                    alert("Παρακαλώ επιλέξτε μια έγκυρη περιοχή στο πρόγραμμα.");
+                    // Reset all states for new selection
+                    setIsDraggingNewSelection(false);
+                    setStartSelection(null);
+                    setEndSelection(null);
+                    setTempFloatingSelectionRect(null);
+                    return;
+                }
 
                 const newEntry = {
                     id: Date.now(),
@@ -244,79 +454,182 @@ function WeeklyScheduleCalendar() {
                     label: `Νέο Μάθημα` // Default label
                 };
 
-                // Check for valid time range before opening dialog
                 if (dayjs(`2000-01-01T${newEntry.endTime}`).isAfter(dayjs(`2000-01-01T${newEntry.startTime}`))) {
-                    setDialogEntry(newEntry);
-                    setDialogLabel(newEntry.label);
-                    setOpenDialog(true);
+                    addDisplayedEventBlock(newEntry);
+                    setNewClassroomInitialSchedule([{
+                        id: newEntry.id,
+                        day: newEntry.day,
+                        startTime: newEntry.startTime,
+                        endTime: newEntry.endTime,
+                        duration: calculateDuration(newEntry.startTime, newEntry.endTime)
+                    }]);
+                    setOpenNewClassroomDialog(true);
                 } else {
                     alert("Η επιλεγμένη χρονική διάρκεια δεν είναι έγκυρη.");
                 }
             }
+        } else if (isDraggingEvent) {
+            const blockElement = document.getElementById(`event-block-${draggedEventId}`);
+            if (blockElement) {
+                const blockRect = blockElement.getBoundingClientRect();
+                // We need to find the grid coordinates based on the center of the block for snapping
+                const snappedCoords = getGridCoordinatesFromPixels(
+                    blockRect.left + blockRect.width / 2,
+                    blockRect.top + blockRect.height / 2
+                );
+
+                if (snappedCoords) {
+                    const originalEntry = displayedEventBlocks.find(block => block.id === draggedEventId);
+                    const originalDurationMinutes = dayjs(`2000-01-01T${originalEntry.endTime}`).diff(dayjs(`2000-01-01T${originalEntry.startTime}`), 'minute');
+                    const originalDurationHours = originalDurationMinutes / 60;
+
+                    const newStartTimeIndex = snappedCoords.hourIndex;
+                    // Calculate new end time index based on duration
+                    const newEndTimeIndex = newStartTimeIndex + originalDurationHours;
+                    const newEndTime = TIME_SLOTS[newEndTimeIndex] || `${String(calendarEndHour).padStart(2, '0')}:00`;
+
+                    const newDay = DAYS_OF_WEEK[snappedCoords.dayIndex];
+
+                    setDisplayedEventBlocks(prevBlocks => prevBlocks.map(block => {
+                        if (block.id === draggedEventId) {
+                            const snappedStartCellRect = getCellPixelRect(snappedCoords.dayIndex, snappedCoords.hourIndex);
+                            const snappedEndCellRect = getCellPixelRect(snappedCoords.dayIndex, TIME_SLOTS.indexOf(newEndTime) -1);
+
+                            return {
+                                ...block,
+                                day: newDay,
+                                startTime: TIME_SLOTS[newStartTimeIndex],
+                                endTime: newEndTime,
+                                duration: calculateDuration(TIME_SLOTS[newStartTimeIndex], newEndTime),
+                                left: snappedStartCellRect.left,
+                                top: snappedStartCellRect.top,
+                                width: snappedStartCellRect.width,
+                                height: snappedEndCellRect.top + snappedEndCellRect.height - snappedStartCellRect.top,
+                            };
+                        }
+                        return block;
+                    }));
+                }
+            }
+        } else if (isResizingEvent) {
+            const blockElement = document.getElementById(`event-block-${resizedEventId}`);
+            if (blockElement) {
+                const blockRect = blockElement.getBoundingClientRect();
+
+                setDisplayedEventBlocks(prevBlocks => prevBlocks.map(block => {
+                    if (block.id === resizedEventId) {
+                        let newStartTime = block.startTime;
+                        let newEndTime = block.endTime;
+
+                        // Calculate snapped top/bottom based on current pixel position
+                        const snappedTopHourIndex = getGridCoordinatesFromPixels(blockRect.left + 1, blockRect.top + 1)?.hourIndex;
+                        const snappedBottomHourIndex = getGridCoordinatesFromPixels(blockRect.left + 1, blockRect.bottom - 1)?.hourIndex;
+
+                        if (resizeHandle === 'top' && snappedTopHourIndex !== null && snappedTopHourIndex !== undefined) {
+                            newStartTime = TIME_SLOTS[snappedTopHourIndex];
+                        } else if (resizeHandle === 'bottom' && snappedBottomHourIndex !== null && snappedBottomHourIndex !== undefined) {
+                            newEndTime = TIME_SLOTS[snappedBottomHourIndex + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`;
+                        }
+
+                        // Ensure newStartTime is before newEndTime
+                        const finalStartTimeIndex = TIME_SLOTS.indexOf(newStartTime);
+                        const finalEndTimeIndex = TIME_SLOTS.indexOf(newEndTime);
+
+                        if (finalStartTimeIndex >= finalEndTimeIndex) {
+                            // Revert to original or smallest valid if invalid
+                            newStartTime = TIME_SLOTS[resizeStartHourIndex];
+                            newEndTime = TIME_SLOTS[resizeEndHourIndex + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`;
+                        }
+
+                        // Recalculate pixel dimensions for the snapped block
+                        const dayIdx = DAYS_OF_WEEK.indexOf(block.day);
+                        const startHourIdx = TIME_SLOTS.indexOf(newStartTime);
+                        const endHourIdx = TIME_SLOTS.indexOf(newEndTime) -1;
+
+                        const snappedStartCellRect = getCellPixelRect(dayIdx, startHourIdx);
+                        const snappedEndCellRect = getCellPixelRect(dayIdx, endHourIdx);
+
+                        return {
+                            ...block,
+                            startTime: newStartTime,
+                            endTime: newEndTime,
+                            duration: calculateDuration(newStartTime, newEndTime),
+                            top: snappedStartCellRect.top,
+                            height: snappedEndCellRect.top + snappedEndCellRect.height - snappedStartCellRect.top,
+                        };
+                    }
+                    return block;
+                }));
+            }
         }
-        setIsDragging(false);
+
+        // Reset all states
+        setIsDraggingNewSelection(false);
+        setIsDraggingEvent(false);
+        setIsResizingEvent(false);
         setStartSelection(null);
         setEndSelection(null);
-    };
+        setTempFloatingSelectionRect(null);
+        setDraggedEventId(null);
+        setDragStartMousePos({ x: 0, y: 0 });
+        setDragStartBlockPos({ left: 0, top: 0 });
+        setResizedEventId(null);
+        setResizeHandle(null);
+        setResizeStartMouseY(0);
+        setResizeStartBlockTop(0);
+        setResizeStartBlockHeight(0);
+        setResizeStartHourIndex(null);
+        setResizeEndHourIndex(null);
+    }, [isDraggingNewSelection, startSelection, endSelection, TIME_SLOTS, calendarEndHour, addDisplayedEventBlock, isDraggingEvent, draggedEventId, dragStartMousePos, dragStartBlockPos, isResizingEvent, resizedEventId, resizeHandle, resizeStartHourIndex, resizeEndHourIndex, getCellPixelRect, getGridCoordinatesFromPixels, displayedEventBlocks]);
 
-    // Attach global mouse up listener to handle cases where mouse leaves table
+
+    // Attach global mouse move and mouse up listeners
     useEffect(() => {
-        window.addEventListener('mouseup', handleMouseUp);
+        window.addEventListener('mousemove', handleGlobalMouseMove);
+        window.addEventListener('mouseup', handleGlobalMouseUp);
+
         return () => {
-            window.removeEventListener('mouseup', handleMouseUp);
+            window.removeEventListener('mousemove', handleGlobalMouseMove);
+            window.removeEventListener('mouseup', handleGlobalMouseUp);
         };
-    }, [isDragging, startSelection, endSelection, resizingEntryId, scheduleEntries]); // Added scheduleEntries to dependencies
+    }, [handleGlobalMouseMove, handleGlobalMouseUp]);
 
-    // Determine if a cell is currently part of the selection range
-    const isCellSelected = (dayIdx, hourIdx) => {
-        if (!startSelection || !endSelection) return false;
 
-        const minDay = Math.min(startSelection.dayIndex, endSelection.dayIndex);
-        const maxDay = Math.max(startSelection.dayIndex, endSelection.dayIndex);
-        const minHour = Math.min(startSelection.hourIndex, endSelection.hourIndex);
-        const maxHour = Math.max(startSelection.hourIndex, endSelection.hourIndex);
-
-        return (
-            dayIdx >= minDay && dayIdx <= maxDay &&
-            hourIdx >= minHour && hourIdx <= maxHour
-        );
-    };
-
-    // Determine if a cell is covered by a finalized schedule entry
-    const getCoveringEntry = (dayIdx, hourIdx) => {
-        const currentDay = DAYS_OF_WEEK[dayIdx];
-        const currentHour = TIME_SLOTS[hourIdx];
-
-        return scheduleEntries.find(entry => {
-            const entryStartHourIndex = TIME_SLOTS.indexOf(entry.startTime);
-            const entryEndHourIndex = TIME_SLOTS.indexOf(entry.endTime);
-
-            return (
-                entry.day === currentDay &&
-                hourIndex >= entryStartHourIndex &&
-                hourIndex < entryEndHourIndex
-            );
-        });
-    };
-
-    // Handle dialog close
+    // Handle dialog close (for editing existing entries)
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setDialogEntry(null);
         setDialogLabel('');
     };
 
-    // Handle confirming a new schedule entry from dialog
+    // Handle confirming an edited schedule entry from dialog
     const handleConfirmScheduleEntry = () => {
         if (dialogEntry) {
             const finalEntry = { ...dialogEntry, label: dialogLabel };
-            setScheduleEntries(prevEntries => {
-                // If it's a new entry, add it. If it's an existing one being edited, update it.
-                if (!prevEntries.some(e => e.id === finalEntry.id)) {
-                    return [...prevEntries, finalEntry];
+            // Update the existing block in displayedEventBlocks
+            setDisplayedEventBlocks(prevBlocks => prevBlocks.map(block => {
+                if (block.id === finalEntry.id) {
+                    // Recalculate dimensions if time changed
+                    const dayIdx = DAYS_OF_WEEK.indexOf(finalEntry.day);
+                    const startHourIdx = TIME_SLOTS.indexOf(finalEntry.startTime);
+                    const endHourIdx = TIME_SLOTS.indexOf(finalEntry.endTime) -1;
+
+                    if (dayIdx !== -1 && startHourIdx !== -1 && endHourIdx !== -1) {
+                        const startCellRect = getCellPixelRect(dayIdx, startHourIdx);
+                        const endCellRect = getCellPixelRect(dayIdx, endHourIdx);
+                        if (startCellRect && endCellRect) {
+                            return {
+                                ...finalEntry,
+                                left: startCellRect.left,
+                                top: startCellRect.top,
+                                width: startCellRect.width,
+                                height: endCellRect.top + endCellRect.height - startCellRect.top,
+                            };
+                        }
+                    }
                 }
-                return prevEntries.map(e => e.id === finalEntry.id ? finalEntry : e);
-            });
+                return block;
+            }));
             handleCloseDialog();
         }
     };
@@ -330,37 +643,19 @@ function WeeklyScheduleCalendar() {
 
     // Handle deleting an existing schedule entry
     const handleDeleteEntry = (id) => {
-        setScheduleEntries(prevEntries => prevEntries.filter(entry => entry.id !== id));
+        setDisplayedEventBlocks(prevBlocks => prevBlocks.filter(block => block.id !== id));
     };
 
     const handleClearSchedule = () => {
-        setScheduleEntries([]);
-    };
-
-    // Function to open the NewClassroomForm dialog with the selected schedule
-    const handleOpenNewClassroomDialog = () => {
-        if (dialogEntry) {
-            const formattedSchedule = [{
-                id: dialogEntry.id,
-                day: dialogEntry.day,
-                startTime: dialogEntry.startTime,
-                endTime: dialogEntry.endTime,
-                duration: calculateDuration(dialogEntry.startTime, dialogEntry.endTime)
-            }];
-            setNewClassroomInitialSchedule(formattedSchedule);
-            setOpenNewClassroomDialog(true);
-            handleCloseDialog(); // Close the current schedule entry dialog
-        } else {
-            alert("Παρακαλώ επιλέξτε ένα διάστημα στο πρόγραμμα πρώτα.");
-        }
+        setDisplayedEventBlocks([]); // Clear all displayed blocks
+        setTempFloatingSelectionRect(null); // Ensure temporary rect is also cleared
     };
 
     // Callback for when NewClassroomForm successfully saves
     const handleNewClassroomSaveSuccess = () => {
         setOpenNewClassroomDialog(false); // Close the NewClassroomForm dialog
         setNewClassroomInitialSchedule(null); // Clear the initial schedule
-        // Optionally, you might want to clear the scheduleEntries or the specific entry that was used
-        // For now, we'll leave the entry on the calendar.
+        // The event block is already displayed, no need to re-add.
     };
 
 
@@ -422,7 +717,18 @@ function WeeklyScheduleCalendar() {
                     </Button>
                 </Box>
 
-                <TableContainer component={Paper} variant="outlined" sx={{ overflow: 'auto' }}>
+                <TableContainer
+                    component={Paper}
+                    variant="outlined"
+                    sx={{
+                        overflow: 'auto',
+                        position: 'relative',
+                        // Disable text selection when dragging for new selection
+                        userSelect: isDraggingNewSelection ? 'none' : 'auto',
+                        WebkitUserSelect: isDraggingNewSelection ? 'none' : 'auto', // For WebKit browsers
+                        cursor: isDraggingNewSelection ? 'grabbing' : 'auto', // Consistent cursor during drag
+                    }}
+                >
                     <Table ref={tableRef} sx={{ minWidth: 800 }}>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: '#1e86cc' }}>
@@ -435,70 +741,48 @@ function WeeklyScheduleCalendar() {
                         <TableBody>
                             {TIME_SLOTS.map((time, hourIndex) => (
                                 <TableRow key={time} sx={{ height: '40px' }}>
-                                    <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>{time}</TableCell>
+                                    {/* Time Label Cell - No mouse events for selection/interaction */}
+                                    <TableCell
+                                        sx={{
+                                            fontWeight: 'bold',
+                                            backgroundColor: '#f5f5f5',
+                                            pointerEvents: 'none' // Ensure no mouse events are captured by this cell
+                                        }}
+                                    >
+                                        {time}
+                                    </TableCell>
                                     {DAYS_OF_WEEK.map((day, dayIndex) => {
-                                        const isCurrentlySelected = isCellSelected(dayIndex, hourIndex);
-                                        const coveringEntry = getCoveringEntry(dayIndex, hourIndex);
-                                        const isStartOfEntry = coveringEntry && TIME_SLOTS.indexOf(coveringEntry.startTime) === hourIndex;
-
                                         return (
                                             <TableCell
                                                 key={`${day}-${time}`}
-                                                onMouseDown={(e) => handleMouseDown(e, dayIndex, hourIndex)}
-                                                onMouseEnter={() => handleMouseEnter(dayIndex, hourIndex)}
-                                                onMouseUp={handleMouseUp} // Global listener is also active, but local one helps for clarity
+                                                onMouseDown={(e) => handleGridMouseDown(e, dayIndex, hourIndex)} // Only for data cells
+                                                onMouseEnter={() => {
+                                                    if (isDraggingNewSelection) {
+                                                        const coords = { dayIndex, hourIndex };
+                                                        // Ensure mouse is over a valid data cell before updating selection
+                                                        if (coords.dayIndex >= 0) {
+                                                            setEndSelection(coords);
+                                                            updateTempFloatingSelectionRect(startSelection, coords);
+                                                        } else {
+                                                            setTempFloatingSelectionRect(null); // Clear if dragging outside valid data cells
+                                                        }
+                                                    }
+                                                }}
+                                                // MouseUp is handled globally for all drag/resize operations
                                                 sx={{
                                                     border: '1px solid #e0e0e0',
-                                                    backgroundColor: isCurrentlySelected ? '#b3e5fc' : (coveringEntry ? '#e0f2f7' : 'inherit'),
-                                                    cursor: isDragging ? 'grabbing' : (coveringEntry ? 'grab' : 'pointer'),
+                                                    backgroundColor: 'inherit', // Cells remain transparent
+                                                    cursor: isDraggingNewSelection ? 'grabbing' : 'pointer',
                                                     position: 'relative',
                                                     verticalAlign: 'top',
                                                     fontSize: '0.75rem',
                                                     padding: '4px',
                                                     '&:hover': {
-                                                        backgroundColor: isCurrentlySelected ? '#b3e5fc' : (coveringEntry ? '#d0e9f0' : '#f0f0f0'),
+                                                        backgroundColor: '#f0f0f0', // Only hover effect for empty cells
                                                     },
                                                 }}
                                             >
-                                                {isStartOfEntry && (
-                                                    <Box sx={{
-                                                        backgroundColor: '#2196f3',
-                                                        color: '#fff',
-                                                        borderRadius: '4px',
-                                                        padding: '2px 4px',
-                                                        textAlign: 'center',
-                                                        overflow: 'hidden',
-                                                        whiteSpace: 'nowrap',
-                                                        textOverflow: 'ellipsis',
-                                                        position: 'absolute',
-                                                        top: '2px',
-                                                        left: '2px',
-                                                        right: '2px',
-                                                        zIndex: 1,
-                                                        display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'center',
-                                                        gap: '4px',
-                                                    }}>
-                                                        <Typography variant="caption" sx={{ flexGrow: 1, textAlign: 'left' }}>
-                                                            {coveringEntry.label}
-                                                        </Typography>
-                                                        <IconButton
-                                                            size="small"
-                                                            sx={{ color: '#fff', padding: '2px' }}
-                                                            onClick={(e) => { e.stopPropagation(); handleEditEntry(coveringEntry); }}
-                                                        >
-                                                            <Edit sx={{ fontSize: '0.8rem' }} />
-                                                        </IconButton>
-                                                        <IconButton
-                                                            size="small"
-                                                            sx={{ color: '#fff', padding: '2px' }}
-                                                            onClick={(e) => { e.stopPropagation(); handleDeleteEntry(coveringEntry.id); }}
-                                                        >
-                                                            <Delete sx={{ fontSize: '0.8rem' }} />
-                                                        </IconButton>
-                                                    </Box>
-                                                )}
+                                                {/* No content here, events are drawn as floating blocks */}
                                             </TableCell>
                                         );
                                     })}
@@ -506,10 +790,38 @@ function WeeklyScheduleCalendar() {
                             ))}
                         </TableBody>
                     </Table>
+                    {/* Temporary Floating Selection Rectangle (during initial drag) */}
+                    {tempFloatingSelectionRect && (
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                left: tempFloatingSelectionRect.left,
+                                top: tempFloatingSelectionRect.top,
+                                width: tempFloatingSelectionRect.width,
+                                height: tempFloatingSelectionRect.height,
+                                backgroundColor: 'rgba(179, 229, 252, 0.5)', // Light blue with transparency
+                                border: '1px solid #2196f3',
+                                borderRadius: '4px',
+                                pointerEvents: 'none', // Allow mouse events to pass through to cells
+                                zIndex: 10, // Ensure it's on top of everything during drag
+                            }}
+                        />
+                    )}
+                    {/* Finalized Event Blocks */}
+                    {displayedEventBlocks.map(block => (
+                        <FloatingEventBlock
+                            key={block.id}
+                            {...block}
+                            onEdit={handleEditEntry}
+                            onDelete={handleDeleteEntry}
+                            onDragStart={handleEventDragStart}
+                            onResizeStart={handleEventResizeStart}
+                        />
+                    ))}
                 </TableContainer>
             </Paper>
 
-            {/* Schedule Entry Dialog (for confirming/editing label) */}
+            {/* Schedule Entry Dialog (still used for editing existing entries) */}
             <Dialog open={openDialog} onClose={handleCloseDialog}>
                 <DialogTitle>{dialogEntry ? 'Επεξεργασία Προγράμματος' : 'Προσθήκη Νέου Προγράμματος'}</DialogTitle>
                 <DialogContent>
@@ -538,13 +850,8 @@ function WeeklyScheduleCalendar() {
                         Ακύρωση
                     </Button>
                     <Button onClick={handleConfirmScheduleEntry} color="primary" variant="contained">
-                        {dialogEntry && scheduleEntries.some(e => e.id === dialogEntry.id) ? 'Ενημέρωση' : 'Προσθήκη'}
+                        Ενημέρωση
                     </Button>
-                    {dialogEntry && (
-                        <Button onClick={handleOpenNewClassroomDialog} color="secondary" variant="outlined">
-                            Δημιουργία Τμήματος με αυτό το Πρόγραμμα
-                        </Button>
-                    )}
                 </DialogActions>
             </Dialog>
 
@@ -553,11 +860,11 @@ function WeeklyScheduleCalendar() {
                 <DialogTitle>Δημιουργία Νέου Τμήματος</DialogTitle>
                 <DialogContent dividers>
                     <NewClassroomForm
-                        navigateTo={() => {}} // No navigation needed from here
-                        classroomToEdit={null} // Not editing an existing classroom
-                        setClassroomToEdit={() => {}} // No need to set classroom to edit
+                        navigateTo={() => {}}
+                        classroomToEdit={null}
+                        setClassroomToEdit={() => {}}
                         initialSchedule={newClassroomInitialSchedule}
-                        onSaveSuccess={handleNewClassroomSaveSuccess} // Callback for successful save
+                        onSaveSuccess={handleNewClassroomSaveSuccess}
                     />
                 </DialogContent>
                 <DialogActions>
