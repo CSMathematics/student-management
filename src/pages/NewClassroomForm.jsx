@@ -1,8 +1,8 @@
 // src/components/NewClassroomForm.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-    Box, Button, Container, Grid, Paper, Typography, IconButton,
-    FormControl, InputLabel, Select, MenuItem // <--- ADDED THESE IMPORTS BACK
+    Box, Button, Container, Grid, Paper, Typography, TextField,
+    FormControl, InputLabel, Select, MenuItem, IconButton
 } from '@mui/material';
 import { Add, Delete, CheckCircleOutline, Restore } from '@mui/icons-material';
 
@@ -19,199 +19,97 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, collection, addDoc, doc, updateDoc } from 'firebase/firestore'; // Import doc and updateDoc
 
-import { getSubjects, getSpecializations } from '../data/subjects.js';
-import ClassroomDetailsForm from './ClassroomDetailsForm.jsx'; // Import the new component
+import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
 
-function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, initialSchedule, onSaveSuccess }) { // Added onSaveSuccess prop
+
+function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, initialSchedule, onSaveSuccess, db, userId, appId }) { // Added onSaveSuccess, db, userId, appId props
     const initialFormData = {
+        classroomName: '',
         grade: '',
         specialization: '',
         subject: '',
         maxStudents: 5,
         schedule: [{ id: Date.now(), day: '', startTime: null, endTime: null, editingStage: 'start' }],
+        enrolledStudents: [], // Initialize enrolledStudents as an empty array
     };
-    const [formData, setFormData] = useState(initialFormData);
+    const [formData, setFormData] = useState(classroomToEdit || initialFormData);
 
     const [availableSpecializations, setAvailableSpecializations] = useState([]);
     const [currentSubjects, setCurrentSubjects] = useState([]);
-    const [db, setDb] = useState(null); // State for Firestore instance
-    const [auth, setAuth] = useState(null); // State for Auth instance
-    const [userId, setUserId] = useState(null); // State for user ID
-    const [selectedColor, setSelectedColor] = useState('#2196f3'); // New state for color selection
+    const [selectedColor, setSelectedColor] = useState(classroomToEdit?.color || '#2196f3'); // Use existing color or default
 
-    // Populate form if classroomToEdit or initialSchedule is provided
+    // Effect to update form data if classroomToEdit changes (for editing)
     useEffect(() => {
-        if (initialSchedule && initialSchedule.length > 0) {
-            console.log("initialSchedule received:", initialSchedule);
-            // Pre-fill schedule from initialSchedule
-            setFormData(prev => ({
-                ...prev,
-                schedule: initialSchedule.map(slot => ({
-                    id: slot.id || Date.now(),
-                    day: slot.day || '',
-                    startTime: slot.startTime ? dayjs(slot.startTime, 'HH:mm') : null,
-                    endTime: slot.endTime ? dayjs(slot.endTime, 'HH:mm') : null,
-                    duration: slot.duration || '',
-                    editingStage: 'done'
-                }))
-            }));
-            // Set color from initial schedule if available
-            if (initialSchedule[0].backgroundColor) {
-                setSelectedColor(initialSchedule[0].backgroundColor);
-            }
-        } else if (classroomToEdit) {
-            console.log("classroomToEdit received:", classroomToEdit);
-            setFormData({
-                grade: classroomToEdit.grade || '',
-                specialization: classroomToEdit.specialization || '',
-                subject: classroomToEdit.subject || '',
-                maxStudents: classroomToEdit.maxStudents || 5,
-                // Map schedule from string times back to Dayjs objects for TimeClock
-                schedule: classroomToEdit.schedule.map(slot => ({
-                    id: slot.id || Date.now(), // Use existing ID or generate new
-                    day: slot.day || '',
-                    startTime: slot.startTime ? dayjs(slot.startTime, 'HH:mm') : null,
-                    endTime: slot.endTime ? dayjs(slot.endTime, 'HH:mm') : null,
-                    duration: slot.duration || '', // Preserve duration if it exists
-                    editingStage: 'done' // Assume existing slots are done editing
-                })),
-            });
-            // Set color from existing classroom data
-            if (classroomToEdit.color) { // Assuming 'color' field exists in classroomToEdit
-                setSelectedColor(classroomToEdit.color);
-            }
+        if (classroomToEdit) {
+            setFormData(classroomToEdit);
+            setSelectedColor(classroomToEdit.color || '#2196f3');
         } else {
-            console.log("No classroomToEdit or initialSchedule, resetting form.");
-            setFormData(initialFormData); // Reset form for new entry
-            setSelectedColor('#2196f3'); // Reset color to default
-        }
-    }, [classroomToEdit, initialSchedule]); // Re-run when classroomToEdit or initialSchedule changes
-
-    // Initialize Firebase and authenticate
-    useEffect(() => {
-        try {
-            const firebaseConfigString = typeof __firebase_config !== 'undefined'
-                ? __firebase_config
-                : import.meta.env.VITE_FIREBASE_CONFIG;
-
-            // Log the value of VITE_APP_ID from import.meta.env
-            console.log("VITE_APP_ID from import.meta.env:", import.meta.env.VITE_APP_ID);
-
-            const appId = typeof __app_id !== 'undefined'
-                ? __app_id
-                : import.meta.env.VITE_APP_ID || 'default-local-app-id';
-
-            console.log("Final appId being used:", appId); // Log the final appId
-
-            const initialAuthToken = typeof __initial_auth_token !== 'undefined'
-                ? __initial_auth_token
-                : import.meta.env.VITE_INITIAL_AUTH_TOKEN;
-
-            const parsedFirebaseConfig = firebaseConfigString ? JSON.parse(firebaseConfigString) : {};
-
-            if (Object.keys(parsedFirebaseConfig).length === 0 || !parsedFirebaseConfig.apiKey) {
-                console.error("Firebase config is missing or incomplete.");
-                alert("Firebase config is missing or incomplete. Check console for details.");
-                return;
+            // If no classroomToEdit, and there's an initialSchedule (from calendar drag)
+            if (initialSchedule && initialSchedule.length > 0) {
+                setFormData(prev => ({
+                    ...prev,
+                    schedule: initialSchedule.map(slot => ({
+                        ...slot,
+                        startTime: dayjs(`2000-01-01T${slot.startTime}`), // Convert to Dayjs object
+                        endTime: dayjs(`2000-01-01T${slot.endTime}`),     // Convert to Dayjs object
+                        editingStage: 'done' // Mark as done since it's from a selection
+                    }))
+                }));
+            } else {
+                setFormData(initialFormData);
             }
-
-            const app = initializeApp(parsedFirebaseConfig);
-            const firestoreDb = getFirestore(app);
-            const firebaseAuth = getAuth(app);
-
-            setDb(firestoreDb);
-            setAuth(firebaseAuth);
-
-            const authenticate = async () => {
-                try {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(firebaseAuth, initialAuthToken);
-                        console.log("Authenticated with custom token.");
-                    } else {
-                        await signInAnonymously(firebaseAuth);
-                        console.log("Authenticated anonymously.");
-                    }
-                    const currentUserId = firebaseAuth.currentUser?.uid || crypto.randomUUID();
-                    setUserId(currentUserId);
-                    console.log("Firebase Auth User ID:", currentUserId);
-                } catch (authError) {
-                    console.error("Error during Firebase authentication:", authError);
-                    alert("Authentication failed. Check console for details.");
-                }
-            };
-
-            authenticate();
-        } catch (error) {
-            console.error("Error during Firebase initialization (outside auth block):", error);
-            alert("Error initializing Firebase. Check console for details and ensure your .env config is correct.");
+            setSelectedColor('#2196f3'); // Reset color for new form
         }
-    }, []);
+    }, [classroomToEdit, initialSchedule]);
 
-    // Effect to update specializations and subjects based on grade/specialization changes
+
+    // Update available specializations when grade changes
     useEffect(() => {
         const specs = getSpecializations(formData.grade);
         setAvailableSpecializations(specs);
 
+        // If current specialization is not in new specs, reset it
         if (specs.length > 0 && !specs.includes(formData.specialization)) {
             setFormData(prev => ({ ...prev, specialization: '' }));
+        } else if (specs.length === 0 && formData.specialization !== '') {
+            setFormData(prev => ({ ...prev, specialization: '' }));
         }
+    }, [formData.grade]);
 
+    // Update current subjects when grade or specialization changes
+    useEffect(() => {
         const subjects = getSubjects(formData.grade, formData.specialization);
         setCurrentSubjects(subjects);
-
-        if (!subjects.includes(formData.subject)) {
+        // If the selected subject is no longer in the list, clear it
+        if (formData.subject && !subjects.includes(formData.subject)) {
             setFormData(prev => ({ ...prev, subject: '' }));
         }
+    }, [formData.grade, formData.specialization]);
 
-    }, [formData.grade, formData.specialization, formData.subject]);
 
-
-    const handleTimePickerChange = (id, field, newValue) => {
-        setFormData(prev => ({
-            ...prev,
-            schedule: prev.schedule.map(slot =>
-                slot.id === id ? { ...slot, [field]: newValue } : slot
-            )
-        }));
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleConfirmTime = (id, field) => {
+    const handleScheduleChange = (id, field, value) => {
         setFormData(prev => ({
             ...prev,
             schedule: prev.schedule.map(slot => {
                 if (slot.id === id) {
-                    if (field === 'startTime') {
-                        return { ...slot, editingStage: 'end' };
-                    } else if (field === 'endTime') {
-                        // Ensure endTime is after startTime if both are set
-                        if (slot.startTime && slot.endTime && dayjs(slot.endTime).isBefore(dayjs(slot.startTime))) {
-                            alert("Η ώρα λήξης δεν μπορεί να είναι πριν από την ώρα έναρξης.");
-                            return { ...slot, endTime: null }; // Reset endTime if invalid
-                        }
-                        return { ...slot, editingStage: 'done' };
+                    const updatedSlot = { ...slot, [field]: value };
+                    // Auto-advance editing stage if start time is set
+                    if (field === 'startTime' && value) {
+                        updatedSlot.editingStage = 'end';
                     }
+                    // Auto-advance to done if end time is set
+                    if (field === 'endTime' && value) {
+                        updatedSlot.editingStage = 'done';
+                    }
+                    return updatedSlot;
                 }
                 return slot;
             })
-        }));
-    };
-
-    const handleResetTime = (id) => {
-        setFormData(prev => ({
-            ...prev,
-            schedule: prev.schedule.map(slot =>
-                slot.id === id ? { ...slot, startTime: null, endTime: null, editingStage: 'start' } : slot
-            )
-        }));
-    };
-
-    const handleScheduleDayChange = (id, e) => {
-        const { value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            schedule: prev.schedule.map(slot =>
-                slot.id === id ? { ...slot, day: value } : slot
-            )
         }));
     };
 
@@ -222,25 +120,27 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
         }));
     };
 
-    const removeScheduleSlot = (idToRemove) => {
+    const removeScheduleSlot = (id) => {
         setFormData(prev => ({
             ...prev,
-            schedule: prev.schedule.filter(slot => slot.id !== idToRemove)
+            schedule: prev.schedule.filter(slot => slot.id !== id)
         }));
     };
 
-    const calculateDuration = (startTime, endTime) => {
-        if (!startTime || !endTime) return '';
-        const start = dayjs(startTime);
-        const end = dayjs(endTime);
+    const calculateTotalDuration = useMemo(() => {
+        let totalMinutes = 0;
+        formData.schedule.forEach(slot => {
+            if (slot.startTime && slot.endTime) {
+                const start = dayjs(slot.startTime);
+                const end = dayjs(slot.endTime);
+                if (end.isAfter(start)) {
+                    totalMinutes += end.diff(start, 'minute');
+                }
+            }
+        });
 
-        if (end.isBefore(start)) {
-            return "Invalid Time Range";
-        }
-
-        const diff = dayjs.duration(end.diff(start));
-        const hours = diff.hours();
-        const minutes = diff.minutes();
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
 
         let durationString = '';
         if (hours > 0) {
@@ -254,221 +154,234 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
             durationString = '0 λεπτά';
         }
         return durationString;
-    };
-
-    const calculateTotalDuration = useMemo(() => {
-        let totalMinutes = 0;
-        formData.schedule.forEach(slot => {
-            // Only calculate duration for slots that are 'done' (i.e., both start and end times confirmed)
-            if (slot.startTime && slot.endTime && slot.editingStage === 'done') {
-                const start = dayjs(slot.startTime);
-                const end = dayjs(slot.endTime);
-                if (end.isAfter(start)) {
-                    totalMinutes += end.diff(start, 'minute');
-                }
-            }
-        });
-
-        const totalHours = Math.floor(totalMinutes / 60);
-        const remainingMinutes = totalMinutes % 60;
-
-        let totalDurationString = '';
-        if (totalHours > 0) {
-            totalDurationString += `${totalHours} ${totalHours > 1 ? 'ώρες' : 'ώρα'}`;
-        }
-        if (remainingMinutes > 0) {
-            if (totalHours > 0) totalDurationString += ' και ';
-            totalDurationString += `${remainingMinutes} λεπτά`;
-        }
-        // Handle case where total duration is 0 but there are confirmed slots
-        if (totalHours === 0 && remainingMinutes === 0 && formData.schedule.some(s => s.editingStage === 'done')) {
-            totalDurationString = '0 λεπτά';
-        } else if (totalHours === 0 && remainingMinutes === 0) {
-            totalDurationString = '0 ώρες'; // Default for no confirmed slots
-        }
-        return totalDurationString;
     }, [formData.schedule]);
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!db || !userId) {
-            alert("Firebase is not initialized or user not authenticated. Please try again.");
-            console.error("Firestore DB or User ID is null. Cannot submit.");
+        // Ensure db and appId are available
+        if (!db || !appId) {
+            console.error("Firestore DB or appId not initialized. Cannot save classroom.");
+            alert("Σφάλμα: Η βάση δεδομένων ή το αναγνωριστικό εφαρμογής δεν είναι διαθέσιμα. Παρακαλώ δοκιμάστε ξανά.");
             return;
         }
 
-        const classroomData = {
-            grade: formData.grade,
-            specialization: formData.specialization,
-            subject: formData.subject,
-            maxStudents: formData.maxStudents,
+        // Validate schedule entries
+        const isValidSchedule = formData.schedule.every(slot =>
+            slot.day && slot.startTime && slot.endTime && dayjs(slot.endTime).isAfter(dayjs(slot.startTime))
+        );
+
+        if (!isValidSchedule) {
+            alert("Παρακαλώ συμπληρώστε όλες τις πληροφορίες προγράμματος σωστά (ημέρα, ώρα έναρξης, ώρα λήξης) και βεβαιωθείτε ότι η ώρα λήξης είναι μετά την ώρα έναρξης.");
+            return;
+        }
+
+        // Prepare data for Firestore
+        const dataToSave = {
+            ...formData,
+            color: selectedColor,
+            // Convert Dayjs objects back to string for saving
             schedule: formData.schedule.map(slot => ({
-                // Ensure times are formatted as strings for Firestore
-                day: slot.day,
-                startTime: slot.startTime ? dayjs(slot.startTime).format('HH:mm') : '',
-                endTime: slot.endTime ? dayjs(slot.endTime).format('HH:mm') : '',
-                duration: calculateDuration(slot.startTime, slot.endTime)
+                ...slot,
+                startTime: slot.startTime ? dayjs(slot.startTime).format('HH:mm') : null,
+                endTime: slot.endTime ? dayjs(slot.endTime).format('HH:mm') : null,
+                editingStage: undefined // Remove transient editing stage
             })),
-            totalDuration: calculateTotalDuration,
-            color: selectedColor, // Include the selected color
-            updatedAt: new Date(), // Add an update timestamp
+            lastUpdated: new Date(), // Add a timestamp
         };
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : import.meta.env.VITE_APP_ID || 'default-local-app-id';
-        const classroomsCollectionRef = collection(db, `artifacts/${appId}/public/data/classrooms`);
-
-        try {
-            if (classroomToEdit && classroomToEdit.id) {
-                // Update existing classroom
-                const classroomDocPath = `artifacts/${appId}/public/data/classrooms/${classroomToEdit.id}`;
-                console.log("Attempting to update classroom at path:", classroomDocPath); // Log the full path
-                console.log("Data to update:", classroomData);
+        if (!classroomToEdit) {
+            // Add new classroom
+            try {
+                const classroomsCollectionRef = collection(db, `artifacts/${appId}/public/data/classrooms`);
+                await addDoc(classroomsCollectionRef, dataToSave);
+                alert('Τμήμα αποθηκεύτηκε επιτυχώς!');
+                if (onSaveSuccess) onSaveSuccess(); // Call success callback
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                alert('Σφάλμα κατά την αποθήκευση του τμήματος.');
+            }
+        } else {
+            // Update existing classroom
+            try {
                 const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToEdit.id);
-                await updateDoc(classroomDocRef, classroomData);
-                console.log('Classroom Data Updated in Firestore:', classroomData);
-                alert('Classroom updated successfully!');
-                if (setClassroomToEdit) setClassroomToEdit(null); // Clear editing state
-            } else {
-                // Add new classroom
-                console.log("Attempting to add new classroom.");
-                console.log("Data to add:", classroomData);
-                const docRef = await addDoc(classroomsCollectionRef, {
-                    ...classroomData,
-                    createdAt: new Date(), // Add creation timestamp only for new docs
-                    createdBy: userId,
-                });
-                console.log('New Classroom Data Submitted to Firestore:', classroomData);
-                console.log('Document written with ID: ', docRef.id);
-                alert('New classroom created and saved to Firestore!');
+                await updateDoc(classroomDocRef, dataToSave);
+                alert('Τμήμα ενημερώθηκε επιτυχώς!');
+                if (onSaveSuccess) onSaveSuccess(); // Call success callback
+            } catch (error) {
+                console.error("Error updating document: ", error);
+                alert('Σφάλμα κατά την ενημέρωση του τμήματος.');
             }
-
-            // Reset form after successful submission/update
-            setFormData(initialFormData);
-            setSelectedColor('#2196f3'); // Reset color to default
-
-            // Conditional navigation/callback based on how the form is used
-            if (onSaveSuccess) {
-                // Pass the initial schedule with the selected color for calendar update
-                const updatedInitialScheduleWithColor = initialSchedule ? initialSchedule.map(slot => ({
-                    ...slot,
-                    backgroundColor: selectedColor
-                })) : [];
-                onSaveSuccess(updatedInitialScheduleWithColor); // Call the callback if provided (for dialog use)
-            } else if (navigateTo) {
-                navigateTo('classroomsList'); // Navigate if used as a full page
-            }
-
-        } catch (error) {
-            console.error("Error saving/updating document to Firestore: ", error);
-            alert("Failed to save classroom. Please check console for errors.");
         }
     };
 
-    const daysOfWeek = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο'];
 
     return (
         <Container maxWidth="md">
             <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-                {/* Classroom Details Form Component */}
-                <ClassroomDetailsForm
-                    formData={formData}
-                    setFormData={setFormData}
-                    availableSpecializations={availableSpecializations}
-                    currentSubjects={currentSubjects}
-                    selectedColor={selectedColor}
-                    setSelectedColor={setSelectedColor}
-                    classroomToEdit={classroomToEdit}
-                />
-
-                {/* ⏰ Schedule Section */}
                 <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', mb: 4 }}>
                     <Typography variant="h5" component="h3" sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: 3, color: '#3f51b5' }}>
-                        <i className="fas fa-calendar-alt"></i> Πρόγραμμα
+                        <i className="fas fa-chalkboard"></i> Στοιχεία Τμήματος
+                    </Typography>
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Όνομα Τμήματος"
+                                name="classroomName"
+                                value={formData.classroomName}
+                                onChange={handleInputChange}
+                                required
+                                variant="outlined"
+                                size="small"
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth variant="outlined" size="small">
+                                <InputLabel id="grade-select-label">Τάξη</InputLabel>
+                                <Select
+                                    labelId="grade-select-label"
+                                    id="gradeSelect"
+                                    name="grade"
+                                    value={formData.grade}
+                                    onChange={handleInputChange}
+                                    label="Τάξη"
+                                    required
+                                >
+                                    <MenuItem value="">-- Επιλέξτε Τάξη --</MenuItem>
+                                    <MenuItem value="Α' Γυμνασίου">Α' Γυμνασίου</MenuItem>
+                                    <MenuItem value="Β' Γυμνασίου">Β' Γυμνασίου</MenuItem>
+                                    <MenuItem value="Γ' Γυμνασίου">Γ' Γυμνασίου</MenuItem>
+                                    <MenuItem value="Α' Λυκείου">Α' Λυκείου</MenuItem>
+                                    <MenuItem value="Β' Λυκείου">Β' Λυκείου</MenuItem>
+                                    <MenuItem value="Γ' Λυκείου">Γ' Λυκείου</MenuItem>
+                                    <MenuItem value="Γ' ΕΠΑ.Λ.">Γ' ΕΠΑ.Λ.</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        {availableSpecializations.length > 0 && (
+                            <Grid item xs={12} sm={6}>
+                                <FormControl fullWidth variant="outlined" size="small">
+                                    <InputLabel id="specialization-select-label">Κατεύθυνση</InputLabel>
+                                    <Select
+                                        labelId="specialization-select-label"
+                                        id="specializationSelect"
+                                        name="specialization"
+                                        value={formData.specialization}
+                                        onChange={handleInputChange}
+                                        label="Κατεύθυνση"
+                                        required
+                                    >
+                                        <MenuItem value="">-- Επιλέξτε Κατεύθυνση --</MenuItem>
+                                        {availableSpecializations.map(spec => (
+                                            <MenuItem key={spec} value={spec}>{spec}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        )}
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth variant="outlined" size="small">
+                                <InputLabel id="subject-select-label">Μάθημα</InputLabel>
+                                <Select
+                                    labelId="subject-select-label"
+                                    id="subjectSelect"
+                                    name="subject"
+                                    value={formData.subject}
+                                    onChange={handleInputChange}
+                                    label="Μάθημα"
+                                    required
+                                >
+                                    <MenuItem value="">-- Επιλέξτε Μάθημα --</MenuItem>
+                                    {currentSubjects.map(subject => (
+                                        <MenuItem key={subject} value={subject}>{subject}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Μέγιστος Αριθμός Μαθητών"
+                                name="maxStudents"
+                                type="number"
+                                value={formData.maxStudents}
+                                onChange={handleInputChange}
+                                required
+                                variant="outlined"
+                                size="small"
+                                inputProps={{ min: 1 }}
+                            />
+                        </Grid>
+                    </Grid>
+                </Paper>
+
+                {/* Schedule Section */}
+                <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', mb: 4 }}>
+                    <Typography variant="h5" component="h3" sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: 3, color: '#3f51b5' }}>
+                        <i className="fas fa-calendar-alt"></i> Πρόγραμμα Τμήματος
                     </Typography>
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                         {formData.schedule.map((slot, index) => (
-                            <Grid container spacing={2} key={slot.id} sx={{ mb: 2, alignItems: 'center' }}>
+                            <Grid container spacing={2} key={slot.id} sx={{ mb: 2, alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: '8px', p: 2 }}>
                                 <Grid item xs={12} sm={4}>
                                     <FormControl fullWidth variant="outlined" size="small">
                                         <InputLabel id={`day-select-label-${slot.id}`}>Ημέρα</InputLabel>
                                         <Select
                                             labelId={`day-select-label-${slot.id}`}
-                                            name="day"
                                             value={slot.day}
-                                            onChange={(e) => handleScheduleDayChange(slot.id, e)}
+                                            onChange={(e) => handleScheduleChange(slot.id, 'day', e.target.value)}
                                             label="Ημέρα"
+                                            required
                                         >
                                             <MenuItem value="">-- Επιλέξτε Ημέρα --</MenuItem>
-                                            {daysOfWeek.map(day => (
-                                                <MenuItem key={day} value={day}>{day}</MenuItem>
-                                            ))}
+                                            <MenuItem value="Δευτέρα">Δευτέρα</MenuItem>
+                                            <MenuItem value="Τρίτη">Τρίτη</MenuItem>
+                                            <MenuItem value="Τετάρτη">Τετάρτη</MenuItem>
+                                            <MenuItem value="Πέμπτη">Πέμπτη</MenuItem>
+                                            <MenuItem value="Παρασκευή">Παρασκευή</MenuItem>
+                                            <MenuItem value="Σάββατο">Σάββατο</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
-                                {/* Time Pickers / Display */}
-                                {slot.editingStage === 'start' && (
-                                    <Grid item xs={12} sm={6}>
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                                            <Typography variant="subtitle1" sx={{ mb: 1, color: '#3f51b5' }}>Ώρα Έναρξης</Typography>
-                                            <TimeClock
-                                                value={slot.startTime}
-                                                onChange={(newValue) => handleTimePickerChange(slot.id, 'startTime', newValue)}
-                                                views={['hours', 'minutes']}
-                                                ampm={false}
-                                            />
-                                            <Button
-                                                variant="contained"
-                                                color="primary"
-                                                onClick={() => handleConfirmTime(slot.id, 'startTime')}
-                                                startIcon={<CheckCircleOutline />}
-                                                sx={{ mt: 1, borderRadius: '8px' }}
-                                                disabled={!slot.startTime}
-                                            >
-                                                OK
-                                            </Button>
-                                        </Box>
-                                    </Grid>
-                                )}
-                                {slot.editingStage === 'end' && (
-                                    <Grid item xs={12} sm={6}>
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                                            <Typography variant="subtitle1" sx={{ mb: 1, color: '#3f51b5' }}>Ώρα Λήξης</Typography>
-                                            <TimeClock
-                                                value={slot.endTime}
-                                                onChange={(newValue) => handleTimePickerChange(slot.id, 'endTime', newValue)}
-                                                views={['hours', 'minutes']}
-                                                ampm={false}
-                                            />
-                                            <Button
-                                                variant="contained"
-                                                color="primary"
-                                                onClick={() => handleConfirmTime(slot.id, 'endTime')}
-                                                startIcon={<CheckCircleOutline />}
-                                                sx={{ mt: 1, borderRadius: '8px' }}
-                                                disabled={!slot.endTime}
-                                            >
-                                                OK
-                                            </Button>
-                                        </Box>
-                                    </Grid>
-                                )}
-                                {slot.editingStage === 'done' && (
-                                    <Grid item xs={12} sm={6}>
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.5, ml: 2 }}>
-                                            <Typography variant="body1" sx={{ color: '#555' }}>
-                                                Ώρα: {slot.startTime ? dayjs(slot.startTime).format('HH:mm') : ''} - {slot.endTime ? dayjs(slot.endTime).format('HH:mm') : ''}
-                                            </Typography>
-                                            <Typography variant="body2" sx={{ color: '#757575', fontStyle: 'italic' }}>
-                                                Διάρκεια: {calculateDuration(slot.startTime, slot.endTime)}
-                                            </Typography>
-                                            <IconButton color="info" onClick={() => handleResetTime(slot.id)} size="small" sx={{ mt: 1 }}>
-                                                <Restore fontSize="small" /> Επεξεργασία Ώρας
-                                            </IconButton>
-                                        </Box>
-                                    </Grid>
-                                )}
-                                <Grid item xs={12} sm={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <Grid item xs={12} sm={3}>
+                                    <TimeClock
+                                        label="Ώρα Έναρξης"
+                                        value={slot.startTime}
+                                        onChange={(newValue) => handleScheduleChange(slot.id, 'startTime', newValue)}
+                                        ampm={false}
+                                        sx={{
+                                            border: '1px solid #ccc',
+                                            borderRadius: '8px',
+                                            padding: '8px',
+                                            width: '100%',
+                                            '.MuiTimeClock-root': { width: '100%' },
+                                            '.MuiClock-root': { width: '100%', height: 'auto' },
+                                            '.MuiClock-pmButton': { display: 'none' },
+                                            '.MuiClock-amButton': { display: 'none' },
+                                        }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={3}>
+                                    <TimeClock
+                                        label="Ώρα Λήξης"
+                                        value={slot.endTime}
+                                        onChange={(newValue) => handleScheduleChange(slot.id, 'endTime', newValue)}
+                                        ampm={false}
+                                        sx={{
+                                            border: '1px solid #ccc',
+                                            borderRadius: '8px',
+                                            padding: '8px',
+                                            width: '100%',
+                                            '.MuiTimeClock-root': { width: '100%' },
+                                            '.MuiClock-root': { width: '100%', height: 'auto' },
+                                            '.MuiClock-pmButton': { display: 'none' },
+                                            '.MuiClock-amButton': { display: 'none' },
+                                        }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={2} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                                     {formData.schedule.length > 1 && (
                                         <IconButton color="error" onClick={() => removeScheduleSlot(slot.id)}>
                                             <Delete />
@@ -488,6 +401,21 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                         Συνολική Διάρκεια Μαθημάτων: {calculateTotalDuration}
                     </Typography>
                 </Paper>
+
+                {/* Color Picker for the classroom schedule */}
+                <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
+                        <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                            Επιλογή Χρώματος Προγράμματος:
+                        </Typography>
+                        <input
+                            type="color"
+                            value={selectedColor}
+                            onChange={(e) => setSelectedColor(e.target.value)}
+                            style={{ width: '50px', height: '30px', border: 'none', cursor: 'pointer', borderRadius: '4px' }}
+                        />
+                    </Box>
+                </Grid>
 
                 {/* Submit Button */}
                 <Box sx={{ mt: 3, textAlign: 'right' }}>

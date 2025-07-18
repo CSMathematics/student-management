@@ -8,7 +8,14 @@ import {
 } from '@mui/material';
 import { ClearAll, Save, Add, Edit, Delete, CheckCircleOutline } from '@mui/icons-material';
 import dayjs from 'dayjs';
-import NewClassroomForm from './NewClassroomForm.jsx'; // Import NewClassroomForm
+import duration from 'dayjs/plugin/duration';
+dayjs.extend(duration);
+
+// Firebase Imports
+import { doc, deleteDoc, collection, query, getDocs, updateDoc } from 'firebase/firestore';
+
+// Import NewClassroomForm to be used in the dialog
+import NewClassroomForm from './NewClassroomForm.jsx';
 
 // Define the days of the week (excluding Sunday)
 const DAYS_OF_WEEK = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο'];
@@ -18,7 +25,9 @@ const generateTimeSlots = (startHour, endHour) => {
     const slots = [];
     for (let h = startHour; h < endHour; h++) {
         slots.push(`${String(h).padStart(2, '0')}:00`);
+        slots.push(`${String(h).padStart(2, '0')}:30`); // Add 30-minute intervals
     }
+    slots.push(`${String(endHour).padStart(2, '0')}:00`); // Ensure the end hour is included
     return slots;
 };
 
@@ -51,36 +60,36 @@ const calculateDuration = (startTimeStr, endTimeStr) => {
 };
 
 // FloatingEventBlock Component
-// This component renders an individual event block on the calendar.
-const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart }) => {
+const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrolledStudents, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData }) => {
+    const currentStudents = enrolledStudents ? enrolledStudents.length : 0;
     return (
         <Box
-            id={`event-block-${id}`} // Add an ID for easy lookup
+            id={`event-block-${id}`}
             sx={{
                 position: 'absolute',
                 left: left,
                 top: top,
                 width: width,
                 height: height,
-                backgroundColor: backgroundColor || '#2196f3', // Use dynamic background color
+                backgroundColor: backgroundColor || '#2196f3',
                 color: '#fff',
                 borderRadius: '4px',
-                padding: '2px 4px', // Overall padding for the block
+                padding: '2px 4px',
                 textAlign: 'left',
                 overflow: 'hidden',
                 whiteSpace: 'nowrap',
                 textOverflow: 'ellipsis',
-                zIndex: 5, // Below the active drag rect, but above table cells
+                zIndex: 5,
                 boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                cursor: 'grab', // Indicate draggable
-                touchAction: 'none', // Prevent default touch actions like scrolling
-                display: 'flex', // Make it a flex container
-                flexDirection: 'column', // Stack children vertically
-                justifyContent: 'space-between', // Distribute space
+                cursor: 'grab',
+                touchAction: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
                 fontSize: '0.75rem',
-                boxSizing: 'border-box', // Ensure padding and border are included in the width/height
+                boxSizing: 'border-box',
             }}
-            onMouseDown={(e) => onDragStart(e, id)} // Handle drag start for the block itself
+            onMouseDown={(e) => onDragStart(e, id)}
         >
             {/* Top Resize Handle */}
             <Box
@@ -89,17 +98,23 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, wid
                     top: 0,
                     left: 0,
                     right: 0,
-                    height: '8px', // Make it small
-                    cursor: 'ns-resize', // North-south resize cursor
-                    zIndex: 6, // Above the event content
+                    height: '8px',
+                    cursor: 'ns-resize',
+                    zIndex: 6,
                 }}
                 onMouseDown={(e) => onResizeStart(e, id, 'top')}
             />
 
-            {/* Content (Label and Time) */}
-            <Box sx={{ flexGrow: 1, overflow: 'hidden', pr: '40px' }}> {/* Add right padding for buttons */}
+            {/* Content (Subject, Grade, Students, and Time) */}
+            <Box sx={{ flexGrow: 1, overflow: 'hidden', pr: '40px' }}>
                 <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block' }}>
-                    {label}
+                    {subject}
+                </Typography>
+                <Typography variant="caption" sx={{ display: 'block' }}>
+                    {grade}
+                </Typography>
+                <Typography variant="caption" sx={{ display: 'block' }}>
+                    Μαθητές: {currentStudents}/{maxStudents}
                 </Typography>
                 <Typography variant="caption" sx={{ display: 'block' }}>
                     {startTime} - {endTime}
@@ -109,23 +124,23 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, wid
             {/* Buttons positioned absolutely at top right */}
             <Box sx={{
                 position: 'absolute',
-                top: '2px', // Adjust as needed for padding
-                right: '2px', // Adjust as needed for padding
+                top: '2px',
+                right: '2px',
                 display: 'flex',
                 gap: '2px',
-                zIndex: 7, // Ensure buttons are clickable
+                zIndex: 7,
             }}>
                 <IconButton
                     size="small"
                     sx={{ color: '#fff', padding: '2px' }}
-                    onClick={(e) => { e.stopPropagation(); onEdit({ id, day, startTime, endTime, label, backgroundColor }); }} // Pass backgroundColor to onEdit
+                    onClick={(e) => { e.stopPropagation(); onEdit(fullClassroomData); }}
                 >
                     <Edit sx={{ fontSize: '0.8rem' }} />
                 </IconButton>
                 <IconButton
                     size="small"
                     sx={{ color: '#fff', padding: '2px' }}
-                    onClick={(e) => { e.stopPropagation(); onDelete(id); }}
+                    onClick={(e) => { e.stopPropagation(); onDelete(fullClassroomData.id); }}
                 >
                     <Delete sx={{ fontSize: '0.8rem' }} />
                 </IconButton>
@@ -138,9 +153,9 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, wid
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    height: '8px', // Make it small
-                    cursor: 'ns-resize', // North-south resize cursor
-                    zIndex: 6, // Above the event content
+                    height: '8px',
+                    cursor: 'ns-resize',
+                    zIndex: 6,
                 }}
                 onMouseDown={(e) => onResizeStart(e, id, 'bottom')}
             />
@@ -148,48 +163,53 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, wid
     );
 };
 
-function WeeklyScheduleCalendar() {
+function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCalendar, onEditClassroom, navigateTo, db, userId, appId }) { // Receive appId prop
     // Calendar display hours
-    const [calendarStartHour, setCalendarStartHour] = useState(8); // Default 8 AM
-    const [calendarEndHour, setCalendarEndHour] = useState(20); // Default 8 PM
+    const [calendarStartHour, setCalendarStartHour] = useState(8);
+    const [calendarEndHour, setCalendarEndHour] = useState(20);
 
     // Generated time slots based on selected hours
     const TIME_SLOTS = useMemo(() => generateTimeSlots(calendarStartHour, calendarEndHour), [calendarStartHour, calendarEndHour]);
 
     // Dragging states for new selection
     const [isDraggingNewSelection, setIsDraggingNewSelection] = useState(false);
-    const [startSelection, setStartSelection] = useState(null); // { dayIndex, hourIndex }
-    const [endSelection, setEndSelection] = useState(null);   // { dayIndex, hourIndex }
-    const [tempFloatingSelectionRect, setTempFloatingSelectionRect] = useState(null); // { left, top, width, height }
+    const [startSelection, setStartSelection] = useState(null);
+    const [endSelection, setEndSelection] = useState(null);
+    const [tempFloatingSelectionRect, setTempFloatingSelectionRect] = useState(null);
 
     // Dragging states for existing event blocks
     const [isDraggingEvent, setIsDraggingEvent] = useState(false);
     const [draggedEventId, setDraggedEventId] = useState(null);
-    const [dragStartMousePos, setDragStartMousePos] = useState({ x: 0, y: 0 }); // Mouse position when drag started
+    const [dragStartMousePos, setDragStartMousePos] = useState({ x: 0, y: 0 });
     const [dragStartBlockPos, setDragStartBlockPos] = useState({ left: 0, top: 0 });
 
     // Resizing states for existing event blocks
     const [isResizingEvent, setIsResizingEvent] = useState(false);
     const [resizedEventId, setResizedEventId] = useState(null);
-    const [resizeHandle, setResizeHandle] = useState(null); // 'top' or 'bottom'
-    const [resizeStartMouseY, setResizeStartMouseY] = useState(0); // Mouse Y position when resize started
-    const [resizeStartBlockTop, setResizeStartBlockTop] = useState(0); // Block's top when resize started
-    const [resizeStartBlockHeight, setResizeStartBlockHeight] = useState(0); // Block's height when resize started
-    const [resizeStartHourIndex, setResizeStartHourIndex] = useState(null); // Original start hour index for resizing
-    const [resizeEndHourIndex, setResizeEndHourIndex] = useState(null); // Original end hour index for resizing
+    const [resizeHandle, setResizeHandle] = useState(null);
+    const [resizeStartMouseY, setResizeStartMouseY] = useState(0);
+    const [resizeStartBlockTop, setResizeStartBlockTop] = useState(0);
+    const [resizeStartBlockHeight, setResizeStartBlockHeight] = useState(0);
+    const [resizeStartHourIndex, setResizeStartHourIndex] = useState(null);
+    const [resizeEndHourIndex, setResizeEndHourIndex] = useState(null);
 
     // State for the finalized event blocks displayed on the calendar
-    const [displayedEventBlocks, setDisplayedEventBlocks] = useState([]); // { id, day, startTime, endTime, label, left, top, width, height, backgroundColor }
+    const [displayedEventBlocks, setDisplayedEventBlocks] = useState([]);
 
-    // Dialog states for confirming/editing schedule entry (still used for editing existing)
+    // Dialog states for editing individual schedule entry (label/color)
     const [openDialog, setOpenDialog] = useState(false);
-    const [dialogEntry, setDialogEntry] = useState(null); // The entry being confirmed/edited
+    const [dialogEntry, setDialogEntry] = useState(null);
     const [dialogLabel, setDialogLabel] = useState('');
-    const [dialogColor, setDialogColor] = useState('#2196f3'); // State for editing color
+    const [dialogColor, setDialogColor] = useState('#2196f3');
 
-    // State for NewClassroomForm dialog
-    const [openNewClassroomDialog, setOpenNewClassroomDialog] = useState(false);
+    // State for the new classroom creation dialog (now holds NewClassroomForm)
+    const [openNewClassroomFormDialog, setOpenNewClassroomFormDialog] = useState(false);
     const [newClassroomInitialSchedule, setNewClassroomInitialSchedule] = useState(null);
+
+    // States for custom confirmation dialogs
+    const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
+    const [classroomIdToDelete, setClassroomIdToDelete] = useState(null);
+    const [openClearConfirmDialog, setOpenClearConfirmDialog] = useState(false);
 
 
     // Ref for the table container to calculate cell positions
@@ -200,14 +220,11 @@ function WeeklyScheduleCalendar() {
         const table = tableRef.current;
         if (!table) return null;
 
-        // Select the correct cell. +1 for 1-based indexing of tr, +2 for 1-based indexing of td (skipping time label column)
         const cellElement = table.querySelector(`tbody tr:nth-child(${hourIdx + 1}) td:nth-child(${dayIdx + 2})`);
         if (cellElement) {
             const cellRect = cellElement.getBoundingClientRect();
-            // Get the bounding rect of the TableContainer, which is the positioning context for absolute elements
             const tableContainerRect = table.closest('.MuiTableContainer-root').getBoundingClientRect();
 
-            // Return position relative to the TableContainer's top-left corner
             return {
                 left: cellRect.left - tableContainerRect.left,
                 top: cellRect.top - tableContainerRect.top,
@@ -227,24 +244,21 @@ function WeeklyScheduleCalendar() {
         const relativeX = pixelX - tableRect.left;
         const relativeY = pixelY - tableRect.top;
 
-        // Find dayIndex
-        // Start from 1 to skip the first header cell (time label)
         const headerCells = table.querySelectorAll('thead th');
         let dayIndex = -1;
         for (let i = 1; i < headerCells.length; i++) {
             const cellRect = headerCells[i].getBoundingClientRect();
-            if (pixelX >= cellRect.left && pixelX < cellRect.right) { // Use absolute pixelX for comparison
-                dayIndex = i - 1; // Adjust for 0-based index of DAYS_OF_WEEK
+            if (pixelX >= cellRect.left && pixelX < cellRect.right) {
+                dayIndex = i - 1;
                 break;
             }
         }
 
-        // Find hourIndex
         const bodyRows = table.querySelectorAll('tbody tr');
         let hourIndex = -1;
         for (let i = 0; i < bodyRows.length; i++) {
             const rowRect = bodyRows[i].getBoundingClientRect();
-            if (pixelY >= rowRect.top && pixelY < rowRect.bottom) { // Use absolute pixelY for comparison
+            if (pixelY >= rowRect.top && pixelY < rowRect.bottom) {
                 hourIndex = i;
                 break;
             }
@@ -268,8 +282,6 @@ function WeeklyScheduleCalendar() {
         const minHour = Math.min(startCoords.hourIndex, endCoords.hourIndex);
         const maxHour = Math.max(startCoords.hourIndex, endCoords.hourIndex);
 
-        // Ensure selection is within valid data columns (minDay >= 0)
-        // This check is crucial to prevent the rectangle from extending into the time label column
         if (minDay < 0) {
             setTempFloatingSelectionRect(null);
             return;
@@ -282,7 +294,7 @@ function WeeklyScheduleCalendar() {
             setTempFloatingSelectionRect({
                 left: startCellRect.left,
                 top: startCellRect.top,
-                width: endCellRect.left + endCellRect.width - startCellRect.left - 4, // Reduced width
+                width: endCellRect.left + endCellRect.width - startCellRect.left - 4,
                 height: endCellRect.top + endCellRect.height - startCellRect.top,
             });
         } else {
@@ -290,45 +302,80 @@ function WeeklyScheduleCalendar() {
         }
     }, [getCellPixelRect]);
 
-    // Function to calculate and add a new displayed event block
-    const addDisplayedEventBlock = useCallback((entry) => {
-        const dayIdx = DAYS_OF_WEEK.indexOf(entry.day);
-        const startHourIdx = TIME_SLOTS.indexOf(entry.startTime);
-        const endHourIdx = TIME_SLOTS.indexOf(entry.endTime) -1 ; // -1 because endTime is exclusive in TIME_SLOTS
+    // Function to transform classrooms data into displayedEventBlocks
+    const transformClassroomsToEvents = useCallback((classroomsData) => {
+        const events = [];
+        classroomsData.forEach(classroom => {
+            if (classroom.schedule && Array.isArray(classroom.schedule)) {
+                classroom.schedule.forEach((slot, index) => {
+                    const dayIdx = DAYS_OF_WEEK.indexOf(slot.day);
+                    if (dayIdx === -1) return;
 
-        if (dayIdx === -1 || startHourIdx === -1 || endHourIdx === -1) {
-            console.error("Invalid day or time for event block:", entry);
-            return;
-        }
+                    const startHourIdx = TIME_SLOTS.indexOf(slot.startTime);
+                    let endHourIdx = TIME_SLOTS.indexOf(slot.endTime);
 
-        const startCellRect = getCellPixelRect(dayIdx, startHourIdx);
-        const endCellRect = getCellPixelRect(dayIdx, endHourIdx);
+                    if (endHourIdx === -1) {
+                        const targetEndTimeMoment = dayjs(`2000-01-01T${slot.endTime}`);
+                        for (let i = TIME_SLOTS.length - 1; i >= 0; i--) {
+                            const slotMoment = dayjs(`2000-01-01T${TIME_SLOTS[i]}`);
+                            if (slotMoment.isSame(targetEndTimeMoment) || slotMoment.isBefore(targetEndTimeMoment)) {
+                                endHourIdx = i;
+                                break;
+                            }
+                        }
+                    }
 
-        if (startCellRect && endCellRect) {
-            setDisplayedEventBlocks(prevBlocks => [
-                ...prevBlocks,
-                {
-                    ...entry,
-                    left: startCellRect.left,
-                    top: startCellRect.top,
-                    width: startCellRect.width - 4, // Event block spans one column, reduced by 4px
-                    height: endCellRect.top + endCellRect.height - startCellRect.top,
-                }
-            ]);
-        }
+                    if (startHourIdx === -1 || endHourIdx === -1 || startHourIdx >= endHourIdx) {
+                        console.warn("Invalid time slot for classroom event:", classroom, slot);
+                        return;
+                    }
+
+                    endHourIdx = Math.max(startHourIdx, endHourIdx - 1);
+
+
+                    const startCellRect = getCellPixelRect(dayIdx, startHourIdx);
+                    const endCellRect = getCellPixelRect(dayIdx, endHourIdx);
+
+                    if (startCellRect && endCellRect) {
+                        events.push({
+                            id: classroom.id + '-' + index,
+                            day: slot.day,
+                            startTime: slot.startTime,
+                            endTime: slot.endTime,
+                            subject: classroom.subject, // Pass subject directly
+                            grade: classroom.grade,     // Pass grade directly
+                            enrolledStudents: classroom.enrolledStudents, // Pass enrolled students
+                            maxStudents: classroom.maxStudents,       // Pass max students
+                            backgroundColor: classroom.color || '#2196f3',
+                            left: startCellRect.left,
+                            top: startCellRect.top,
+                            width: startCellRect.width - 4,
+                            height: endCellRect.top + endCellRect.height - startCellRect.top,
+                            fullClassroomData: classroom,
+                        });
+                    }
+                });
+            }
+        });
+        return events;
     }, [getCellPixelRect, TIME_SLOTS]);
+
+    // Update displayedEventBlocks when classrooms prop changes
+    useEffect(() => {
+        if (classrooms) {
+            setDisplayedEventBlocks(transformClassroomsToEvents(classrooms));
+        }
+    }, [classrooms, transformClassroomsToEvents]);
+
 
     // Handle mouse down to start a new selection on the grid
     const handleGridMouseDown = (e, dayIdx, hourIdx) => {
-        if (e.button !== 0) return; // Only left mouse button
+        if (e.button !== 0) return;
 
-        // If we're already dragging/resizing an event, do nothing
-        if (isDraggingEvent || isResizingEvent) return;
+        e.preventDefault();
 
-        // Clear any existing temporary floating selection when starting a new drag
         setTempFloatingSelectionRect(null);
 
-        // Start new selection
         setIsDraggingNewSelection(true);
         setStartSelection({ dayIndex: dayIdx, hourIndex: hourIdx });
         setEndSelection({ dayIndex: dayIdx, hourIndex: hourIdx });
@@ -337,8 +384,10 @@ function WeeklyScheduleCalendar() {
 
     // Handle mouse down on an existing event block to start dragging
     const handleEventDragStart = useCallback((e, id) => {
-        e.stopPropagation(); // Prevent grid's mousedown from firing
+        e.stopPropagation();
         if (e.button !== 0) return;
+
+        e.preventDefault();
 
         setIsDraggingEvent(true);
         setDraggedEventId(id);
@@ -347,7 +396,7 @@ function WeeklyScheduleCalendar() {
         const blockElement = document.getElementById(`event-block-${id}`);
         if (blockElement) {
             const blockRect = blockElement.getBoundingClientRect();
-            const tableContainerRect = tableRef.current.closest('.MuiTableContainer-root').getBoundingClientRect(); // Use table container rect
+            const tableContainerRect = tableRef.current.closest('.MuiTableContainer-root').getBoundingClientRect();
             setDragStartBlockPos({
                 left: blockRect.left - tableContainerRect.left,
                 top: blockRect.top - tableContainerRect.top
@@ -357,8 +406,10 @@ function WeeklyScheduleCalendar() {
 
     // Handle mouse down on a resize handle to start resizing
     const handleEventResizeStart = useCallback((e, id, handle) => {
-        e.stopPropagation(); // Prevent block's drag and grid's mousedown
+        e.stopPropagation();
         if (e.button !== 0) return;
+
+        e.preventDefault();
 
         setIsResizingEvent(true);
         setResizedEventId(id);
@@ -368,15 +419,23 @@ function WeeklyScheduleCalendar() {
         const blockElement = document.getElementById(`event-block-${id}`);
         if (blockElement) {
             const blockRect = blockElement.getBoundingClientRect();
-            const tableContainerRect = tableRef.current.closest('.MuiTableContainer-root').getBoundingClientRect(); // Use table container rect
+            const tableContainerRect = tableRef.current.closest('.MuiTableContainer-root').getBoundingClientRect();
             setResizeStartBlockTop(blockRect.top - tableContainerRect.top);
             setResizeStartBlockHeight(blockRect.height);
 
-            // Store original hour indices for snapping
-            const originalEntry = displayedEventBlocks.find(block => block.id === id);
-            if (originalEntry) {
-                setResizeStartHourIndex(TIME_SLOTS.indexOf(originalEntry.startTime));
-                setResizeEndHourIndex(TIME_SLOTS.indexOf(originalEntry.endTime) - 1);
+            const originalEventBlock = displayedEventBlocks.find(block => block.id === id);
+            if (originalEventBlock) {
+                setResizeStartHourIndex(TIME_SLOTS.indexOf(originalEventBlock.startTime));
+                const originalEndTimeMoment = dayjs(`2000-01-01T${originalEventBlock.endTime}`);
+                let originalEndSlotIndex = TIME_SLOTS.length - 1;
+                for (let i = TIME_SLOTS.length - 1; i >= 0; i--) {
+                    const slotMoment = dayjs(`2000-01-01T${TIME_SLOTS[i]}`);
+                    if (slotMoment.isSame(originalEndTimeMoment) || slotMoment.isBefore(targetEndTimeMoment)) {
+                        originalEndSlotIndex = i;
+                        break;
+                    }
+                }
+                setResizeEndHourIndex(originalEndSlotIndex);
             }
         }
     }, [displayedEventBlocks, TIME_SLOTS]);
@@ -384,14 +443,14 @@ function WeeklyScheduleCalendar() {
 
     // Global mouse move handler for dragging and resizing
     const handleGlobalMouseMove = useCallback((e) => {
+        e.preventDefault();
+
         if (isDraggingNewSelection) {
             const coords = getGridCoordinatesFromPixels(e.clientX, e.clientY);
-            // Only update if coords are valid and within the data grid
             if (coords && coords.dayIndex >= 0) {
                 setEndSelection(coords);
                 updateTempFloatingSelectionRect(startSelection, coords);
             } else if (coords && coords.dayIndex < 0) {
-                // If mouse moves into the time label column, clear temp rect
                 setTempFloatingSelectionRect(null);
             }
         } else if (isDraggingEvent) {
@@ -413,8 +472,8 @@ function WeeklyScheduleCalendar() {
 
             setDisplayedEventBlocks(prevBlocks => prevBlocks.map(block => {
                 if (block.id === resizedEventId) {
-                    let newTop = block.top;
-                    let newHeight = block.height;
+                    let newTop = resizeStartBlockTop;
+                    let newHeight = resizeStartBlockHeight;
 
                     if (resizeHandle === 'top') {
                         newTop = resizeStartBlockTop + dy;
@@ -423,8 +482,7 @@ function WeeklyScheduleCalendar() {
                         newHeight = resizeStartBlockHeight + dy;
                     }
 
-                    // Prevent negative height
-                    newHeight = Math.max(newHeight, 10); // Minimum height of 10px
+                    newHeight = Math.max(newHeight, 10);
 
                     return {
                         ...block,
@@ -435,156 +493,27 @@ function WeeklyScheduleCalendar() {
                 return block;
             }));
         }
-    }, [isDraggingNewSelection, startSelection, updateTempFloatingSelectionRect, isDraggingEvent, draggedEventId, dragStartMousePos, dragStartBlockPos, isResizingEvent, resizedEventId, resizeHandle, resizeStartMouseY, resizeStartBlockTop, resizeStartBlockHeight, getGridCoordinatesFromPixels]);
+    }, [isDraggingNewSelection, startSelection, updateTempFloatingSelectionRect, isDraggingEvent, draggedEventId, dragStartMousePos, dragStartBlockPos, isResizingEvent, resizedEventId, resizeHandle, resizeStartMouseY, resizeStartBlockTop, resizeStartBlockHeight, getGridCoordinatesFromPixels, displayedEventBlocks]);
 
 
     // Global mouse up handler to finalize operations
-    const handleGlobalMouseUp = useCallback(() => {
-        if (isDraggingNewSelection) {
-            if (startSelection && endSelection) {
-                const normalizedStartDay = Math.min(startSelection.dayIndex, endSelection.dayIndex);
-                const normalizedEndDay = Math.max(startSelection.dayIndex, endSelection.dayIndex);
-                const normalizedStartHour = Math.min(startSelection.hourIndex, endSelection.hourIndex);
-                const normalizedEndHour = Math.max(startSelection.hourIndex, endSelection.hourIndex);
+    const handleGlobalMouseUp = useCallback(async () => {
+        // Capture current state values before resetting
+        const wasDraggingNewSelection = isDraggingNewSelection;
+        const wasDraggingEvent = isDraggingEvent;
+        const wasResizingEvent = isResizingEvent;
+        const currentStartSelection = startSelection;
+        const currentEndSelection = endSelection;
+        const currentDraggedEventId = draggedEventId;
+        const currentResizedEventId = resizedEventId;
 
-                // Ensure a valid selection was made (not just a click on the time label column)
-                if (normalizedStartDay < 0 || normalizedStartHour < 0) {
-                    alert("Παρακαλώ επιλέξτε μια έγκυρη περιοχή στο πρόγραμμα.");
-                    // Reset all states for new selection
-                    setIsDraggingNewSelection(false);
-                    setStartSelection(null);
-                    setEndSelection(null);
-                    setTempFloatingSelectionRect(null);
-                    return;
-                }
-
-                const newEntry = {
-                    id: Date.now(),
-                    day: DAYS_OF_WEEK[normalizedStartDay],
-                    startTime: TIME_SLOTS[normalizedStartHour],
-                    endTime: TIME_SLOTS[normalizedEndHour + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`,
-                    label: `Νέο Μάθημα`, // Default label
-                    backgroundColor: '#2196f3' // Default color for new selections
-                };
-
-                if (dayjs(`2000-01-01T${newEntry.endTime}`).isAfter(dayjs(`2000-01-01T${newEntry.startTime}`))) {
-                    // We don't add the block here directly. We pass it to the NewClassroomForm.
-                    // The NewClassroomForm will then call onSaveSuccess which will add the block.
-                    setNewClassroomInitialSchedule([{
-                        id: newEntry.id,
-                        day: newEntry.day,
-                        startTime: newEntry.startTime,
-                        endTime: newEntry.endTime,
-                        duration: calculateDuration(newEntry.startTime, newEntry.endTime),
-                        backgroundColor: newEntry.backgroundColor
-                    }]);
-                    setOpenNewClassroomDialog(true);
-                } else {
-                    alert("Η επιλεγμένη χρονική διάρκεια δεν είναι έγκυρη.");
-                }
-            }
-        } else if (isDraggingEvent) {
-            const blockElement = document.getElementById(`event-block-${draggedEventId}`);
-            if (blockElement) {
-                const blockRect = blockElement.getBoundingClientRect();
-                // We need to find the grid coordinates based on the center of the block for snapping
-                const snappedCoords = getGridCoordinatesFromPixels(
-                    blockRect.left + blockRect.width / 2,
-                    blockRect.top + blockRect.height / 2
-                );
-
-                if (snappedCoords) {
-                    const originalEntry = displayedEventBlocks.find(block => block.id === draggedEventId);
-                    const originalDurationMinutes = dayjs(`2000-01-01T${originalEntry.endTime}`).diff(dayjs(`2000-01-01T${originalEntry.startTime}`), 'minute');
-                    const originalDurationHours = originalDurationMinutes / 60;
-
-                    const newStartTimeIndex = snappedCoords.hourIndex;
-                    // Calculate new end time index based on duration
-                    const newEndTimeIndex = newStartTimeIndex + originalDurationHours;
-                    const newEndTime = TIME_SLOTS[newEndTimeIndex] || `${String(calendarEndHour).padStart(2, '0')}:00`;
-
-                    const newDay = DAYS_OF_WEEK[snappedCoords.dayIndex];
-
-                    setDisplayedEventBlocks(prevBlocks => prevBlocks.map(block => {
-                        if (block.id === draggedEventId) {
-                            const snappedStartCellRect = getCellPixelRect(snappedCoords.dayIndex, snappedCoords.hourIndex);
-                            const snappedEndCellRect = getCellPixelRect(snappedCoords.dayIndex, TIME_SLOTS.indexOf(newEndTime) -1);
-
-                            return {
-                                ...block,
-                                day: newDay,
-                                startTime: TIME_SLOTS[newStartTimeIndex],
-                                endTime: newEndTime,
-                                duration: calculateDuration(TIME_SLOTS[newStartTimeIndex], newEndTime),
-                                left: snappedStartCellRect.left,
-                                top: snappedStartCellRect.top,
-                                width: snappedStartCellRect.width - 4, // Apply reduced width here too
-                                height: snappedEndCellRect.top + snappedEndCellRect.height - snappedStartCellRect.top,
-                            };
-                        }
-                        return block;
-                    }));
-                }
-            }
-        } else if (isResizingEvent) {
-            const blockElement = document.getElementById(`event-block-${resizedEventId}`);
-            if (blockElement) {
-                const blockRect = blockElement.getBoundingClientRect();
-
-                setDisplayedEventBlocks(prevBlocks => prevBlocks.map(block => {
-                    if (block.id === resizedEventId) {
-                        let newStartTime = block.startTime;
-                        let newEndTime = block.endTime;
-
-                        // Calculate snapped top/bottom based on current pixel position
-                        const snappedTopHourIndex = getGridCoordinatesFromPixels(blockRect.left + 1, blockRect.top + 1)?.hourIndex;
-                        const snappedBottomHourIndex = getGridCoordinatesFromPixels(blockRect.left + 1, blockRect.bottom - 1)?.hourIndex;
-
-                        if (resizeHandle === 'top' && snappedTopHourIndex !== null && snappedTopHourIndex !== undefined) {
-                            newStartTime = TIME_SLOTS[snappedTopHourIndex];
-                        } else if (resizeHandle === 'bottom' && snappedBottomHourIndex !== null && snappedBottomHourIndex !== undefined) {
-                            newEndTime = TIME_SLOTS[snappedBottomHourIndex + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`;
-                        }
-
-                        // Ensure newStartTime is before newEndTime
-                        const finalStartTimeIndex = TIME_SLOTS.indexOf(newStartTime);
-                        const finalEndTimeIndex = TIME_SLOTS.indexOf(newEndTime);
-
-                        if (finalStartTimeIndex >= finalEndTimeIndex) {
-                            // Revert to original or smallest valid if invalid
-                            newStartTime = TIME_SLOTS[resizeStartHourIndex];
-                            newEndTime = TIME_SLOTS[resizeEndHourIndex + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`;
-                        }
-
-                        // Recalculate pixel dimensions for the snapped block
-                        const dayIdx = DAYS_OF_WEEK.indexOf(block.day);
-                        const startHourIdx = TIME_SLOTS.indexOf(newStartTime);
-                        const endHourIdx = TIME_SLOTS.indexOf(newEndTime) -1;
-
-                        const snappedStartCellRect = getCellPixelRect(dayIdx, startHourIdx);
-                        const snappedEndCellRect = getCellPixelRect(dayIdx, endHourIdx);
-
-                        return {
-                            ...block,
-                            startTime: newStartTime,
-                            endTime: newEndTime,
-                            duration: calculateDuration(newStartTime, newEndTime),
-                            top: snappedStartCellRect.top,
-                            height: snappedEndCellRect.top + snappedEndCellRect.height - snappedStartCellRect.top,
-                        };
-                    }
-                    return block;
-                }));
-            }
-        }
-
-        // Reset all states
+        // Reset all dragging/resizing states immediately
         setIsDraggingNewSelection(false);
         setIsDraggingEvent(false);
         setIsResizingEvent(false);
+        setTempFloatingSelectionRect(null); // Always clear temp rect on mouse up
         setStartSelection(null);
         setEndSelection(null);
-        setTempFloatingSelectionRect(null);
         setDraggedEventId(null);
         setDragStartMousePos({ x: 0, y: 0 });
         setDragStartBlockPos({ left: 0, top: 0 });
@@ -595,7 +524,175 @@ function WeeklyScheduleCalendar() {
         setResizeStartBlockHeight(0);
         setResizeStartHourIndex(null);
         setResizeEndHourIndex(null);
-    }, [isDraggingNewSelection, startSelection, endSelection, TIME_SLOTS, calendarEndHour, addDisplayedEventBlock, isDraggingEvent, draggedEventId, dragStartMousePos, dragStartBlockPos, isResizingEvent, resizedEventId, resizeHandle, resizeStartHourIndex, resizeEndHourIndex, getCellPixelRect, getGridCoordinatesFromPixels, displayedEventBlocks]);
+
+
+        if (wasDraggingNewSelection && currentStartSelection && currentEndSelection && (currentStartSelection.dayIndex !== currentEndSelection.dayIndex || currentStartSelection.hourIndex !== currentEndSelection.hourIndex)) {
+            const normalizedStartDay = Math.min(currentStartSelection.dayIndex, currentEndSelection.dayIndex);
+            const normalizedEndDay = Math.max(currentStartSelection.dayIndex, currentEndSelection.dayIndex);
+            const normalizedStartHour = Math.min(currentStartSelection.hourIndex, currentEndSelection.hourIndex);
+            const normalizedEndHour = Math.max(currentStartSelection.hourIndex, currentEndSelection.hourIndex);
+
+            if (normalizedStartDay < 0 || normalizedStartHour < 0) {
+                alert("Παρακαλώ επιλέξτε μια έγκυρη περιοχή στο πρόγραμμα.");
+                return;
+            }
+
+            const newStartTime = TIME_SLOTS[normalizedStartHour];
+            const newEndTime = TIME_SLOTS[normalizedEndHour + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`;
+
+            const newEntry = {
+                id: Date.now(),
+                day: DAYS_OF_WEEK[normalizedStartDay],
+                startTime: newStartTime,
+                endTime: newEndTime,
+                duration: calculateDuration(newStartTime, newEndTime),
+                backgroundColor: '#2196f3'
+            };
+
+            if (dayjs(`2000-01-01T${newEntry.endTime}`).isAfter(dayjs(`2000-01-01T${newEntry.startTime}`))) {
+                setNewClassroomInitialSchedule([newEntry]);
+                setOpenNewClassroomFormDialog(true); // Open the dialog with NewClassroomForm
+            } else {
+                alert("Η επιλεγμένη χρονική διάρκεια δεν είναι έγκυρη.");
+            }
+        } else if (wasDraggingEvent && currentDraggedEventId) {
+            // Ensure db is initialized before attempting Firestore operations
+            if (!db || !appId) {
+                console.error("Firestore DB or appId not initialized. Cannot update classroom schedule after drag.");
+                alert("Σφάλμα: Η βάση δεδομένων ή το αναγνωριστικό εφαρμογής δεν είναι διαθέσιμα. Παρακαλώ δοκιμάστε ξανά.");
+                return;
+            }
+
+            const blockElement = document.getElementById(`event-block-${currentDraggedEventId}`);
+            if (blockElement) {
+                const blockRect = blockElement.getBoundingClientRect();
+                const tableContainerRect = tableRef.current.closest('.MuiTableContainer-root').getBoundingClientRect();
+
+                const snappedCoords = getGridCoordinatesFromPixels(
+                    blockRect.left + tableContainerRect.left + 2,
+                    blockRect.top + tableContainerRect.top + 2
+                );
+
+                if (snappedCoords && snappedCoords.dayIndex >= 0 && snappedCoords.hourIndex >= 0) {
+                    const originalEventBlock = displayedEventBlocks.find(block => block.id === currentDraggedEventId);
+                    if (originalEventBlock) {
+                        const originalStartTimeMoment = dayjs(`2000-01-01T${originalEventBlock.startTime}`);
+                        const originalEndTimeMoment = dayjs(`2000-01-01T${originalEventBlock.endTime}`);
+                        const originalDurationMinutes = originalEndTimeMoment.diff(originalStartTimeMoment, 'minute');
+
+                        const newDay = DAYS_OF_WEEK[snappedCoords.dayIndex];
+                        const newStartTime = TIME_SLOTS[snappedCoords.hourIndex];
+
+                        const newStartMoment = dayjs(`2000-01-01T${newStartTime}`);
+                        const newEndMoment = newStartMoment.add(originalDurationMinutes, 'minute');
+                        const newEndTime = newEndMoment.format('HH:mm');
+
+                        const classroomToUpdate = classrooms.find(cls =>
+                            cls.schedule.some((slot, idx) => `${cls.id}-${idx}` === currentDraggedEventId)
+                        );
+
+                        if (classroomToUpdate) {
+                            const updatedSchedule = classroomToUpdate.schedule.map((slot, idx) => {
+                                if (`${classroomToUpdate.id}-${idx}` === currentDraggedEventId) {
+                                    return {
+                                        ...slot,
+                                        day: newDay,
+                                        startTime: newStartTime,
+                                        endTime: newEndTime,
+                                        duration: calculateDuration(newStartTime, newEndTime)
+                                    };
+                                }
+                                return slot;
+                            });
+
+                            try {
+                                const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToUpdate.id);
+                                await updateDoc(classroomDocRef, { schedule: updatedSchedule });
+                                console.log("Classroom schedule updated in Firestore after drag.");
+                            } catch (error) {
+                                console.error("Error updating classroom schedule after drag:", error);
+                                alert("Αποτυχία ενημέρωσης προγράμματος μετά τη μεταφορά.");
+                            }
+                        } else {
+                            console.warn(`Classroom with ID derived from ${currentDraggedEventId} not found for update. It might have been deleted or not yet saved.`);
+                        }
+                    }
+                }
+            }
+        } else if (wasResizingEvent && currentResizedEventId) {
+            // Ensure db is initialized before attempting Firestore operations
+            if (!db || !appId) {
+                console.error("Firestore DB or appId not initialized. Cannot update classroom schedule after resize.");
+                alert("Σφάλμα: Η βάση δεδομένων ή το αναγνωριστικό εφαρμογής δεν είναι διαθέσιμα. Παρακαλώ δοκιμάστε ξανά.");
+                return;
+            }
+
+            const blockElement = document.getElementById(`event-block-${currentResizedEventId}`);
+            if (blockElement) {
+                const blockRect = blockElement.getBoundingClientRect();
+                const tableContainerRect = tableRef.current.closest('.MuiTableContainer-root').getBoundingClientRect();
+
+                let newStartTime = null;
+                let newEndTime = null;
+                const originalEventBlock = displayedEventBlocks.find(block => block.id === currentResizedEventId);
+
+                if (!originalEventBlock) {
+                    console.error("Original event block not found for resizing.");
+                    return;
+                }
+
+                const snappedTopCoords = getGridCoordinatesFromPixels(blockRect.left + tableContainerRect.left + 2, blockRect.top + tableContainerRect.top + 2);
+                const snappedBottomCoords = getGridCoordinatesFromPixels(blockRect.left + tableContainerRect.left + 2, blockRect.bottom + tableContainerRect.top - 2);
+
+                if (resizeHandle === 'top' && snappedTopCoords && snappedTopCoords.hourIndex !== null && snappedTopCoords.hourIndex !== undefined) {
+                    newStartTime = TIME_SLOTS[snappedTopCoords.hourIndex];
+                    newEndTime = originalEventBlock.endTime;
+                } else if (resizeHandle === 'bottom' && snappedBottomCoords && snappedBottomCoords.hourIndex !== null && snappedBottomCoords.hourIndex !== undefined) {
+                    newStartTime = originalEventBlock.startTime;
+                    newEndTime = TIME_SLOTS[snappedBottomCoords.hourIndex + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`;
+                } else {
+                    newStartTime = originalEventBlock.startTime;
+                    newEndTime = originalEventBlock.endTime;
+                }
+
+                const startMoment = dayjs(`2000-01-01T${newStartTime}`);
+                const endMoment = dayjs(`2000-01-01T${newEndTime}`);
+
+                if (startMoment.isBefore(endMoment)) {
+                    const classroomToUpdate = classrooms.find(cls =>
+                        cls.schedule.some((slot, idx) => `${cls.id}-${idx}` === currentResizedEventId)
+                    );
+
+                    if (classroomToUpdate) {
+                        const updatedSchedule = classroomToUpdate.schedule.map((slot, idx) => {
+                            if (`${classroomToUpdate.id}-${idx}` === currentResizedEventId) {
+                                return {
+                                    ...slot,
+                                    startTime: newStartTime,
+                                    endTime: newEndTime,
+                                    duration: calculateDuration(newStartTime, newEndTime)
+                                };
+                            }
+                            return slot;
+                        });
+
+                        try {
+                            const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToUpdate.id);
+                            await updateDoc(classroomDocRef, { schedule: updatedSchedule });
+                            console.log("Classroom schedule updated in Firestore after resize.");
+                        } catch (error) {
+                            console.error("Error updating classroom schedule after resize:", error);
+                            alert("Αποτυχία ενημέρωσης προγράμματος μετά την αλλαγή μεγέθους.");
+                        }
+                    } else {
+                        console.warn(`Classroom with ID derived from ${currentResizedEventId} not found for update. It might have been deleted or not yet saved.`);
+                    }
+                } else {
+                    alert("Η ώρα λήξης δεν μπορεί να είναι πριν ή ίδια με την ώρα έναρξης.");
+                }
+            }
+        }
+    }, [isDraggingNewSelection, startSelection, endSelection, TIME_SLOTS, calendarEndHour, onCreateClassroomFromCalendar, isDraggingEvent, draggedEventId, dragStartMousePos, dragStartBlockPos, isResizingEvent, resizedEventId, resizeHandle, resizeStartHourIndex, resizeEndHourIndex, getCellPixelRect, getGridCoordinatesFromPixels, displayedEventBlocks, classrooms, db, appId]);
 
 
     // Attach global mouse move and mouse up listeners
@@ -610,75 +707,133 @@ function WeeklyScheduleCalendar() {
     }, [handleGlobalMouseMove, handleGlobalMouseUp]);
 
 
-    // Handle dialog close (for editing existing entries)
+    // Handle dialog close (for editing individual schedule entries)
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setDialogEntry(null);
         setDialogLabel('');
-        setDialogColor('#2196f3'); // Reset color to default
+        setDialogColor('#2196f3');
     };
 
     // Handle confirming an edited schedule entry from dialog
-    const handleConfirmScheduleEntry = () => {
+    const handleConfirmScheduleEntry = async () => {
         if (dialogEntry) {
-            const finalEntry = { ...dialogEntry, label: dialogLabel, backgroundColor: dialogColor }; // Include color
-            // Update the existing block in displayedEventBlocks
-            setDisplayedEventBlocks(prevBlocks => prevBlocks.map(block => {
-                if (block.id === finalEntry.id) {
-                    // Recalculate dimensions if time changed
-                    const dayIdx = DAYS_OF_WEEK.indexOf(finalEntry.day);
-                    const startHourIdx = TIME_SLOTS.indexOf(finalEntry.startTime);
-                    const endHourIdx = TIME_SLOTS.indexOf(finalEntry.endTime) -1;
+            // Ensure db is initialized before attempting Firestore operations
+            if (!db || !appId) {
+                console.error("Firestore DB or appId not initialized. Cannot update schedule entry.");
+                alert("Σφάλμα: Η βάση δεδομένων ή το αναγνωριστικό εφαρμογής δεν είναι διαθέσιμα. Παρακαλώ δοκιμάστε ξανά.");
+                return;
+            }
 
-                    if (dayIdx !== -1 && startHourIdx !== -1 && endHourIdx !== -1) {
-                        const startCellRect = getCellPixelRect(dayIdx, startHourIdx);
-                        const endCellRect = getCellPixelRect(dayIdx, endHourIdx);
-                        if (startCellRect && endCellRect) {
-                            return {
-                                ...finalEntry,
-                                left: startCellRect.left,
-                                top: startCellRect.top,
-                                width: startCellRect.width - 4, // Apply reduced width here too
-                                height: endCellRect.top + endCellRect.height - startCellRect.top,
-                            };
-                        }
+            const finalEntry = { ...dialogEntry, label: dialogLabel, backgroundColor: dialogColor };
+
+            const classroomToUpdate = classrooms.find(cls =>
+                cls.schedule.some((slot, idx) => `${cls.id}-${idx}` === dialogEntry.id)
+            );
+
+            if (classroomToUpdate) {
+                const updatedSchedule = classroomToUpdate.schedule.map((slot, idx) => {
+                    if (`${classroomToUpdate.id}-${idx}` === dialogEntry.id) {
+                        return {
+                            ...slot,
+                        };
                     }
+                    return slot;
+                });
+
+                try {
+                    const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToUpdate.id);
+                    await updateDoc(classroomDocRef, { schedule: updatedSchedule, color: finalEntry.backgroundColor });
+                    console.log("Classroom schedule entry updated in Firestore:", finalEntry);
+                } catch (error) {
+                    console.error("Error updating classroom schedule entry:", error);
+                    alert("Αποτυχία ενημέρωσης καταχώρησης προγράμματος.");
                 }
-                return block;
-            }));
+            }
             handleCloseDialog();
         }
     };
 
-    // Handle editing an existing schedule entry (opens dialog)
-    const handleEditEntry = (entry) => {
-        setDialogEntry(entry);
-        setDialogLabel(entry.label);
-        setDialogColor(entry.backgroundColor || '#2196f3'); // Set dialog color from entry or default
-        setOpenDialog(true);
+    // Handle editing an existing schedule entry (opens full NewClassroomForm)
+    const handleEditEntry = (fullClassroomData) => {
+        onEditClassroom(fullClassroomData);
+        navigateTo('newClassroom');
     };
 
-    // Handle deleting an existing schedule entry
-    const handleDeleteEntry = (id) => {
-        setDisplayedEventBlocks(prevBlocks => prevBlocks.filter(block => block.id !== id));
+    // Handle deleting an existing classroom (opens confirmation dialog)
+    const handleDeleteEntry = (classroomId) => {
+        setClassroomIdToDelete(classroomId);
+        setOpenDeleteConfirmDialog(true);
     };
 
-    const handleClearSchedule = () => {
-        setDisplayedEventBlocks([]); // Clear all displayed blocks
-        setTempFloatingSelectionRect(null); // Ensure temporary rect is also cleared
-    };
+    // Function to confirm deletion after dialog
+    const handleConfirmDelete = async () => {
+        setOpenDeleteConfirmDialog(false); // Close dialog immediately
 
-    // Callback for when NewClassroomForm successfully saves
-    const handleNewClassroomSaveSuccess = (updatedInitialSchedule) => {
-        setOpenNewClassroomDialog(false); // Close the NewClassroomForm dialog
-        setNewClassroomInitialSchedule(null); // Clear the initial schedule
+        // Ensure db is initialized before attempting Firestore operations
+        if (!db || !classroomIdToDelete || !appId) {
+            console.error("Firestore DB, classroomId, or appId not initialized. Cannot delete classroom.");
+            alert("Σφάλμα: Η βάση δεδομένων, το αναγνωριστικό τμήματος ή το αναγνωριστικό εφαρμογής δεν είναι διαθέσιμα. Παρακαλώ δοκιμάστε ξανά.");
+            return;
+        }
 
-        // Add the new block(s) to displayedEventBlocks with the chosen color
-        if (updatedInitialSchedule && updatedInitialSchedule.length > 0) {
-            updatedInitialSchedule.forEach(entry => addDisplayedEventBlock(entry));
+        try {
+            const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomIdToDelete);
+            await deleteDoc(classroomDocRef);
+            alert("Classroom deleted successfully!");
+            setClassroomIdToDelete(null); // Clear the ID
+        } catch (error) {
+            console.error("Error deleting classroom:", error);
+            alert("Αποτυχία διαγραφής τμήματος. Παρακαλώ δοκιμάστε ξανά.");
         }
     };
 
+    const handleCancelDelete = () => {
+        setOpenDeleteConfirmDialog(false);
+        setClassroomIdToDelete(null);
+    };
+
+    // Handle clearing entire schedule (opens confirmation dialog)
+    const handleClearSchedule = () => {
+        setOpenClearConfirmDialog(true);
+    };
+
+    // Function to confirm clearing after dialog
+    const handleConfirmClearSchedule = async () => {
+        setOpenClearConfirmDialog(false); // Close dialog immediately
+
+        // Ensure db is initialized before attempting Firestore operations
+        if (!db || !appId) {
+            console.error("Firestore DB or appId not initialized. Cannot clear all classrooms.");
+            alert("Σφάλμα: Η βάση δεδομένων ή το αναγνωριστικό εφαρμογής δεν είναι διαθέσιμα. Παρακαλώ δοκιμάστε ξανά.");
+            return;
+        }
+
+        try {
+            const classroomsCollectionRef = collection(db, `artifacts/${appId}/public/data/classrooms`);
+            const q = query(classroomsCollectionRef);
+            const snapshot = await getDocs(q);
+
+            const deletePromises = snapshot.docs.map(docToDelete => deleteDoc(doc(db, `artifacts/${appId}/public/data/classrooms`, docToDelete.id)));
+            await Promise.all(deletePromises);
+            alert("Όλα τα τμήματα διαγράφηκαν επιτυχώς!");
+            // The onSnapshot listener in App.jsx will automatically refresh the calendar with new data
+        } catch (error) {
+            console.error("Error clearing all classrooms:", error);
+            alert("Αποτυχία εκκαθάρισης όλων των τμημάτων. Παρακαλώ δοκιμάστε ξανά.");
+        }
+    };
+
+    const handleCancelClearSchedule = () => {
+        setOpenClearConfirmDialog(false);
+    };
+
+    // Callback for NewClassroomForm when it successfully saves from within the dialog
+    const handleNewClassroomFormSaveSuccess = () => {
+        setOpenNewClassroomFormDialog(false); // Close the dialog
+        setNewClassroomInitialSchedule(null); // Clear initial schedule
+        // The App.jsx's onSnapshot will automatically refresh the calendar with new data
+    };
 
     return (
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -744,10 +899,9 @@ function WeeklyScheduleCalendar() {
                     sx={{
                         overflow: 'auto',
                         position: 'relative',
-                        // Disable text selection when dragging for new selection
                         userSelect: isDraggingNewSelection ? 'none' : 'auto',
-                        WebkitUserSelect: isDraggingNewSelection ? 'none' : 'auto', // For WebKit browsers
-                        cursor: isDraggingNewSelection ? 'grabbing' : 'auto', // Consistent cursor during drag
+                        WebkitUserSelect: isDraggingNewSelection ? 'none' : 'auto',
+                        cursor: isDraggingNewSelection ? 'grabbing' : 'auto',
                     }}
                 >
                     <Table ref={tableRef} sx={{ minWidth: 800 }}>
@@ -762,16 +916,15 @@ function WeeklyScheduleCalendar() {
                         <TableBody>
                             {TIME_SLOTS.map((time, hourIndex) => (
                                 <TableRow key={time} sx={{ height: '40px' }}>
-                                    {/* Time Label Cell - Reverted to previous alignment attempt */}
                                     <TableCell
                                         sx={{
                                             fontWeight: 'bold',
                                             backgroundColor: '#f5f5f5',
-                                            pointerEvents: 'none', // Ensure no mouse events are captured by this cell
-                                            verticalAlign: 'top', // Align text to the top
-                                            paddingTop: '4px', // Adjust padding to visually align with the line
-                                            paddingBottom: '0px', // Reduce bottom padding if needed
-                                            paddingLeft: '8px', // Keep left padding for readability
+                                            pointerEvents: 'none',
+                                            verticalAlign: 'top',
+                                            paddingTop: '4px',
+                                            paddingBottom: '0px',
+                                            paddingLeft: '8px',
                                         }}
                                     >
                                         {time}
@@ -780,30 +933,28 @@ function WeeklyScheduleCalendar() {
                                         return (
                                             <TableCell
                                                 key={`${day}-${time}`}
-                                                onMouseDown={(e) => handleGridMouseDown(e, dayIndex, hourIndex)} // Only for data cells
+                                                onMouseDown={(e) => handleGridMouseDown(e, dayIndex, hourIndex)}
                                                 onMouseEnter={() => {
                                                     if (isDraggingNewSelection) {
                                                         const coords = { dayIndex, hourIndex };
-                                                        // Ensure mouse is over a valid data cell before updating selection
                                                         if (coords.dayIndex >= 0) {
                                                             setEndSelection(coords);
                                                             updateTempFloatingSelectionRect(startSelection, coords);
                                                         } else {
-                                                            setTempFloatingSelectionRect(null); // Clear if dragging outside valid data cells
+                                                            setTempFloatingSelectionRect(null);
                                                         }
                                                     }
                                                 }}
-                                                // MouseUp is handled globally for all drag/resize operations
                                                 sx={{
                                                     border: '1px solid #e0e0e0',
-                                                    backgroundColor: 'inherit', // Cells remain transparent
+                                                    backgroundColor: 'inherit',
                                                     cursor: isDraggingNewSelection ? 'grabbing' : 'pointer',
                                                     position: 'relative',
                                                     verticalAlign: 'top',
                                                     fontSize: '0.75rem',
                                                     padding: '4px',
                                                     '&:hover': {
-                                                        backgroundColor: '#f0f0f0', // Only hover effect for empty cells
+                                                        backgroundColor: '#f0f0f0',
                                                     },
                                                 }}
                                             >
@@ -824,11 +975,11 @@ function WeeklyScheduleCalendar() {
                                 top: tempFloatingSelectionRect.top,
                                 width: tempFloatingSelectionRect.width,
                                 height: tempFloatingSelectionRect.height,
-                                backgroundColor: 'rgba(179, 229, 252, 0.5)', // Light blue with transparency
+                                backgroundColor: 'rgba(179, 229, 252, 0.5)',
                                 border: '1px solid #2196f3',
                                 borderRadius: '4px',
-                                pointerEvents: 'none', // Allow mouse events to pass through to cells
-                                zIndex: 10, // Ensure it's on top of everything during drag
+                                pointerEvents: 'none',
+                                zIndex: 10,
                             }}
                         />
                     )}
@@ -846,7 +997,63 @@ function WeeklyScheduleCalendar() {
                 </TableContainer>
             </Paper>
 
-            {/* Schedule Entry Dialog (still used for editing existing entries) */}
+            {/* Dialog for creating a new classroom with NewClassroomForm */}
+            <Dialog open={openNewClassroomFormDialog} onClose={() => setOpenNewClassroomFormDialog(false)} maxWidth="md" fullWidth>
+                <DialogTitle>Δημιουργία Νέου Τμήματος</DialogTitle>
+                <DialogContent dividers>
+                    {newClassroomInitialSchedule && (
+                        <NewClassroomForm
+                            navigateTo={() => {}} // No navigation needed within dialog
+                            classroomToEdit={null} // Always null for new creation
+                            setClassroomToEdit={() => {}} // No setter needed for new creation
+                            initialSchedule={newClassroomInitialSchedule}
+                            onSaveSuccess={handleNewClassroomFormSaveSuccess} // Callback to close dialog
+                            db={db} // Pass db instance
+                            userId={userId} // Pass userId
+                            appId={appId} // Pass appId
+                        />
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenNewClassroomFormDialog(false)} color="primary">
+                        Κλείσιμο
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Confirmation Dialog for Deleting a single Classroom */}
+            <Dialog open={openDeleteConfirmDialog} onClose={handleCancelDelete}>
+                <DialogTitle>Επιβεβαίωση Διαγραφής</DialogTitle>
+                <DialogContent>
+                    <Typography>Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το τμήμα; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCancelDelete} color="primary">
+                        Ακύρωση
+                    </Button>
+                    <Button onClick={handleConfirmDelete} color="error" variant="contained">
+                        Διαγραφή
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Confirmation Dialog for Clearing All Classrooms */}
+            <Dialog open={openClearConfirmDialog} onClose={handleCancelClearSchedule}>
+                <DialogTitle>Επιβεβαίωση Εκκαθάρισης Προγράμματος</DialogTitle>
+                <DialogContent>
+                    <Typography>Είστε σίγουροι ότι θέλετε να διαγράψετε ΟΛΑ τα τμήματα; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCancelClearSchedule} color="primary">
+                        Ακύρωση
+                    </Button>
+                    <Button onClick={handleConfirmClearSchedule} color="error" variant="contained">
+                        Εκκαθάριση
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Schedule Entry Dialog (still used for editing individual event labels/colors, if desired) */}
             <Dialog open={openDialog} onClose={handleCloseDialog}>
                 <DialogTitle>{dialogEntry ? 'Επεξεργασία Προγράμματος' : 'Προσθήκη Νέου Προγράμματος'}</DialogTitle>
                 <DialogContent>
@@ -886,25 +1093,6 @@ function WeeklyScheduleCalendar() {
                     </Button>
                     <Button onClick={handleConfirmScheduleEntry} color="primary" variant="contained">
                         Ενημέρωση
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* NewClassroomForm Dialog */}
-            <Dialog open={openNewClassroomDialog} onClose={() => setOpenNewClassroomDialog(false)} maxWidth="md" fullWidth>
-                <DialogTitle>Δημιουργία Νέου Τμήματος</DialogTitle>
-                <DialogContent dividers>
-                    <NewClassroomForm
-                        navigateTo={() => {}}
-                        classroomToEdit={null}
-                        setClassroomToEdit={() => {}}
-                        initialSchedule={newClassroomInitialSchedule}
-                        onSaveSuccess={handleNewClassroomSaveSuccess}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenNewClassroomDialog(false)} color="primary">
-                        Κλείσιμο
                     </Button>
                 </DialogActions>
             </Dialog>
