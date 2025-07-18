@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     Box, Button, Container, Grid, Paper, Typography, IconButton,
-    FormControl, InputLabel, Select, MenuItem // <--- ADDED THESE IMPORTS BACK
+    FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
 import { Add, Delete, CheckCircleOutline, Restore } from '@mui/icons-material';
 
@@ -42,8 +42,8 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
     // Populate form if classroomToEdit or initialSchedule is provided
     useEffect(() => {
         if (initialSchedule && initialSchedule.length > 0) {
-            console.log("initialSchedule received:", initialSchedule);
-            // Pre-fill schedule from initialSchedule
+            console.log("initialSchedule received from calendar:", initialSchedule);
+            // Pre-fill schedule from initialSchedule, ensuring editingStage is 'done'
             setFormData(prev => ({
                 ...prev,
                 schedule: initialSchedule.map(slot => ({
@@ -52,12 +52,14 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                     startTime: slot.startTime ? dayjs(slot.startTime, 'HH:mm') : null,
                     endTime: slot.endTime ? dayjs(slot.endTime, 'HH:mm') : null,
                     duration: slot.duration || '',
-                    editingStage: 'done'
+                    editingStage: 'done' // Mark as done since it's pre-selected from calendar
                 }))
             }));
             // Set color from initial schedule if available
             if (initialSchedule[0].backgroundColor) {
                 setSelectedColor(initialSchedule[0].backgroundColor);
+            } else {
+                setSelectedColor('#2196f3'); // Default color if not provided
             }
         } else if (classroomToEdit) {
             console.log("classroomToEdit received:", classroomToEdit);
@@ -79,6 +81,8 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
             // Set color from existing classroom data
             if (classroomToEdit.color) { // Assuming 'color' field exists in classroomToEdit
                 setSelectedColor(classroomToEdit.color);
+            } else {
+                setSelectedColor('#2196f3'); // Default color if not provided
             }
         } else {
             console.log("No classroomToEdit or initialSchedule, resetting form.");
@@ -89,19 +93,16 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
 
     // Initialize Firebase and authenticate
     useEffect(() => {
+        let isMounted = true; // Flag to track if component is mounted
+
         try {
             const firebaseConfigString = typeof __firebase_config !== 'undefined'
                 ? __firebase_config
                 : import.meta.env.VITE_FIREBASE_CONFIG;
 
-            // Log the value of VITE_APP_ID from import.meta.env
-            console.log("VITE_APP_ID from import.meta.env:", import.meta.env.VITE_APP_ID);
-
             const appId = typeof __app_id !== 'undefined'
                 ? __app_id
                 : import.meta.env.VITE_APP_ID || 'default-local-app-id';
-
-            console.log("Final appId being used:", appId); // Log the final appId
 
             const initialAuthToken = typeof __initial_auth_token !== 'undefined'
                 ? __initial_auth_token
@@ -119,8 +120,10 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
             const firestoreDb = getFirestore(app);
             const firebaseAuth = getAuth(app);
 
-            setDb(firestoreDb);
-            setAuth(firebaseAuth);
+            if (isMounted) {
+                setDb(firestoreDb);
+                setAuth(firebaseAuth);
+            }
 
             const authenticate = async () => {
                 try {
@@ -131,21 +134,32 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                         await signInAnonymously(firebaseAuth);
                         console.log("Authenticated anonymously.");
                     }
-                    const currentUserId = firebaseAuth.currentUser?.uid || crypto.randomUUID();
-                    setUserId(currentUserId);
-                    console.log("Firebase Auth User ID:", currentUserId);
+                    if (isMounted) {
+                        const currentUserId = firebaseAuth.currentUser?.uid || crypto.randomUUID();
+                        setUserId(currentUserId);
+                        console.log("Firebase Auth User ID:", currentUserId);
+                    }
                 } catch (authError) {
                     console.error("Error during Firebase authentication:", authError);
-                    alert("Authentication failed. Check console for details.");
+                    if (isMounted) {
+                        alert("Authentication failed. Check console for details.");
+                    }
                 }
             };
 
             authenticate();
         } catch (error) {
             console.error("Error during Firebase initialization (outside auth block):", error);
-            alert("Error initializing Firebase. Check console for details and ensure your .env config is correct.");
+            if (isMounted) {
+                alert("Error initializing Firebase. Check console for details and ensure your .env config is correct.");
+            }
         }
+
+        return () => {
+            isMounted = false; // Cleanup flag
+        };
     }, []);
+
 
     // Effect to update specializations and subjects based on grade/specialization changes
     useEffect(() => {

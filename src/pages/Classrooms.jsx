@@ -33,6 +33,7 @@ function Classrooms({ navigateTo, setClassroomToEdit }) { // Added navigateTo an
     // Initialize Firebase and authenticate, then set up real-time listener
     useEffect(() => {
         let unsubscribe = () => {}; // Initialize unsubscribe function
+        let isMounted = true; // Flag to track if component is mounted
 
         try {
             const firebaseConfigString = typeof __firebase_config !== 'undefined'
@@ -51,8 +52,10 @@ function Classrooms({ navigateTo, setClassroomToEdit }) { // Added navigateTo an
 
             if (Object.keys(parsedFirebaseConfig).length === 0 || !parsedFirebaseConfig.apiKey) {
                 console.error("Firebase config is missing or incomplete.");
-                setError("Firebase configuration is missing. Cannot load classrooms.");
-                setLoading(false);
+                if (isMounted) {
+                    setError("Firebase configuration is missing. Cannot load classrooms.");
+                    setLoading(false);
+                }
                 return;
             }
 
@@ -60,7 +63,9 @@ function Classrooms({ navigateTo, setClassroomToEdit }) { // Added navigateTo an
             const firestoreDb = getFirestore(app);
             const firebaseAuth = getAuth(app);
 
-            setDb(firestoreDb); // Set db state
+            if (isMounted) {
+                setDb(firestoreDb); // Set db state
+            }
 
             const authenticateAndListen = async () => {
                 try {
@@ -69,35 +74,43 @@ function Classrooms({ navigateTo, setClassroomToEdit }) { // Added navigateTo an
                     } else {
                         await signInAnonymously(firebaseAuth);
                     }
-                    const currentUserId = firebaseAuth.currentUser?.uid || crypto.randomUUID();
-                    setUserId(currentUserId);
+                    if (isMounted) {
+                        const currentUserId = firebaseAuth.currentUser?.uid || crypto.randomUUID();
+                        setUserId(currentUserId);
+                    }
 
                     // Set up real-time listener for classrooms
                     const classroomsCollectionRef = collection(firestoreDb, `artifacts/${appId}/public/data/classrooms`);
                     const q = query(classroomsCollectionRef); // No orderBy as per previous instruction
 
                     unsubscribe = onSnapshot(q, (snapshot) => {
-                        const fetchedClassrooms = snapshot.docs.map(doc => ({
-                            id: doc.id, // Document ID from Firestore
-                            ...doc.data()
-                        }));
-                        setClassrooms(fetchedClassrooms);
-                        setLoading(false);
-                        // If a classroom was selected, try to re-select it with updated data
-                        if (selectedClassroom) {
-                            const updatedSelected = fetchedClassrooms.find(c => c.id === selectedClassroom.id);
-                            setSelectedClassroom(updatedSelected || null);
+                        if (isMounted) {
+                            const fetchedClassrooms = snapshot.docs.map(doc => ({
+                                id: doc.id, // Document ID from Firestore
+                                ...doc.data()
+                            }));
+                            setClassrooms(fetchedClassrooms);
+                            setLoading(false);
+                            // If a classroom was selected, try to re-select it with updated data
+                            if (selectedClassroom) {
+                                const updatedSelected = fetchedClassrooms.find(c => c.id === selectedClassroom.id);
+                                setSelectedClassroom(updatedSelected || null);
+                            }
                         }
                     }, (err) => {
                         console.error("Error fetching classrooms:", err);
-                        setError("Failed to load classrooms. Please try again.");
-                        setLoading(false);
+                        if (isMounted) {
+                            setError("Failed to load classrooms. Please try again.");
+                            setLoading(false);
+                        }
                     });
 
                 } catch (authError) {
                     console.error("Error during Firebase authentication:", authError);
-                    setError("Authentication failed. Cannot load classrooms.");
-                    setLoading(false);
+                    if (isMounted) {
+                        setError("Authentication failed. Cannot load classrooms.");
+                        setLoading(false);
+                    }
                 }
             };
 
@@ -105,12 +118,17 @@ function Classrooms({ navigateTo, setClassroomToEdit }) { // Added navigateTo an
 
         } catch (initError) {
             console.error("Error during Firebase initialization (outside auth block):", initError);
-            setError("Error initializing Firebase. Check console for details.");
-            setLoading(false);
+            if (isMounted) {
+                setError("Error initializing Firebase. Check console for details.");
+                setLoading(false);
+            }
         }
 
         // Cleanup function for onSnapshot listener
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            isMounted = false; // Set flag to false on unmount
+        };
     }, [selectedClassroom]); // Added selectedClassroom to dependencies to re-select if data updates
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -322,6 +340,12 @@ function Classrooms({ navigateTo, setClassroomToEdit }) { // Added navigateTo an
                                 <Typography variant="body1"><strong>Μάθημα:</strong> {selectedClassroom.subject}</Typography>
                                 <Typography variant="body1"><strong>Μέγιστος Αριθμός Μαθητών:</strong> {selectedClassroom.maxStudents}</Typography>
                                 <Typography variant="body1"><strong>Συνολική Διάρκεια:</strong> {selectedClassroom.totalDuration}</Typography>
+                                <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <strong>Χρώμα:</strong>
+                                    <Box sx={{ width: 20, height: 20, borderRadius: '4px', backgroundColor: selectedClassroom.color || '#2196f3', border: '1px solid #ccc' }} />
+                                    {selectedClassroom.color || '#2196f3'}
+                                </Typography>
+
 
                                 <Divider sx={{ my: 3 }} />
 
