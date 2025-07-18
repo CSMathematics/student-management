@@ -1,8 +1,8 @@
 // src/components/NewClassroomForm.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-    Box, Button, Container, Grid, Paper, Typography, TextField,
-    FormControl, InputLabel, Select, MenuItem, IconButton
+    Box, Button, Container, Grid, Paper, Typography, IconButton,
+    FormControl, InputLabel, Select, MenuItem // <--- ADDED THESE IMPORTS BACK
 } from '@mui/material';
 import { Add, Delete, CheckCircleOutline, Restore } from '@mui/icons-material';
 
@@ -19,8 +19,8 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, collection, addDoc, doc, updateDoc } from 'firebase/firestore'; // Import doc and updateDoc
 
-import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
-
+import { getSubjects, getSpecializations } from '../data/subjects.js';
+import ClassroomDetailsForm from './ClassroomDetailsForm.jsx'; // Import the new component
 
 function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, initialSchedule, onSaveSuccess }) { // Added onSaveSuccess prop
     const initialFormData = {
@@ -33,10 +33,11 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
     const [formData, setFormData] = useState(initialFormData);
 
     const [availableSpecializations, setAvailableSpecializations] = useState([]);
-    const [currentSubjects, setCurrentSubjects] = useState([]); // Renamed from availableSubjects for clarity
+    const [currentSubjects, setCurrentSubjects] = useState([]);
     const [db, setDb] = useState(null); // State for Firestore instance
     const [auth, setAuth] = useState(null); // State for Auth instance
     const [userId, setUserId] = useState(null); // State for user ID
+    const [selectedColor, setSelectedColor] = useState('#2196f3'); // New state for color selection
 
     // Populate form if classroomToEdit or initialSchedule is provided
     useEffect(() => {
@@ -54,6 +55,10 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                     editingStage: 'done'
                 }))
             }));
+            // Set color from initial schedule if available
+            if (initialSchedule[0].backgroundColor) {
+                setSelectedColor(initialSchedule[0].backgroundColor);
+            }
         } else if (classroomToEdit) {
             console.log("classroomToEdit received:", classroomToEdit);
             setFormData({
@@ -71,9 +76,14 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                     editingStage: 'done' // Assume existing slots are done editing
                 })),
             });
+            // Set color from existing classroom data
+            if (classroomToEdit.color) { // Assuming 'color' field exists in classroomToEdit
+                setSelectedColor(classroomToEdit.color);
+            }
         } else {
             console.log("No classroomToEdit or initialSchedule, resetting form.");
             setFormData(initialFormData); // Reset form for new entry
+            setSelectedColor('#2196f3'); // Reset color to default
         }
     }, [classroomToEdit, initialSchedule]); // Re-run when classroomToEdit or initialSchedule changes
 
@@ -137,7 +147,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
         }
     }, []);
 
-
+    // Effect to update specializations and subjects based on grade/specialization changes
     useEffect(() => {
         const specs = getSpecializations(formData.grade);
         setAvailableSpecializations(specs);
@@ -147,7 +157,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
         }
 
         const subjects = getSubjects(formData.grade, formData.specialization);
-        setCurrentSubjects(subjects); // Update currentSubjects
+        setCurrentSubjects(subjects);
 
         if (!subjects.includes(formData.subject)) {
             setFormData(prev => ({ ...prev, subject: '' }));
@@ -155,13 +165,6 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
 
     }, [formData.grade, formData.specialization, formData.subject]);
 
-    const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-    };
 
     const handleTimePickerChange = (id, field, newValue) => {
         setFormData(prev => ({
@@ -308,6 +311,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                 duration: calculateDuration(slot.startTime, slot.endTime)
             })),
             totalDuration: calculateTotalDuration,
+            color: selectedColor, // Include the selected color
             updatedAt: new Date(), // Add an update timestamp
         };
 
@@ -341,9 +345,16 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
 
             // Reset form after successful submission/update
             setFormData(initialFormData);
+            setSelectedColor('#2196f3'); // Reset color to default
+
             // Conditional navigation/callback based on how the form is used
             if (onSaveSuccess) {
-                onSaveSuccess(); // Call the callback if provided (for dialog use)
+                // Pass the initial schedule with the selected color for calendar update
+                const updatedInitialScheduleWithColor = initialSchedule ? initialSchedule.map(slot => ({
+                    ...slot,
+                    backgroundColor: selectedColor
+                })) : [];
+                onSaveSuccess(updatedInitialScheduleWithColor); // Call the callback if provided (for dialog use)
             } else if (navigateTo) {
                 navigateTo('classroomsList'); // Navigate if used as a full page
             }
@@ -359,80 +370,16 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
     return (
         <Container maxWidth="md">
             <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-                <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', mb: 4 }}>
-                    <Typography variant="h5" component="h3" sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: 3, color: '#3f51b5' }}>
-                        <i className="fas fa-plus-circle"></i> {classroomToEdit ? 'Επεξεργασία Τμήματος' : 'Δημιουργία Νέου Τμήματος'}
-                    </Typography>
-                    <Grid container spacing={3}>
-                        <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth variant="outlined" size="small" required>
-                                <InputLabel id="grade-select-label">Τάξη</InputLabel>
-                                <Select
-                                    labelId="grade-select-label"
-                                    name="grade"
-                                    value={formData.grade}
-                                    onChange={handleInputChange}
-                                    label="Τάξη"
-                                >
-                                    <MenuItem value="">-- Επιλέξτε Τάξη --</MenuItem>
-                                    {Object.keys(SUBJECTS_BY_GRADE_AND_CLASS).map(gradeOption => (
-                                        <MenuItem key={gradeOption} value={gradeOption}>{gradeOption}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            {availableSpecializations.length > 0 && (
-                                <FormControl fullWidth variant="outlined" size="small">
-                                    <InputLabel id="specialization-select-label">Κατεύθυνση</InputLabel>
-                                    <Select
-                                        labelId="specialization-select-label"
-                                        name="specialization"
-                                        value={formData.specialization}
-                                        onChange={handleInputChange}
-                                        label="Κατεύθυνση"
-                                    >
-                                        <MenuItem value="">-- Επιλέξτε Κατεύθυνση --</MenuItem>
-                                        {availableSpecializations.map(spec => (
-                                            <MenuItem key={spec} value={spec}>{spec}</MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            )}
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth variant="outlined" size="small" required>
-                                <InputLabel id="subject-select-label">Μάθημα</InputLabel>
-                                <Select
-                                    labelId="subject-select-label"
-                                    name="subject"
-                                    value={formData.subject}
-                                    onChange={handleInputChange}
-                                    label="Μάθημα"
-                                >
-                                    <MenuItem value="">-- Επιλέξτε Μάθημα --</MenuItem>
-                                    {currentSubjects.map(subjectOption => ( // Use currentSubjects here
-                                        <MenuItem key={subjectOption} value={subjectOption}>{subjectOption}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Μέγιστος Αριθμός Μαθητών"
-                                name="maxStudents"
-                                type="number"
-                                value={formData.maxStudents}
-                                onChange={handleInputChange}
-                                variant="outlined"
-                                size="small"
-                                inputProps={{ min: 1 }}
-                                required
-                            />
-                        </Grid>
-                    </Grid>
-                </Paper>
+                {/* Classroom Details Form Component */}
+                <ClassroomDetailsForm
+                    formData={formData}
+                    setFormData={setFormData}
+                    availableSpecializations={availableSpecializations}
+                    currentSubjects={currentSubjects}
+                    selectedColor={selectedColor}
+                    setSelectedColor={setSelectedColor}
+                    classroomToEdit={classroomToEdit}
+                />
 
                 {/* ⏰ Schedule Section */}
                 <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', mb: 4 }}>

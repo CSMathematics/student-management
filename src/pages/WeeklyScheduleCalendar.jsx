@@ -52,7 +52,7 @@ const calculateDuration = (startTimeStr, endTimeStr) => {
 
 // FloatingEventBlock Component
 // This component renders an individual event block on the calendar.
-const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, width, height, onEdit, onDelete, onDragStart, onResizeStart }) => {
+const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart }) => {
     return (
         <Box
             id={`event-block-${id}`} // Add an ID for easy lookup
@@ -62,7 +62,7 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, wid
                 top: top,
                 width: width,
                 height: height,
-                backgroundColor: '#2196f3', // Solid blue for finalized events
+                backgroundColor: backgroundColor || '#2196f3', // Use dynamic background color
                 color: '#fff',
                 borderRadius: '4px',
                 padding: '2px 4px', // Overall padding for the block
@@ -118,7 +118,7 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, wid
                 <IconButton
                     size="small"
                     sx={{ color: '#fff', padding: '2px' }}
-                    onClick={(e) => { e.stopPropagation(); onEdit({ id, day, startTime, endTime, label }); }}
+                    onClick={(e) => { e.stopPropagation(); onEdit({ id, day, startTime, endTime, label, backgroundColor }); }} // Pass backgroundColor to onEdit
                 >
                     <Edit sx={{ fontSize: '0.8rem' }} />
                 </IconButton>
@@ -166,7 +166,7 @@ function WeeklyScheduleCalendar() {
     const [isDraggingEvent, setIsDraggingEvent] = useState(false);
     const [draggedEventId, setDraggedEventId] = useState(null);
     const [dragStartMousePos, setDragStartMousePos] = useState({ x: 0, y: 0 }); // Mouse position when drag started
-    const [dragStartBlockPos, setDragStartBlockPos] = useState({ left: 0, top: 0 }); // Block position when drag started
+    const [dragStartBlockPos, setDragStartBlockPos] = useState({ left: 0, top: 0 });
 
     // Resizing states for existing event blocks
     const [isResizingEvent, setIsResizingEvent] = useState(false);
@@ -179,12 +179,13 @@ function WeeklyScheduleCalendar() {
     const [resizeEndHourIndex, setResizeEndHourIndex] = useState(null); // Original end hour index for resizing
 
     // State for the finalized event blocks displayed on the calendar
-    const [displayedEventBlocks, setDisplayedEventBlocks] = useState([]); // { id, day, startTime, endTime, label, left, top, width, height }
+    const [displayedEventBlocks, setDisplayedEventBlocks] = useState([]); // { id, day, startTime, endTime, label, left, top, width, height, backgroundColor }
 
     // Dialog states for confirming/editing schedule entry (still used for editing existing)
     const [openDialog, setOpenDialog] = useState(false);
     const [dialogEntry, setDialogEntry] = useState(null); // The entry being confirmed/edited
     const [dialogLabel, setDialogLabel] = useState('');
+    const [dialogColor, setDialogColor] = useState('#2196f3'); // State for editing color
 
     // State for NewClassroomForm dialog
     const [openNewClassroomDialog, setOpenNewClassroomDialog] = useState(false);
@@ -462,17 +463,20 @@ function WeeklyScheduleCalendar() {
                     day: DAYS_OF_WEEK[normalizedStartDay],
                     startTime: TIME_SLOTS[normalizedStartHour],
                     endTime: TIME_SLOTS[normalizedEndHour + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`,
-                    label: `Νέο Μάθημα` // Default label
+                    label: `Νέο Μάθημα`, // Default label
+                    backgroundColor: '#2196f3' // Default color for new selections
                 };
 
                 if (dayjs(`2000-01-01T${newEntry.endTime}`).isAfter(dayjs(`2000-01-01T${newEntry.startTime}`))) {
-                    addDisplayedEventBlock(newEntry);
+                    // We don't add the block here directly. We pass it to the NewClassroomForm.
+                    // The NewClassroomForm will then call onSaveSuccess which will add the block.
                     setNewClassroomInitialSchedule([{
                         id: newEntry.id,
                         day: newEntry.day,
                         startTime: newEntry.startTime,
                         endTime: newEntry.endTime,
-                        duration: calculateDuration(newEntry.startTime, newEntry.endTime)
+                        duration: calculateDuration(newEntry.startTime, newEntry.endTime),
+                        backgroundColor: newEntry.backgroundColor
                     }]);
                     setOpenNewClassroomDialog(true);
                 } else {
@@ -611,12 +615,13 @@ function WeeklyScheduleCalendar() {
         setOpenDialog(false);
         setDialogEntry(null);
         setDialogLabel('');
+        setDialogColor('#2196f3'); // Reset color to default
     };
 
     // Handle confirming an edited schedule entry from dialog
     const handleConfirmScheduleEntry = () => {
         if (dialogEntry) {
-            const finalEntry = { ...dialogEntry, label: dialogLabel };
+            const finalEntry = { ...dialogEntry, label: dialogLabel, backgroundColor: dialogColor }; // Include color
             // Update the existing block in displayedEventBlocks
             setDisplayedEventBlocks(prevBlocks => prevBlocks.map(block => {
                 if (block.id === finalEntry.id) {
@@ -632,9 +637,9 @@ function WeeklyScheduleCalendar() {
                             return {
                                 ...finalEntry,
                                 left: startCellRect.left,
-                                top: snappedStartCellRect.top,
-                                width: snappedStartCellRect.width - 4, // Apply reduced width here too
-                                height: snappedEndCellRect.top + snappedEndCellRect.height - snappedStartCellRect.top,
+                                top: startCellRect.top,
+                                width: startCellRect.width - 4, // Apply reduced width here too
+                                height: endCellRect.top + endCellRect.height - startCellRect.top,
                             };
                         }
                     }
@@ -649,6 +654,7 @@ function WeeklyScheduleCalendar() {
     const handleEditEntry = (entry) => {
         setDialogEntry(entry);
         setDialogLabel(entry.label);
+        setDialogColor(entry.backgroundColor || '#2196f3'); // Set dialog color from entry or default
         setOpenDialog(true);
     };
 
@@ -663,10 +669,14 @@ function WeeklyScheduleCalendar() {
     };
 
     // Callback for when NewClassroomForm successfully saves
-    const handleNewClassroomSaveSuccess = () => {
+    const handleNewClassroomSaveSuccess = (updatedInitialSchedule) => {
         setOpenNewClassroomDialog(false); // Close the NewClassroomForm dialog
         setNewClassroomInitialSchedule(null); // Clear the initial schedule
-        // The event block is already displayed, no need to re-add.
+
+        // Add the new block(s) to displayedEventBlocks with the chosen color
+        if (updatedInitialSchedule && updatedInitialSchedule.length > 0) {
+            updatedInitialSchedule.forEach(entry => addDisplayedEventBlock(entry));
+        }
     };
 
 
@@ -752,12 +762,16 @@ function WeeklyScheduleCalendar() {
                         <TableBody>
                             {TIME_SLOTS.map((time, hourIndex) => (
                                 <TableRow key={time} sx={{ height: '40px' }}>
-                                    {/* Time Label Cell - No mouse events for selection/interaction */}
+                                    {/* Time Label Cell - Reverted to previous alignment attempt */}
                                     <TableCell
                                         sx={{
                                             fontWeight: 'bold',
                                             backgroundColor: '#f5f5f5',
-                                            pointerEvents: 'none' // Ensure no mouse events are captured by this cell
+                                            pointerEvents: 'none', // Ensure no mouse events are captured by this cell
+                                            verticalAlign: 'top', // Align text to the top
+                                            paddingTop: '4px', // Adjust padding to visually align with the line
+                                            paddingBottom: '0px', // Reduce bottom padding if needed
+                                            paddingLeft: '8px', // Keep left padding for readability
                                         }}
                                     >
                                         {time}
@@ -854,6 +868,15 @@ function WeeklyScheduleCalendar() {
                                 onChange={(e) => setDialogLabel(e.target.value)}
                                 sx={{ mt: 2 }}
                             />
+                            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Typography variant="body1"><strong>Χρώμα:</strong></Typography>
+                                <input
+                                    type="color"
+                                    value={dialogColor}
+                                    onChange={(e) => setDialogColor(e.target.value)}
+                                    style={{ width: '50px', height: '30px', border: 'none', cursor: 'pointer', borderRadius: '4px' }}
+                                />
+                            </Box>
                         </Box>
                     )}
                 </DialogContent>
