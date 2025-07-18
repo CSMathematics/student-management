@@ -174,7 +174,7 @@ function App() {
 
     return (
         <Box sx={{ display: 'flex', width: '100%' }}>
-            <Sidebar navigateTo={navigateTo} />
+            <Sidebar navigateTo={navigateTo} currentPage={currentPage}/>
             <Box className="main-content-area">
                 <DashboardHeader
                     pageTitle={getPageTitle()}
