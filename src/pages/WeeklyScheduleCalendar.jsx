@@ -65,19 +65,20 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, wid
                 backgroundColor: '#2196f3', // Solid blue for finalized events
                 color: '#fff',
                 borderRadius: '4px',
-                padding: '2px 4px',
+                padding: '2px 4px', // Overall padding for the block
                 textAlign: 'left',
                 overflow: 'hidden',
                 whiteSpace: 'nowrap',
                 textOverflow: 'ellipsis',
                 zIndex: 5, // Below the active drag rect, but above table cells
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                fontSize: '0.75rem',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                 cursor: 'grab', // Indicate draggable
                 touchAction: 'none', // Prevent default touch actions like scrolling
+                display: 'flex', // Make it a flex container
+                flexDirection: 'column', // Stack children vertically
+                justifyContent: 'space-between', // Distribute space
+                fontSize: '0.75rem',
+                boxSizing: 'border-box', // Ensure padding and border are included in the width/height
             }}
             onMouseDown={(e) => onDragStart(e, id)} // Handle drag start for the block itself
         >
@@ -91,18 +92,29 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, wid
                     height: '8px', // Make it small
                     cursor: 'ns-resize', // North-south resize cursor
                     zIndex: 6, // Above the event content
-                    // backgroundColor: 'rgba(255,255,255,0.3)', // For debugging, remove in production
                 }}
                 onMouseDown={(e) => onResizeStart(e, id, 'top')}
             />
 
-            <Typography variant="caption" sx={{ fontWeight: 'bold', flexShrink: 0 }}>
-                {label}
-            </Typography>
-            <Typography variant="caption" sx={{ flexShrink: 0 }}>
-                {startTime} - {endTime}
-            </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: '2px', flexShrink: 0 }}>
+            {/* Content (Label and Time) */}
+            <Box sx={{ flexGrow: 1, overflow: 'hidden', pr: '40px' }}> {/* Add right padding for buttons */}
+                <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block' }}>
+                    {label}
+                </Typography>
+                <Typography variant="caption" sx={{ display: 'block' }}>
+                    {startTime} - {endTime}
+                </Typography>
+            </Box>
+
+            {/* Buttons positioned absolutely at top right */}
+            <Box sx={{
+                position: 'absolute',
+                top: '2px', // Adjust as needed for padding
+                right: '2px', // Adjust as needed for padding
+                display: 'flex',
+                gap: '2px',
+                zIndex: 7, // Ensure buttons are clickable
+            }}>
                 <IconButton
                     size="small"
                     sx={{ color: '#fff', padding: '2px' }}
@@ -129,7 +141,6 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, label, left, top, wid
                     height: '8px', // Make it small
                     cursor: 'ns-resize', // North-south resize cursor
                     zIndex: 6, // Above the event content
-                    // backgroundColor: 'rgba(255,255,255,0.3)', // For debugging, remove in production
                 }}
                 onMouseDown={(e) => onResizeStart(e, id, 'bottom')}
             />
@@ -270,7 +281,7 @@ function WeeklyScheduleCalendar() {
             setTempFloatingSelectionRect({
                 left: startCellRect.left,
                 top: startCellRect.top,
-                width: endCellRect.left + endCellRect.width - startCellRect.left,
+                width: endCellRect.left + endCellRect.width - startCellRect.left - 4, // Reduced width
                 height: endCellRect.top + endCellRect.height - startCellRect.top,
             });
         } else {
@@ -299,7 +310,7 @@ function WeeklyScheduleCalendar() {
                     ...entry,
                     left: startCellRect.left,
                     top: startCellRect.top,
-                    width: startCellRect.width, // Event block spans one column
+                    width: startCellRect.width - 4, // Event block spans one column, reduced by 4px
                     height: endCellRect.top + endCellRect.height - startCellRect.top,
                 }
             ]);
@@ -503,7 +514,7 @@ function WeeklyScheduleCalendar() {
                                 duration: calculateDuration(TIME_SLOTS[newStartTimeIndex], newEndTime),
                                 left: snappedStartCellRect.left,
                                 top: snappedStartCellRect.top,
-                                width: snappedStartCellRect.width,
+                                width: snappedStartCellRect.width - 4, // Apply reduced width here too
                                 height: snappedEndCellRect.top + snappedEndCellRect.height - snappedStartCellRect.top,
                             };
                         }
@@ -621,9 +632,9 @@ function WeeklyScheduleCalendar() {
                             return {
                                 ...finalEntry,
                                 left: startCellRect.left,
-                                top: startCellRect.top,
-                                width: startCellRect.width,
-                                height: endCellRect.top + endCellRect.height - startCellRect.top,
+                                top: snappedStartCellRect.top,
+                                width: snappedStartCellRect.width - 4, // Apply reduced width here too
+                                height: snappedEndCellRect.top + snappedEndCellRect.height - snappedStartCellRect.top,
                             };
                         }
                     }
@@ -838,6 +849,7 @@ function WeeklyScheduleCalendar() {
                                 type="text"
                                 fullWidth
                                 variant="outlined"
+                                size="small"
                                 value={dialogLabel}
                                 onChange={(e) => setDialogLabel(e.target.value)}
                                 sx={{ mt: 2 }}
