@@ -161,6 +161,14 @@ function App() {
         navigateTo('classroomsList');
     };
 
+    // Callback for when NewClassroomForm is cancelled
+    const handleNewClassroomFormCancel = () => {
+        setInitialScheduleForNewClassroom([]);
+        setClassroomToEdit(null);
+        // Navigate back to the previous page, or dashboard if no clear previous page
+        navigateTo('dashboard'); // Or 'calendar' if it was opened from there
+    };
+
 
     const getPageTitle = () => {
         switch (currentPage) {
@@ -213,16 +221,22 @@ function App() {
                     <StudentsList />
                 )}
                 {currentPage === 'newClassroom' && (
-                    <NewClassroomForm
-                        navigateTo={navigateTo}
-                        classroomToEdit={classroomToEdit}
-                        setClassroomToEdit={setClassroomToEdit}
-                        initialSchedule={initialScheduleForNewClassroom} // Pass initial schedule
-                        onSaveSuccess={handleNewClassroomSaveSuccess} // Pass success callback
-                        db={db} // Pass db instance
-                        userId={userId} // Pass userId
-                        appId={appId} // Pass appId
-                    />
+                    <>
+                        {/* Add a log here to check the classrooms state just before passing */}
+                        {console.log("App.jsx: Classrooms state before passing to NewClassroomForm:", classrooms)}
+                        <NewClassroomForm
+                            navigateTo={navigateTo}
+                            classroomToEdit={classroomToEdit}
+                            setClassroomToEdit={setClassroomToEdit}
+                            initialSchedule={initialScheduleForNewClassroom} // Pass initial schedule
+                            onSaveSuccess={handleNewClassroomSaveSuccess} // Pass success callback
+                            onCancel={handleNewClassroomFormCancel} // Pass cancel callback
+                            db={db} // Pass db instance
+                            userId={userId} // Pass userId
+                            appId={appId} // Pass appId
+                            allClassrooms={classrooms} // Pass all classrooms for overlap checking
+                        />
+                    </>
                 )}
                 {currentPage === 'classroomsList' && (
                     <Classrooms

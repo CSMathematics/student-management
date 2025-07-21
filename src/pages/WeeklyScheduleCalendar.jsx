@@ -5,7 +5,7 @@ import {
     FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle,
     DialogContent, DialogActions, TextField
 } from '@mui/material';
-import { ClearAll, Save, Add, Edit, Delete, CheckCircleOutline } from '@mui/icons-material';
+import { ClearAll, Save, Add, Edit, Delete, CheckCircleOutline, Palette } from '@mui/icons-material'; // Import Palette icon for brush
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'; // Import the plugin
@@ -65,7 +65,7 @@ const calculateDuration = (startTimeStr, endTimeStr) => {
 };
 
 // FloatingEventBlock Component
-const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrolledStudents, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData }) => {
+const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrolledStudents, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker }) => {
     const currentStudents = enrolledStudents ? enrolledStudents.length : 0;
     return (
         <Box
@@ -141,6 +141,13 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrol
                     onClick={(e) => { e.stopPropagation(); onEdit(fullClassroomData); }}
                 >
                     <Edit sx={{ fontSize: '0.8rem' }} />
+                </IconButton>
+                <IconButton
+                    size="small"
+                    sx={{ color: '#fff', padding: '2px' }}
+                    onClick={(e) => { e.stopPropagation(); onOpenColorPicker(fullClassroomData); }} // New color picker button
+                >
+                    <Palette sx={{ fontSize: '0.8rem' }} />
                 </IconButton>
                 <IconButton
                     size="small"
@@ -235,8 +242,8 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
     // Dialog states for editing individual schedule entry (label/color)
     const [openDialog, setOpenDialog] = useState(false);
     const [dialogEntry, setDialogEntry] = useState(null);
-    const [dialogLabel, setDialogLabel] = '';
-    const [dialogColor, setDialogColor] = '#2196f3';
+    const [dialogLabel, setDialogLabel] = useState(''); // Initialize with empty string
+    const [dialogColor, setDialogColor] = useState('#2196f3'); // Initialize with default color
 
     // State for the new classroom creation dialog (now holds NewClassroomForm)
     const [openNewClassroomFormDialog, setOpenNewClassroomFormDialog] = useState(false);
@@ -250,6 +257,11 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
     // State for conflict error dialog
     const [openConflictDialog, setOpenConflictDialog] = useState(false);
     const [conflictMessage, setConflictMessage] = useState('');
+
+    // State for color picker dialog for existing events
+    const [openColorPickerDialog, setOpenColorPickerDialog] = useState(false);
+    const [selectedClassroomForColor, setSelectedClassroomForColor] = useState(null);
+    const [tempColor, setTempColor] = useState('#2196f3'); // Temporary color state for picker
 
 
     // Helper to get grid coordinates from pixel coordinates relative to the grid container
@@ -594,7 +606,9 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
                 };
 
                 if (dayjs(`2000-01-01T${newEntry.endTime}`).isAfter(dayjs(`2000-01-01T${newEntry.startTime}`))) {
-                    onCreateClassroomFromCalendar([newEntry]);
+                    // Open the NewClassroomForm in a dialog instead of navigating
+                    setNewClassroomInitialSchedule([newEntry]);
+                    setOpenNewClassroomFormDialog(true);
                 } else {
                     setOpenConflictDialog(true);
                     setConflictMessage("Η επιλεγμένη χρονική διάρκεια δεν είναι έγκυρη.");
@@ -970,6 +984,35 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
         setNewClassroomInitialSchedule(null);
     };
 
+    // Handle opening the color picker dialog for an existing event
+    const handleOpenColorPicker = (classroomData) => {
+        setSelectedClassroomForColor(classroomData);
+        setTempColor(classroomData.color || '#2196f3'); // Set initial color to current or default
+        setOpenColorPickerDialog(true);
+    };
+
+    // Handle saving the new color to Firestore
+    const handleSaveColor = async () => {
+        if (!db || !appId || !selectedClassroomForColor) {
+            console.error("Firestore DB, appId, or selectedClassroomForColor not initialized.");
+            setOpenConflictDialog(true);
+            setConflictMessage("Σφάλμα: Η βάση δεδομένων ή το αναγνωριστικό εφαρμογής δεν είναι διαθέσιμα. Παρακαλώ δοκιμάστε ξανά.");
+            return;
+        }
+
+        try {
+            const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, selectedClassroomForColor.id);
+            await updateDoc(classroomDocRef, { color: tempColor });
+            setOpenColorPickerDialog(false);
+            setSelectedClassroomForColor(null);
+            setTempColor('#2196f3');
+        } catch (error) {
+            console.error("Error updating classroom color:", error);
+            setOpenConflictDialog(true);
+            setConflictMessage("Αποτυχία ενημέρωσης χρώματος τμήματος. Παρακαλώ δοκιμάστε ξανά.");
+        }
+    };
+
     return (
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
             <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', minHeight: '600px' }}>
@@ -1136,6 +1179,7 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
                             onDelete={handleDeleteEntry}
                             onDragStart={handleEventDragStart}
                             onResizeStart={handleEventResizeStart}
+                            onOpenColorPicker={handleOpenColorPicker} // Pass the new handler
                         />
                     ))}
                 </Box>
@@ -1155,13 +1199,17 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
                             db={db}
                             userId={userId}
                             appId={appId}
+                            allClassrooms={classrooms} // Pass allClassrooms for overlap check
                         />
                     )}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setOpenNewClassroomFormDialog(false)} color="primary">
-                        Κλείσιμο
+                        Ακύρωση
                     </Button>
+                    {/* The NewClassroomForm component handles its own submit button internally,
+                        so we don't need a separate "Save" button here.
+                        The form's onSubmit will trigger the save logic. */}
                 </DialogActions>
             </Dialog>
 
@@ -1210,46 +1258,38 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
                 </DialogActions>
             </Dialog>
 
-            {/* Schedule Entry Dialog (still used for editing individual event labels/colors, if desired) */}
-            <Dialog open={openDialog} onClose={handleCloseDialog}>
-                <DialogTitle>{dialogEntry ? 'Επεξεργασία Προγράμματος' : 'Προσθήκη Νέου Προγράμματος'}</DialogTitle>
-                <DialogContent>
-                    {dialogEntry && (
-                        <Box sx={{ mt: 2 }}>
-                            <Typography variant="body1"><strong>Ημέρα:</strong> {dialogEntry.day}</Typography>
-                            <Typography variant="body1"><strong>Ώρα Έναρξης:</strong> {dialogEntry.startTime}</Typography>
-                            <Typography variant="body1"><strong>Ώρα Λήξης:</strong> {dialogEntry.endTime}</Typography>
-                            <Typography variant="body1"><strong>Διάρκεια:</strong> {calculateDuration(dialogEntry.startTime, dialogEntry.endTime)}</Typography>
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label="Περιγραφή/Τίτλος"
-                                type="text"
-                                fullWidth
-                                variant="outlined"
-                                size="small"
-                                value={dialogLabel}
-                                onChange={(e) => setDialogLabel(e.target.value)}
-                                sx={{ mt: 2 }}
-                            />
-                            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Typography variant="body1"><strong>Χρώμα:</strong></Typography>
-                                <input
-                                    type="color"
-                                    value={dialogColor}
-                                    onChange={(e) => setDialogColor(e.target.value)}
-                                    style={{ width: '50px', height: '30px', border: 'none', cursor: 'pointer', borderRadius: '4px' }}
-                                />
-                            </Box>
-                        </Box>
-                    )}
+            {/* Color Picker Dialog for Existing Events */}
+            <Dialog
+                open={openColorPickerDialog}
+                onClose={() => setOpenColorPickerDialog(false)}
+                aria-labelledby="color-picker-dialog-title"
+            >
+                <DialogTitle id="color-picker-dialog-title">Αλλαγή Χρώματος Μαθήματος</DialogTitle>
+                <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 3 }}>
+                    <Typography variant="body1" sx={{ mb: 2 }}>
+                        Τμήμα: {selectedClassroomForColor?.subject} ({selectedClassroomForColor?.grade})
+                    </Typography>
+                    <input
+                        type="color"
+                        value={tempColor}
+                        onChange={(e) => setTempColor(e.target.value)}
+                        style={{ width: '100px', height: '100px', border: 'none', cursor: 'pointer', borderRadius: '8px', marginBottom: '20px' }}
+                    />
+                    <TextField
+                        label="Κωδικός Χρώματος (Hex)"
+                        value={tempColor}
+                        onChange={(e) => setTempColor(e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        sx={{ width: '100%' }}
+                    />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDialog} color="primary">
+                    <Button onClick={() => setOpenColorPickerDialog(false)} color="secondary">
                         Ακύρωση
                     </Button>
-                    <Button onClick={handleConfirmScheduleEntry} color="primary" variant="contained">
-                        Ενημέρωση
+                    <Button onClick={handleSaveColor} color="primary" variant="contained">
+                        Αποθήκευση
                     </Button>
                 </DialogActions>
             </Dialog>
