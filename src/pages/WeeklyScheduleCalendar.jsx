@@ -45,8 +45,7 @@ const calculateDuration = (startTimeStr, endTimeStr) => {
     return durationString || '0 λεπτά';
 };
 
-const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, enrolledStudents, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker, onAddMoreHours }) => {
-    const currentStudents = enrolledStudents ? enrolledStudents.length : 0;
+const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, enrolledStudentsCount, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker, onAddMoreHours }) => {
     return (
         <Box
             id={`event-block-${id}`}
@@ -64,7 +63,8 @@ const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, enrolledSt
             <Box sx={{ flexGrow: 1, overflow: 'hidden', pr: '40px' }}>
                 <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', textWrap: 'wrap', fontSize: '1rem', lineHeight: '1.25rem' }}>{subject}</Typography>
                 <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>{grade}</Typography>
-                <Typography variant="caption" sx={{ display: 'block' }}>Μαθητές: {currentStudents}/{maxStudents}</Typography>
+                {/* <-- ΑΛΛΑΓΗ: Εμφάνιση του αριθμού των μαθητών --> */}
+                <Typography variant="caption" sx={{ display: 'block' }}>Μαθητές: {enrolledStudentsCount || 0}/{maxStudents}</Typography>
                 <Typography variant="caption" sx={{ display: 'block' }}>{startTime} - {endTime}</Typography>
             </Box>
             <Box sx={{ position: 'absolute', bottom: '2px', right: '2px', display: 'flex', gap: '2px', zIndex: 7 }}>
@@ -77,7 +77,7 @@ const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, enrolledSt
                 <IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onOpenColorPicker(fullClassroomData); }} title="Αλλαγή Χρώματος">
                     <i className="fa-solid fa-paintbrush fa-2xs"></i>
                 </IconButton>
-                <IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onDelete(fullClassroomData.id); }} title="Διαγραφή">
+                <IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onDelete(id); }} title="Διαγραφή">
                     <Delete sx={{ fontSize: '0.8rem' }} />
                 </IconButton>
             </Box>
@@ -86,13 +86,15 @@ const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, enrolledSt
     );
 };
 
-// The props are now passed from App.jsx
 function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, appId }) {
     const [calendarStartHour, setCalendarStartHour] = useState(8);
     const [calendarEndHour, setCalendarEndHour] = useState(20);
     const TIME_SLOTS = useMemo(() => generateTimeSlots(calendarStartHour, calendarEndHour), [calendarStartHour, calendarEndHour]);
     const gridContainerRef = useRef(null);
     const [gridDimensions, setGridDimensions] = useState({ width: 0, height: 0, cellWidth: 0, cellHeight: 40 });
+
+    // <-- ΑΛΛΑΓΗ: Νέο state για την αποθήκευση όλων των μαθητών -->
+    const [allStudents, setAllStudents] = useState([]);
 
     useEffect(() => {
         const updateGridDimensions = () => {
@@ -107,6 +109,47 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
         window.addEventListener('resize', updateGridDimensions);
         return () => window.removeEventListener('resize', updateGridDimensions);
     }, [TIME_SLOTS]);
+
+    // <-- ΑΛΛΑΓΗ: Νέο useEffect για τη φόρτωση των μαθητών -->
+    useEffect(() => {
+        const fetchStudents = async () => {
+            if (!db || !appId) return;
+            try {
+                const studentsCollectionRef = collection(db, `artifacts/${appId}/public/data/students`);
+                const studentSnapshot = await getDocs(studentsCollectionRef);
+                const studentList = studentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setAllStudents(studentList);
+            } catch (error) {
+                console.error("Error fetching students:", error);
+            }
+        };
+        fetchStudents();
+    }, [db, appId]);
+
+    // <-- ΑΛΛΑΓΗ: Νέο useMemo για τον εμπλουτισμό των τμημάτων με τον αριθμό μαθητών -->
+    const enrichedClassrooms = useMemo(() => {
+        if (!classrooms.length) return [];
+        if (!allStudents.length) {
+            return classrooms.map(c => ({
+                ...c,
+                enrolledStudentsCount: (c.enrolledStudents || []).length
+            }));
+        }
+
+        const studentCountMap = new Map();
+        allStudents.forEach(student => {
+            if (student.enrolledClassrooms && Array.isArray(student.enrolledClassrooms)) {
+                student.enrolledClassrooms.forEach(classroomId => {
+                    studentCountMap.set(classroomId, (studentCountMap.get(classroomId) || 0) + 1);
+                });
+            }
+        });
+
+        return classrooms.map(classroom => ({
+            ...classroom,
+            enrolledStudentsCount: studentCountMap.get(classroom.id) || 0,
+        }));
+    }, [classrooms, allStudents]);
 
     const [isDraggingNewSelection, setIsDraggingNewSelection] = useState(false);
     const [startSelection, setStartSelection] = useState(null);
@@ -127,8 +170,7 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
     const [resizeStartBlockHeight, setResizeStartBlockHeight] = useState(0);
     const [originalResizedBlockProps, setOriginalResizedBlockProps] = useState(null);
     const [displayedEventBlocks, setDisplayedEventBlocks] = useState([]);
-    const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
-    const [classroomIdToDelete, setClassroomIdToDelete] = useState(null);
+    const [deleteInfo, setDeleteInfo] = useState(null);
     const [openClearConfirmDialog, setOpenClearConfirmDialog] = useState(false);
     const [openConflictDialog, setOpenConflictDialog] = useState(false);
     const [conflictMessage, setConflictMessage] = useState('');
@@ -190,7 +232,7 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
                         endTime: slot.endTime,
                         subject: classroom.subject,
                         grade: classroom.grade,
-                        enrolledStudents: classroom.enrolledStudents,
+                        enrolledStudentsCount: classroom.enrolledStudentsCount, // <-- ΑΛΛΑΓΗ
                         maxStudents: classroom.maxStudents,
                         backgroundColor: classroom.color || '#2196f3',
                         left, top, width, height,
@@ -203,10 +245,11 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
     }, [gridDimensions, TIME_SLOTS]);
 
     useEffect(() => {
-        if (classrooms) {
-            setDisplayedEventBlocks(transformClassroomsToEvents(classrooms));
+        // <-- ΑΛΛΑΓΗ: Χρησιμοποιούμε το enrichedClassrooms
+        if (enrichedClassrooms) {
+            setDisplayedEventBlocks(transformClassroomsToEvents(enrichedClassrooms));
         }
-    }, [classrooms, transformClassroomsToEvents, gridDimensions]);
+    }, [enrichedClassrooms, transformClassroomsToEvents]);
 
     const checkOverlap = useCallback((targetClassroomId, targetDay, targetStartTimeStr, targetEndTimeStr, allClassroomsData) => {
         const targetStart = dayjs(`2000-01-01T${targetStartTimeStr}`);
@@ -348,7 +391,6 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
         setStartSelection(null);
         setEndSelection(null);
 
-        // --- DRAG LOGIC (ΑΠΟ ΤΟΝ ΑΡΧΙΚΟ ΚΩΔΙΚΑ) ---
         if (isDraggingEvent && draggedEventId) {
             const { cellWidth, cellHeight } = gridDimensions;
             const originalEventBlock = displayedEventBlocks.find(b => b.id === draggedEventId);
@@ -403,7 +445,6 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
             }
         }
 
-        // --- RESIZE LOGIC (ΑΠΟ ΤΟΝ ΑΡΧΙΚΟ ΚΩΔΙΚΑ) ---
         if (isResizingEvent && resizedEventId) {
             const { cellHeight } = gridDimensions;
             const originalEventBlock = displayedEventBlocks.find(b => b.id === resizedEventId);
@@ -454,7 +495,6 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
         setOriginalDraggedBlockProps(null);
         setOriginalResizedBlockProps(null);
 
-        // --- NEW SELECTION LOGIC ---
         if (wasDraggingNewSelection && currentStartSelection && currentEndSelection) {
             const normalizedStartDay = Math.min(currentStartSelection.dayIndex, currentEndSelection.dayIndex);
             const normalizedEndDay = Math.max(currentStartSelection.dayIndex, currentEndSelection.dayIndex);
@@ -511,32 +551,49 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
         navigateTo('newClassroom', { classroomToEdit: fullClassroomData });
     };
 
-    const handleDeleteEntry = (classroomId) => {
-        setClassroomIdToDelete(classroomId);
-        setOpenDeleteConfirmDialog(true);
+    const handleDeleteEntry = (eventId) => {
+        const [classroomId, slotIndexStr] = eventId.split('-');
+        const slotIndex = parseInt(slotIndexStr, 10);
+        setDeleteInfo({ classroomId, slotIndex });
     };
 
-    const handleConfirmDelete = async () => {
-        setOpenDeleteConfirmDialog(false);
-        if (!db || !classroomIdToDelete || !appId) {
-            setOpenConflictDialog(true);
-            setConflictMessage("Σφάλμα: Η βάση δεδομένων, το αναγνωριστικό τμήματος ή το αναγνωριστικό εφαρμογής δεν είναι διαθέσιμα.");
-            return;
+    const handleConfirmSlotDelete = async () => {
+        if (!deleteInfo) return;
+
+        const { classroomId, slotIndex } = deleteInfo;
+        const classroomToUpdate = classrooms.find(c => c.id === classroomId);
+
+        if (classroomToUpdate) {
+            const updatedSchedule = classroomToUpdate.schedule.filter((_, index) => index !== slotIndex);
+            
+            try {
+                const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
+                await updateDoc(classroomDocRef, { schedule: updatedSchedule });
+            } catch (error) {
+                console.error("Error deleting slot:", error);
+                setOpenConflictDialog(true);
+                setConflictMessage("Αποτυχία διαγραφής της ώρας.");
+            }
         }
+        setDeleteInfo(null);
+    };
+
+    const handleConfirmClassroomDelete = async () => {
+        if (!deleteInfo) return;
+        const { classroomId } = deleteInfo;
         try {
-            const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomIdToDelete);
+            const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
             await deleteDoc(classroomDocRef);
-            setClassroomIdToDelete(null);
         } catch (error) {
             console.error("Error deleting classroom:", error);
             setOpenConflictDialog(true);
             setConflictMessage("Αποτυχία διαγραφής τμήματος.");
         }
+        setDeleteInfo(null);
     };
-
+    
     const handleCancelDelete = () => {
-        setOpenDeleteConfirmDialog(false);
-        setClassroomIdToDelete(null);
+        setDeleteInfo(null);
     };
 
     const handleClearSchedule = () => setOpenClearConfirmDialog(true);
@@ -617,6 +674,11 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
             setConflictMessage("Σφάλμα κατά την αποθήκευση των νέων ωρών.");
         }
     };
+    
+    const classroomForDeleteDialog = useMemo(() => {
+        if (!deleteInfo) return null;
+        return classrooms.find(c => c.id === deleteInfo.classroomId);
+    }, [deleteInfo, classrooms]);
 
 
     return (
@@ -738,14 +800,28 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
                 </Paper>
             )}
 
-            <Dialog open={openDeleteConfirmDialog} onClose={handleCancelDelete}>
+            <Dialog open={!!deleteInfo} onClose={handleCancelDelete}>
                 <DialogTitle>Επιβεβαίωση Διαγραφής</DialogTitle>
-                <DialogContent><Typography>Είστε σίγουροι ότι θέτετε να διαγράψετε αυτό το τμήμα; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</Typography></DialogContent>
+                <DialogContent>
+                    <Typography>
+                        {classroomForDeleteDialog?.schedule?.length > 1
+                            ? "Τι θέλετε να διαγράψετε;"
+                            : "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το τμήμα; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί."}
+                    </Typography>
+                </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCancelDelete}>Ακύρωση</Button>
-                    <Button onClick={handleConfirmDelete} color="error" variant="contained">Διαγραφή</Button>
+                    {classroomForDeleteDialog?.schedule?.length > 1 && (
+                         <Button onClick={handleConfirmSlotDelete} color="primary">
+                            Μόνο αυτή την ώρα
+                        </Button>
+                    )}
+                    <Button onClick={handleConfirmClassroomDelete} color="error" variant="contained">
+                        {classroomForDeleteDialog?.schedule?.length > 1 ? "Όλο το Τμήμα" : "Διαγραφή"}
+                    </Button>
                 </DialogActions>
             </Dialog>
+
             <Dialog open={openClearConfirmDialog} onClose={handleCancelClearSchedule}>
                 <DialogTitle>Επιβεβαίωση Εκκαθάρισης Προγράμματος</DialogTitle>
                 <DialogContent><Typography>Είστε σίγουροι ότι θέτετε να διαγράψετε ΟΛΑ τα τμήματα; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</Typography></DialogContent>
