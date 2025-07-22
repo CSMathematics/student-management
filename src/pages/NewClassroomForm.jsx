@@ -5,8 +5,7 @@ import {
     FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle,
     DialogContent, DialogActions, DialogContentText, Checkbox, ListItemText, IconButton
 } from '@mui/material';
-import { Add, AddCircleOutline, DeleteForever } from '@mui/icons-material'; // Import icons for add/delete schedule
-
+import { Add, Delete, Edit, CheckCircleOutline } from '@mui/icons-material'; // Import icons for add/delete schedule
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -14,40 +13,25 @@ dayjs.extend(duration);
 dayjs.extend(isSameOrBefore);
 
 // Firebase Imports
-import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, updateDoc } from 'firebase/firestore';
 
 import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
+import ClassroomDetailsForm from './ClassroomDetailsForm.jsx'; // Import the new component
 
-// Define the days of the week (in Greek)
-const DAYS_OF_WEEK = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο'];
-
-// Helper to calculate duration string
-const calculateDuration = (startTimeStr, endTimeStr) => {
-    if (!startTimeStr || !endTimeStr) return '';
-    const start = dayjs(`2000-01-01T${startTimeStr}`);
-    const end = dayjs(`2000-01-01T${endTimeStr}`);
-
-    if (end.isBefore(start) || end.isSame(start)) {
-        return "Invalid Time";
+// Helper to generate time slots (duplicate from calendar, consider centralizing if used widely)
+const generateTimeSlots = (startHour, endHour) => {
+    const slots = [];
+    for (let h = startHour; h < endHour; h++) {
+        slots.push(`${String(h).padStart(2, '0')}:00`);
+        slots.push(`${String(h).padStart(2, '0')}:30`);
     }
-
-    const diffMinutes = end.diff(start, 'minute');
-    const hours = Math.floor(diffMinutes / 60);
-    const minutes = diffMinutes % 60;
-
-    let durationString = '';
-    if (hours > 0) {
-        durationString += `${hours} ${hours > 1 ? 'ώρες' : 'ώρα'}`;
-    }
-    if (minutes > 0) {
-        if (hours > 0) durationString += ' και ';
-        durationString += `${minutes} λεπτά`;
-    }
-    if (hours === 0 && minutes === 0) {
-        durationString = '0 λεπτά';
-    }
-    return durationString;
+    slots.push(`${String(endHour).padStart(2, '0')}:00`);
+    return slots;
 };
+
+// Define the days of the week (excluding Sunday)
+const DAYS_OF_WEEK = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο'];
+const TIME_SLOTS = generateTimeSlots(8, 20); // Assuming calendar hours 8-20 for consistency
 
 function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, initialSchedule, onSaveSuccess, onCancel, db, userId, appId, allClassrooms }) {
     const initialFormData = {
@@ -72,6 +56,43 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
     // State for custom alert dialog
     const [openAlertDialog, setOpenAlertDialog] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
+
+    // Helper to calculate duration string
+    const calculateDuration = useCallback((startTimeStr, endTimeStr) => {
+        if (!startTimeStr || !endTimeStr) return '';
+        const start = dayjs(`2000-01-01T${startTimeStr}`);
+        const end = dayjs(`2000-01-01T${endTimeStr}`);
+
+        if (!start.isValid()) {
+            console.error("NewClassroomForm - Invalid start time string in calculateDuration:", startTimeStr);
+        }
+        if (!end.isValid()) {
+            console.error("NewClassroomForm - Invalid end time string in calculateDuration:", endTimeStr);
+        }
+
+        if (end.isBefore(start) || end.isSame(start)) {
+            console.error("NewClassroomForm - End time is before or same as start time in calculateDuration:", startTimeStr, endTimeStr);
+            return "Invalid Time";
+        }
+
+        const diffMinutes = end.diff(start, 'minute');
+        const hours = Math.floor(diffMinutes / 60);
+        const minutes = diffMinutes % 60;
+
+        let durationString = '';
+        if (hours > 0) {
+            durationString += `${hours} ${hours > 1 ? 'ώρες' : 'ώρα'}`;
+        }
+        if (minutes > 0) {
+            if (hours > 0) durationString += ' και ';
+            durationString += `${minutes} λεπτά`;
+        }
+        if (hours === 0 && minutes === 0) {
+            durationString = '0 λεπτά';
+        }
+        return durationString;
+    }, []);
+
 
     // Helper function to check for overlaps
     const checkOverlap = useCallback((targetClassroomId, targetDay, targetStartTimeStr, targetEndTimeStr, existingClassrooms, currentFormSchedule = []) => {
@@ -185,15 +206,16 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                     ...prev,
                     schedule: initialSchedule.map(slot => ({
                         ...slot,
-                        // Ensure startTime and endTime are strings for consistency with saved data
-                        startTime: dayjs(slot.startTime).format('HH:mm'),
-                        endTime: dayjs(slot.endTime).format('HH:mm'),
+                        // No need to re-format, they should already be HH:mm
+                        // startTime: dayjs(slot.startTime).format('HH:mm'),
+                        // endTime: dayjs(slot.endTime).format('HH:mm'),
                     }))
                 }));
                 // Set the initial selected day for the form
                 setSelectedDay(initialSchedule[0].day);
                 // Pre-select the time slot in the dropdown for the initial schedule
-                setSelectedTimeSlots([`${initialSchedule[0].startTime} - ${initialSchedule[0].endTime}`]);
+                // This assumes initialSchedule contains labels like "HH:mm - HH:mm"
+                setSelectedTimeSlots(initialSchedule.map(slot => `${slot.startTime} - ${slot.endTime}`));
             } else {
                 setFormData(initialFormData);
                 setSelectedDay('');
@@ -314,7 +336,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
 
         if (!db || !appId) {
             console.error("Firestore DB or appId not initialized. Cannot save classroom.");
-            setAlertMessage("Σφάλμα: Η βάση δεδομένων ή το αναγνωστικό εφαρμογής δεν είναι διαθέσιμα. Παρακαλώ δοκιμάστε ξανά.");
+            setAlertMessage("Σφάλμα: Η βάση δεδομένων ή το αναγνωριστικό εφαρμογής δεν είναι διαθέσιμα. Παρακαλώ δοκιμάστε ξανά.");
             setOpenAlertDialog(true);
             return;
         }
@@ -566,7 +588,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                             {formData.schedule.map((slot, index) => (
                                 <Box key={slot.id} sx={{ display: 'flex', alignItems: 'center', mb: 1, p: 1, border: '1px solid #e0e0e0', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
                                     <Typography variant="body2" sx={{ flexGrow: 1 }}>
-                                        <strong>{slot.day}</strong>: {slot.startTime} - {slot.endTime} ({slot.duration})
+                                        <strong>{slot.day}</strong>: {slot.startTime} - {slot.endTime} ({calculateDuration(slot.startTime, slot.endTime)})
                                     </Typography>
                                     <IconButton
                                         color="error"
@@ -574,7 +596,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                                         onClick={() => handleRemoveScheduleEntry(slot.id)}
                                         aria-label="delete schedule entry"
                                     >
-                                        <DeleteForever />
+                                        <Delete />
                                     </IconButton>
                                 </Box>
                             ))}

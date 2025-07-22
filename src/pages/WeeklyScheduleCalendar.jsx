@@ -5,15 +5,15 @@ import {
     FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle,
     DialogContent, DialogActions, TextField
 } from '@mui/material';
-import { ClearAll, Save, Add, Edit, Delete, CheckCircleOutline, Palette } from '@mui/icons-material'; // Import Palette icon for brush
+import { ClearAll, Save, Add, Edit, Delete, CheckCircleOutline, Palette, AddCircleOutline } from '@mui/icons-material'; // Import AddCircleOutline
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'; // Import the plugin
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 dayjs.extend(duration);
-dayjs.extend(isSameOrBefore); // Extend the plugin
+dayjs.extend(isSameOrBefore);
 
 // Firebase Imports
-import { doc, deleteDoc, collection, query, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, deleteDoc, collection, query, getDocs, updateDoc, where } from 'firebase/firestore'; // Import 'where'
 
 // Import NewClassroomForm to be used in the dialog
 import NewClassroomForm from './NewClassroomForm.jsx';
@@ -65,7 +65,7 @@ const calculateDuration = (startTimeStr, endTimeStr) => {
 };
 
 // FloatingEventBlock Component
-const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrolledStudents, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker }) => {
+const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrolledStudents, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker, onAddMoreHours }) => {
     const currentStudents = enrolledStudents ? enrolledStudents.length : 0;
     return (
         <Box
@@ -79,7 +79,7 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrol
                 backgroundColor: backgroundColor || '#2196f3',
                 color: '#fff',
                 borderRadius: '4px',
-                padding: '2px 4px',
+                padding: '5px 5px',
                 textAlign: 'left',
                 overflow: 'hidden',
                 whiteSpace: 'nowrap',
@@ -112,10 +112,10 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrol
 
             {/* Content (Subject, Grade, Students, and Time) */}
             <Box sx={{ flexGrow: 1, overflow: 'hidden', pr: '40px' }}>
-                <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block' }}>
+                <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block',textWrap: 'wrap', fontSize: '1rem', lineHeight: '1.25rem' }}>
                     {subject}
                 </Typography>
-                <Typography variant="caption" sx={{ display: 'block' }}>
+                <Typography variant="caption" sx={{ display: 'block',fontWeight: 'bold' }}>
                     {grade}
                 </Typography>
                 <Typography variant="caption" sx={{ display: 'block' }}>
@@ -126,10 +126,10 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrol
                 </Typography>
             </Box>
 
-            {/* Buttons positioned absolutely at top right */}
+            {/* Buttons positioned absolutely at bottom right */}
             <Box sx={{
                 position: 'absolute',
-                top: '2px',
+                bottom: '2px', // Changed from top to bottom
                 right: '2px',
                 display: 'flex',
                 gap: '2px',
@@ -138,7 +138,16 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrol
                 <IconButton
                     size="small"
                     sx={{ color: '#fff', padding: '2px' }}
+                    onClick={(e) => { e.stopPropagation(); onAddMoreHours(id, fullClassroomData); }} // Pass id and fullClassroomData
+                    title="Προσθήκη Ώρας"
+                >
+                    <AddCircleOutline sx={{ fontSize: '0.8rem' }} />
+                </IconButton>
+                <IconButton
+                    size="small"
+                    sx={{ color: '#fff', padding: '2px' }}
                     onClick={(e) => { e.stopPropagation(); onEdit(fullClassroomData); }}
+                    title="Επεξεργασία"
                 >
                     <Edit sx={{ fontSize: '0.8rem' }} />
                 </IconButton>
@@ -146,6 +155,7 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrol
                     size="small"
                     sx={{ color: '#fff', padding: '2px' }}
                     onClick={(e) => { e.stopPropagation(); onOpenColorPicker(fullClassroomData); }} // New color picker button
+                    title="Αλλαγή Χρώματος"
                 >
                     <Palette sx={{ fontSize: '0.8rem' }} />
                 </IconButton>
@@ -153,6 +163,7 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrol
                     size="small"
                     sx={{ color: '#fff', padding: '2px' }}
                     onClick={(e) => { e.stopPropagation(); onDelete(fullClassroomData.id); }}
+                    title="Διαγραφή"
                 >
                     <Delete sx={{ fontSize: '0.8rem' }} />
                 </IconButton>
@@ -219,6 +230,9 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
     const [startSelection, setStartSelection] = useState(null);
     const [endSelection, setEndSelection] = useState(null);
     const [tempFloatingSelectionRect, setTempFloatingSelectionRect] = useState(null);
+
+    // State to accumulate multiple selections before opening the form
+    const [accumulatedSelections, setAccumulatedSelections] = useState([]);
 
     // Dragging states for existing event blocks
     const [isDraggingEvent, setIsDraggingEvent] = useState(false);
@@ -552,12 +566,16 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
 
 
     // Global mouse up handler to finalize operations
-    const handleGlobalMouseUp = useCallback(async () => {
+    const handleGlobalMouseUp = useCallback(async (e) => { // Captured the event object 'e'
+        const wasDraggingNewSelection = isDraggingNewSelection; // Capture current state
+        const currentStartSelection = startSelection; // Capture current state
+        const currentEndSelection = endSelection; // Capture current state
+
         // Reset all dragging/resizing states immediately
         setIsDraggingNewSelection(false);
         setIsDraggingEvent(false);
         setIsResizingEvent(false);
-        setTempFloatingSelectionRect(null);
+        setTempFloatingSelectionRect(null); // Always clear the temporary one
         setStartSelection(null);
         setEndSelection(null);
         setDraggedEventId(null);
@@ -580,21 +598,37 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
 
         const { cellWidth, cellHeight } = gridDimensions;
 
-        if (isDraggingNewSelection && startSelection && endSelection) {
-            if (startSelection.dayIndex !== endSelection.dayIndex || startSelection.hourIndex !== endSelection.hourIndex) {
-                const normalizedStartDay = Math.min(startSelection.dayIndex, endSelection.dayIndex);
-                const normalizedEndDay = Math.max(startSelection.dayIndex, endSelection.dayIndex);
-                const normalizedStartHour = Math.min(startSelection.hourIndex, endSelection.hourIndex);
-                const normalizedEndHour = Math.max(startSelection.hourIndex, endSelection.hourIndex);
+        if (wasDraggingNewSelection && currentStartSelection && currentEndSelection) {
+            if (currentStartSelection.dayIndex !== currentEndSelection.dayIndex || currentStartSelection.hourIndex !== currentEndSelection.hourIndex) {
+                const normalizedStartDay = Math.min(currentStartSelection.dayIndex, currentEndSelection.dayIndex);
+                const normalizedEndDay = Math.max(currentStartSelection.dayIndex, currentEndSelection.dayIndex);
+                const normalizedStartHour = Math.min(currentStartSelection.hourIndex, currentEndSelection.hourIndex);
+                const normalizedEndHour = Math.max(currentStartSelection.hourIndex, currentEndSelection.hourIndex);
 
-                if (normalizedStartDay < 0 || normalizedStartHour < 0) {
+                if (normalizedStartDay < 0 || normalizedStartHour < 0 || normalizedEndHour >= TIME_SLOTS.length) {
                     setOpenConflictDialog(true);
                     setConflictMessage("Παρακαλώ επιλέξτε μια έγκυρη περιοχή στο πρόγραμμα.");
                     return;
                 }
 
                 const newStartTime = TIME_SLOTS[normalizedStartHour];
+                // Ensure newEndTime is always a valid slot, even if it's the end hour
                 const newEndTime = TIME_SLOTS[normalizedEndHour + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`;
+
+
+                if (dayjs(`2000-01-01T${newEndTime}`).isBefore(dayjs(`2000-01-01T${newStartTime}`))) {
+                    setOpenConflictDialog(true);
+                    setConflictMessage("Η επιλεγμένη χρονική διάρκεια δεν είναι έγκυρη.");
+                    return;
+                }
+
+                // Calculate positions and dimensions for the new entry
+                const left = TIME_COLUMN_WIDTH_PX + (normalizedStartDay * cellWidth);
+                const top = HEADER_ROW_HEIGHT_PX + (normalizedStartHour * cellHeight);
+                const width = (normalizedEndDay - normalizedStartDay + 1) * cellWidth - 2;
+                const durationMinutes = dayjs(`2000-01-01T${newEndTime}`).diff(dayjs(`2000-01-01T${newStartTime}`), 'minute');
+                const height = (durationMinutes / 30) * cellHeight;
+
 
                 const newEntry = {
                     id: Date.now(),
@@ -602,16 +636,28 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
                     startTime: newStartTime,
                     endTime: newEndTime,
                     duration: calculateDuration(newStartTime, newEndTime),
-                    backgroundColor: '#2196f3'
+                    backgroundColor: 'rgba(179, 229, 252, 0.3)', // Lighter color for persistent selection
+                    label: `Νέα Επιλογή: ${DAYS_OF_WEEK[normalizedStartDay]} ${newStartTime}-${newEndTime}`,
+                    // Add rendering properties
+                    left, top, width, height
                 };
 
-                if (dayjs(`2000-01-01T${newEntry.endTime}`).isAfter(dayjs(`2000-01-01T${newEntry.startTime}`))) {
-                    // Open the NewClassroomForm in a dialog instead of navigating
-                    setNewClassroomInitialSchedule([newEntry]);
-                    setOpenNewClassroomFormDialog(true);
+                console.log("WeeklyScheduleCalendar - New Entry created:", newEntry); // Log new entry
+
+                // Check for Ctrl key press (or Cmd key on Mac)
+                if (e.ctrlKey || e.metaKey) {
+                    setAccumulatedSelections(prev => [...prev, newEntry]);
+                    // Do not open the dialog immediately, just accumulate
                 } else {
-                    setOpenConflictDialog(true);
-                    setConflictMessage("Η επιλεγμένη χρονική διάρκεια δεν είναι έγκυρη.");
+                    // If Ctrl key is not pressed, open the dialog with all accumulated selections + the current one
+                    const finalSchedule = accumulatedSelections.length > 0
+                        ? [...accumulatedSelections, newEntry]
+                        : [newEntry];
+
+                    console.log("WeeklyScheduleCalendar - Final Schedule to pass:", finalSchedule); // Log final schedule
+                    setNewClassroomInitialSchedule(finalSchedule);
+                    setOpenNewClassroomFormDialog(true);
+                    setAccumulatedSelections([]); // Clear accumulated selections after opening form
                 }
             }
         } else if (isDraggingEvent && draggedEventId) {
@@ -835,7 +881,7 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
                 }
             }
         }
-    }, [isDraggingNewSelection, startSelection, endSelection, TIME_SLOTS, calendarEndHour, onCreateClassroomFromCalendar, isDraggingEvent, draggedEventId, originalDraggedBlockProps, isResizingEvent, resizedEventId, resizeHandle, originalResizedBlockProps, getGridCoordinatesFromPixels, displayedEventBlocks, classrooms, db, appId, checkOverlap, gridDimensions]);
+    }, [isDraggingNewSelection, startSelection, endSelection, TIME_SLOTS, calendarEndHour, onCreateClassroomFromCalendar, isDraggingEvent, draggedEventId, originalDraggedBlockProps, isResizingEvent, resizedEventId, resizeHandle, originalResizedBlockProps, getGridCoordinatesFromPixels, displayedEventBlocks, classrooms, db, appId, checkOverlap, gridDimensions, accumulatedSelections]);
 
 
     // Attach global mouse move and mouse up listeners
@@ -982,6 +1028,7 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
     const handleNewClassroomFormSaveSuccess = () => {
         setOpenNewClassroomFormDialog(false);
         setNewClassroomInitialSchedule(null);
+        setAccumulatedSelections([]); // Clear accumulated selections on successful save
     };
 
     // Handle opening the color picker dialog for an existing event
@@ -1012,6 +1059,62 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
             setConflictMessage("Αποτυχία ενημέρωσης χρώματος τμήματος. Παρακαλώ δοκιμάστε ξανά.");
         }
     };
+
+    // New function to handle adding more hours to an existing classroom
+    const handleAddMoreHours = (eventId, fullClassroomData) => {
+        const [classroomId, slotIndexStr] = eventId.split('-');
+        const slotIndex = parseInt(slotIndexStr, 10);
+
+        if (!fullClassroomData || !fullClassroomData.schedule || !fullClassroomData.schedule[slotIndex]) {
+            console.error("Could not find slot data for eventId:", eventId, "in classroomData:", fullClassroomData);
+            setOpenConflictDialog(true);
+            setConflictMessage("Σφάλμα: Δεν βρέθηκαν δεδομένα για την προσθήκη ώρας.");
+            return;
+        }
+
+        const slotToAdd = fullClassroomData.schedule[slotIndex];
+
+        const { cellWidth, cellHeight } = gridDimensions;
+        const dayIdx = DAYS_OF_WEEK.indexOf(slotToAdd.day);
+        const startHourIdx = TIME_SLOTS.indexOf(slotToAdd.startTime);
+        const endHourIdx = TIME_SLOTS.indexOf(slotToAdd.endTime);
+
+        if (dayIdx === -1 || startHourIdx === -1 || endHourIdx === -1 || cellWidth === 0 || cellHeight === 0) {
+            console.error("Invalid grid dimensions or slot data for adding hours.");
+            setOpenConflictDialog(true);
+            setConflictMessage("Σφάλμα: Αδυναμία υπολογισμού θέσης για προσθήκη ώρας.");
+            return;
+        }
+
+        const left = TIME_COLUMN_WIDTH_PX + (dayIdx * cellWidth);
+        const top = HEADER_ROW_HEIGHT_PX + (startHourIdx * cellHeight);
+        const width = cellWidth - 2;
+        const durationMinutes = dayjs(`2000-01-01T${slotToAdd.endTime}`).diff(dayjs(`2000-01-01T${slotToAdd.startTime}`), 'minute');
+        const height = (durationMinutes / 30) * cellHeight;
+
+
+        const newEntry = {
+            id: eventId, // Use the existing eventId for this slot
+            day: slotToAdd.day,
+            startTime: slotToAdd.startTime,
+            endTime: slotToAdd.endTime,
+            duration: calculateDuration(slotToAdd.startTime, slotToAdd.endTime),
+            backgroundColor: 'rgba(179, 229, 252, 0.3)', // Lighter color for persistent selection
+            label: `Προσθήκη ώρας στο τμήμα: ${fullClassroomData.subject} (${fullClassroomData.grade}${fullClassroomData.specialization ? ' - ' + fullClassroomData.specialization : ''}) - ${slotToAdd.day} ${slotToAdd.startTime}-${slotToAdd.endTime}`, // Add label for display in accumulated selections
+            left, top, width, height
+        };
+
+        setAccumulatedSelections(prev => {
+            // Prevent adding duplicates
+            if (prev.some(selection => selection.id === newEntry.id)) {
+                setOpenConflictDialog(true);
+                setConflictMessage("Αυτή η ώρα έχει ήδη προστεθεί στις συγκεντρωμένες επιλογές.");
+                return prev;
+            }
+            return [...prev, newEntry];
+        });
+    };
+
 
     return (
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -1170,6 +1273,25 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
                             }}
                         />
                     )}
+                    {/* Persistent Floating Selection Rectangles (when Ctrl/Cmd is held) */}
+                    {accumulatedSelections.map((selection, index) => (
+                        <Box
+                            key={`persistent-selection-${selection.id}`}
+                            sx={{
+                                position: 'absolute',
+                                left: selection.left,
+                                top: selection.top,
+                                width: selection.width,
+                                height: selection.height,
+                                backgroundColor: selection.backgroundColor, // Use the color from the selection (rgba for transparency)
+                                border: '1px dashed #2196f3', // Dashed border
+                                borderRadius: '4px',
+                                pointerEvents: 'none',
+                                zIndex: 9, // Slightly lower zIndex than current drag
+                            }}
+                        />
+                    ))}
+
                     {/* Finalized Event Blocks */}
                     {displayedEventBlocks.map(block => (
                         <FloatingEventBlock
@@ -1180,10 +1302,60 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
                             onDragStart={handleEventDragStart}
                             onResizeStart={handleEventResizeStart}
                             onOpenColorPicker={handleOpenColorPicker} // Pass the new handler
+                            onAddMoreHours={handleAddMoreHours} // Pass the new handler
                         />
                     ))}
                 </Box>
             </Paper>
+
+            {/* Floating indicator for accumulated selections */}
+            {accumulatedSelections.length > 0 && (
+                <Box sx={{
+                    position: 'fixed',
+                    bottom: 20,
+                    right: 20,
+                    backgroundColor: '#4caf50',
+                    color: 'white',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    zIndex: 1000,
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    gap: '5px'
+                }}>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        Συγκεντρωμένες επιλογές: {accumulatedSelections.length}
+                    </Typography>
+                    {accumulatedSelections.map((selection, index) => (
+                        <Typography key={index} variant="caption" sx={{ display: 'block' }}>
+                            {selection.label || `Επιλογή ${index + 1}: ${selection.day} ${selection.startTime}-${selection.endTime}`}
+                        </Typography>
+                    ))}
+                    <Button
+                        size="small"
+                        variant="text"
+                        sx={{ color: 'white', textTransform: 'none', mt: 1 }}
+                        onClick={() => {
+                            setNewClassroomInitialSchedule(accumulatedSelections);
+                            setOpenNewClassroomFormDialog(true);
+                            setAccumulatedSelections([]);
+                        }}
+                    >
+                        <CheckCircleOutline sx={{ mr: 0.5 }} /> Δημιουργία Τμήματος
+                    </Button>
+                    <Button
+                        size="small"
+                        variant="text"
+                        sx={{ color: 'white', textTransform: 'none' }}
+                        onClick={() => setAccumulatedSelections([])}
+                    >
+                        <ClearAll sx={{ mr: 0.5 }} /> Εκκαθάριση
+                    </Button>
+                </Box>
+            )}
+
 
             {/* Dialog for creating a new classroom with NewClassroomForm */}
             <Dialog open={openNewClassroomFormDialog} onClose={() => setOpenNewClassroomFormDialog(false)} maxWidth="md" fullWidth>
