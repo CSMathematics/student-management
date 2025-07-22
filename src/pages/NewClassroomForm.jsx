@@ -3,9 +3,9 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box, Button, Container, Grid, Paper, Typography, TextField,
     FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle,
-    DialogContent, DialogActions, DialogContentText, Checkbox, ListItemText, IconButton
+    DialogContent, DialogActions, DialogContentText, IconButton
 } from '@mui/material';
-import { Add, Delete, Edit, CheckCircleOutline } from '@mui/icons-material'; // Import icons for add/delete schedule
+import { Add, Delete } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -16,16 +16,15 @@ dayjs.extend(isSameOrBefore);
 import { doc, setDoc, addDoc, collection, updateDoc } from 'firebase/firestore';
 
 import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
-import ClassroomDetailsForm from './ClassroomDetailsForm.jsx'; // Import the new component
 
-// Helper to generate time slots (duplicate from calendar, consider centralizing if used widely)
+// Helper to generate time slots (30-minute intervals)
 const generateTimeSlots = (startHour, endHour) => {
     const slots = [];
     for (let h = startHour; h < endHour; h++) {
         slots.push(`${String(h).padStart(2, '0')}:00`);
         slots.push(`${String(h).padStart(2, '0')}:30`);
     }
-    slots.push(`${String(endHour).padStart(2, '0')}:00`);
+    slots.push(`${String(endHour).padStart(2, '0')}:00`); // Ensure the end hour is included
     return slots;
 };
 
@@ -40,7 +39,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
         specialization: '',
         subject: '',
         maxStudents: 5,
-        schedule: [], // This will now hold multiple {day, startTime, endTime} objects
+        schedule: [],
         enrolledStudents: [],
     };
 
@@ -50,79 +49,49 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
     const [selectedColor, setSelectedColor] = useState('#2196f3');
 
     const [selectedDay, setSelectedDay] = useState('');
-    const [selectedTimeSlots, setSelectedTimeSlots] = useState([]); // Array for multiple selected time slots for a single "add" operation
-    const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
+    const [selectedStartTime, setSelectedStartTime] = useState('');
+    const [selectedEndTime, setSelectedEndTime] = useState('');
 
-    // State for custom alert dialog
     const [openAlertDialog, setOpenAlertDialog] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
 
-    // Helper to calculate duration string
     const calculateDuration = useCallback((startTimeStr, endTimeStr) => {
         if (!startTimeStr || !endTimeStr) return '';
         const start = dayjs(`2000-01-01T${startTimeStr}`);
         const end = dayjs(`2000-01-01T${endTimeStr}`);
-
-        if (!start.isValid()) {
-            console.error("NewClassroomForm - Invalid start time string in calculateDuration:", startTimeStr);
-        }
-        if (!end.isValid()) {
-            console.error("NewClassroomForm - Invalid end time string in calculateDuration:", endTimeStr);
-        }
-
-        if (end.isBefore(start) || end.isSame(start)) {
-            console.error("NewClassroomForm - End time is before or same as start time in calculateDuration:", startTimeStr, endTimeStr);
-            return "Invalid Time";
-        }
-
+        if (end.isBefore(start) || end.isSame(start)) return "Invalid Time";
         const diffMinutes = end.diff(start, 'minute');
         const hours = Math.floor(diffMinutes / 60);
         const minutes = diffMinutes % 60;
-
         let durationString = '';
-        if (hours > 0) {
-            durationString += `${hours} ${hours > 1 ? 'ώρες' : 'ώρα'}`;
-        }
+        if (hours > 0) durationString += `${hours} ${hours > 1 ? 'ώρες' : 'ώρα'}`;
         if (minutes > 0) {
             if (hours > 0) durationString += ' και ';
             durationString += `${minutes} λεπτά`;
         }
-        if (hours === 0 && minutes === 0) {
-            durationString = '0 λεπτά';
-        }
-        return durationString;
+        return durationString || '0 λεπτά';
     }, []);
 
-
-    // Helper function to check for overlaps
-    const checkOverlap = useCallback((targetClassroomId, targetDay, targetStartTimeStr, targetEndTimeStr, existingClassrooms, currentFormSchedule = []) => {
-        console.log("checkOverlap called with:", { targetClassroomId, targetDay, targetStartTimeStr, targetEndTimeStr, existingClassrooms, currentFormSchedule });
+    const checkOverlap = useCallback((targetClassroomId, targetDay, targetStartTimeStr, targetEndTimeStr, existingClassrooms, currentFormSchedule = [], ignoreFormScheduleIds = []) => {
         const targetStart = dayjs(`2000-01-01T${targetStartTimeStr}`);
         const targetEnd = dayjs(`2000-01-01T${targetEndTimeStr}`);
 
         if (!targetStart.isValid() || !targetEnd.isValid() || targetEnd.isSameOrBefore(targetStart)) {
-            console.log("Invalid target time range, returning true for overlap.");
-            return true; // Invalid time range, treat as overlap to prevent saving
+            return true;
         }
 
-        // Check against existing classrooms from Firestore
         for (const classroom of existingClassrooms) {
-            // If editing, skip the classroom being updated for overlap check
+            // When editing, skip checking the classroom against its own saved schedule
             if (classroomToEdit && classroom.id === classroomToEdit.id) {
-                console.log(`Skipping overlap check for classroom being edited: ${classroom.id}`);
                 continue;
             }
-
             if (classroom.schedule && Array.isArray(classroom.schedule)) {
                 for (const slot of classroom.schedule) {
                     if (slot.day === targetDay) {
                         const existingStart = dayjs(`2000-01-01T${slot.startTime}`);
                         const existingEnd = dayjs(`2000-01-01T${slot.endTime}`);
-
-                        // Check for overlap: (StartA < EndB) && (EndA > StartB)
                         if (targetStart.isBefore(existingEnd) && targetEnd.isAfter(existingStart)) {
-                            console.log(`Overlap detected with existing classroom ${classroom.id} slot:`, slot);
-                            return true; // Overlap detected
+                            return true;
                         }
                     }
                 }
@@ -131,107 +100,83 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
 
         // Check against other entries already added to the current form's schedule
         for (const slot of currentFormSchedule) {
-            // Ensure we don't compare a slot with itself if it's already in the schedule
-            // This is important when iterating through selectedTimeSlots to add them,
-            // or when doing a final check on formData.schedule before submission.
-            if (slot.day === targetDay && slot.startTime === targetStartTimeStr && slot.endTime === targetEndTimeStr) {
-                continue; // Skip if it's the exact same slot already in the current form's schedule
+            if (ignoreFormScheduleIds.includes(slot.id)) {
+                continue;
             }
-
             if (slot.day === targetDay) {
                 const existingStart = dayjs(`2000-01-01T${slot.startTime}`);
                 const existingEnd = dayjs(`2000-01-01T${slot.endTime}`);
-
                 if (targetStart.isBefore(existingEnd) && targetEnd.isAfter(existingStart)) {
-                    console.log(`Overlap detected with another slot in current form's schedule:`, slot);
-                    return true; // Overlap detected
+                    return true;
                 }
             }
         }
-
-        console.log("No overlap detected.");
-        return false; // No overlap
+        return false;
     }, [classroomToEdit]);
 
-    // Generate all possible 1-hour time slots (e.g., 08:00-09:00, 09:00-10:00)
-    const generateAllOneHourSlots = () => {
-        const slots = [];
-        for (let h = 8; h < 20; h++) { // From 08:00 to 19:00 (for 1-hour slots ending by 20:00)
-            const start = dayjs().hour(h).minute(0).format('HH:mm');
-            const end = dayjs().hour(h + 1).minute(0).format('HH:mm');
-            slots.push({ startTime: start, endTime: end, label: `${start} - ${end}` });
-        }
-        console.log("Generated all one-hour slots:", slots);
-        return slots;
-    };
-
-    // Get available time slots for a specific day, considering existing classrooms and current form's schedule
-    const getAvailableTimeSlots = useCallback((day, existingClassrooms, currentFormSchedule) => {
-        console.log("getAvailableTimeSlots called with:", { day, existingClassrooms, currentFormSchedule });
-        if (!day) {
-            console.log("No day selected, returning empty slots.");
-            return [];
-        }
-
-        const allSlots = generateAllOneHourSlots();
+    const getAvailableTimeSlotsForDay = useCallback((day, existingClassrooms, currentFormSchedule) => {
+        if (!day) return [];
         const available = [];
-
-        allSlots.forEach(slot => {
-            const isOverlapping = checkOverlap(classroomToEdit?.id, day, slot.startTime, slot.endTime, existingClassrooms, currentFormSchedule);
+        const idsToIgnoreForInternalCheck = currentFormSchedule.map(s => s.id);
+        TIME_SLOTS.forEach((startTimeStr, index) => {
+            const endTimeStr = TIME_SLOTS[index + 1];
+            if (!endTimeStr) return;
+            const isOverlapping = checkOverlap(classroomToEdit?.id, day, startTimeStr, endTimeStr, existingClassrooms, currentFormSchedule, idsToIgnoreForInternalCheck);
             if (!isOverlapping) {
-                available.push(slot);
+                available.push({ startTime: startTimeStr, endTime: endTimeStr, label: `${startTimeStr} - ${endTimeStr}` });
             }
         });
-        console.log("Available time slots for day", day, ":", available);
         return available;
     }, [checkOverlap, classroomToEdit]);
 
-
-    // Effect to update form data if classroomToEdit changes (for editing)
+    // <-- ΑΛΛΑΓΗ: Ενημερωμένη λογική για να χειρίζεται όλες τις περιπτώσεις
     useEffect(() => {
-        if (classroomToEdit) {
-            // When editing, ensure schedule times are strings (as they are saved as strings)
-            // and set the form data.
-            setFormData(classroomToEdit);
-            setSelectedColor(classroomToEdit.color || '#2196f3');
-            // For editing, we don't pre-select `selectedDay` or `selectedTimeSlots`
-            // as they are for adding *new* slots, not displaying existing ones.
-            setSelectedDay('');
-            setSelectedTimeSlots([]);
-        } else {
-            // If no classroomToEdit, and there's an initialSchedule (from calendar drag)
-            if (initialSchedule && initialSchedule.length > 0) {
-                // Initial schedule from calendar drag is already in the correct format with string times
-                setFormData(prev => ({
-                    ...prev,
-                    schedule: initialSchedule.map(slot => ({
-                        ...slot,
-                        // No need to re-format, they should already be HH:mm
-                        // startTime: dayjs(slot.startTime).format('HH:mm'),
-                        // endTime: dayjs(slot.endTime).format('HH:mm'),
-                    }))
-                }));
-                // Set the initial selected day for the form
-                setSelectedDay(initialSchedule[0].day);
-                // Pre-select the time slot in the dropdown for the initial schedule
-                // This assumes initialSchedule contains labels like "HH:mm - HH:mm"
-                setSelectedTimeSlots(initialSchedule.map(slot => `${slot.startTime} - ${slot.endTime}`));
-            } else {
-                setFormData(initialFormData);
-                setSelectedDay('');
-                setSelectedTimeSlots([]);
-            }
-            setSelectedColor('#2196f3'); // Reset color for new form
-        }
-        console.log("NewClassroomForm useEffect (classroomToEdit/initialSchedule) - allClassrooms:", allClassrooms);
-    }, [classroomToEdit, initialSchedule, allClassrooms]);
+        const baseData = classroomToEdit ? { ...classroomToEdit } : { ...initialFormData };
+        let finalSchedule = classroomToEdit ? [...(classroomToEdit.schedule || [])] : [];
 
-    // Update available specializations when grade changes
+        if (initialSchedule && initialSchedule.length > 0) {
+            const newSlots = initialSchedule.map(slot => ({
+                ...slot,
+                id: slot.id || dayjs().valueOf() + Math.random(),
+                duration: calculateDuration(slot.startTime, slot.endTime)
+            }));
+            finalSchedule.push(...newSlots);
+        }
+
+        const uniqueSchedule = Array.from(new Map(finalSchedule.map(item => 
+            [JSON.stringify({ day: item.day, startTime: item.startTime, endTime: item.endTime }), item]
+        )).values());
+
+        setFormData({
+            ...baseData,
+            schedule: uniqueSchedule,
+        });
+
+        setSelectedColor(classroomToEdit?.color || '#2196f3');
+
+        // Pre-fill the dropdowns for adding a new entry
+        if (initialSchedule && initialSchedule.length > 0) {
+             const lastNewSlot = initialSchedule[initialSchedule.length - 1];
+             setSelectedDay(lastNewSlot.day);
+             setSelectedStartTime(lastNewSlot.startTime);
+             setSelectedEndTime(lastNewSlot.endTime);
+        } else if (uniqueSchedule.length > 0) {
+            const lastSlot = uniqueSchedule[uniqueSchedule.length - 1];
+            setSelectedDay(lastSlot.day);
+            setSelectedStartTime(lastSlot.startTime);
+            setSelectedEndTime(lastSlot.endTime);
+        } else {
+            setSelectedDay('');
+            setSelectedStartTime('');
+            setSelectedEndTime('');
+        }
+
+    }, [classroomToEdit, initialSchedule, allClassrooms, calculateDuration]);
+
+
     useEffect(() => {
         const specs = getSpecializations(formData.grade);
         setAvailableSpecializations(specs);
-
-        // If current specialization is not in new specs, reset it
         if (specs.length > 0 && !specs.includes(formData.specialization)) {
             setFormData(prev => ({ ...prev, specialization: '' }));
         } else if (specs.length === 0 && formData.specialization !== '') {
@@ -239,26 +184,13 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
         }
     }, [formData.grade]);
 
-    // Update current subjects when grade or specialization changes
     useEffect(() => {
         const subjects = getSubjects(formData.grade, formData.specialization);
         setCurrentSubjects(subjects);
-        // If the selected subject is no longer in the list, clear it
         if (formData.subject && !subjects.includes(formData.subject)) {
             setFormData(prev => ({ ...prev, subject: '' }));
         }
     }, [formData.grade, formData.specialization]);
-
-    // Update available time slots when selected day or allClassrooms or formData.schedule changes
-    useEffect(() => {
-        console.log("NewClassroomForm useEffect (selectedDay/allClassrooms/formData.schedule) - selectedDay:", selectedDay, "allClassrooms:", allClassrooms, "formData.schedule:", formData.schedule);
-        if (selectedDay && allClassrooms) {
-            setAvailableTimeSlots(getAvailableTimeSlots(selectedDay, allClassrooms, formData.schedule));
-        } else {
-            setAvailableTimeSlots([]);
-        }
-    }, [selectedDay, allClassrooms, formData.schedule, getAvailableTimeSlots]);
-
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -267,61 +199,52 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
 
     const handleDayChange = (e) => {
         const day = e.target.value;
-        console.log("handleDayChange - selected day:", day);
         setSelectedDay(day);
-        setSelectedTimeSlots([]); // Clear selected time slots when day changes
+        setSelectedStartTime('');
+        setSelectedEndTime('');
     };
 
-    const handleTimeSlotChange = (event) => {
-        const {
-            target: { value },
-        } = event;
-        setSelectedTimeSlots(
-            // On autofill we get a stringified value.
-            typeof value === 'string' ? value.split(',') : value,
-        );
+    const handleStartTimeChange = (e) => {
+        const startTime = e.target.value;
+        setSelectedStartTime(startTime);
+        if (selectedEndTime && dayjs(`2000-01-01T${selectedEndTime}`).isSameOrBefore(dayjs(`2000-01-01T${startTime}`))) {
+            setSelectedEndTime('');
+        }
+    };
+
+    const handleEndTimeChange = (e) => {
+        setSelectedEndTime(e.target.value);
     };
 
     const handleAddScheduleEntry = () => {
-        if (!selectedDay || selectedTimeSlots.length === 0) {
-            setAlertMessage("Παρακαλώ επιλέξτε ημέρα και τουλάχιστον μία ώρα για προσθήκη.");
+        if (!selectedDay || !selectedStartTime || !selectedEndTime) {
+            setAlertMessage("Παρακαλώ επιλέξτε ημέρα, ώρα έναρξης και ώρα λήξης για προσθήκη.");
             setOpenAlertDialog(true);
             return;
         }
 
-        const newScheduleEntries = [];
-        let hasOverlap = false;
+        const newEntry = {
+            id: dayjs().valueOf() + Math.random(),
+            day: selectedDay,
+            startTime: selectedStartTime,
+            endTime: selectedEndTime,
+            duration: calculateDuration(selectedStartTime, selectedEndTime),
+        };
 
-        for (const timeSlotLabel of selectedTimeSlots) {
-            const [startTimeStr, endTimeStr] = timeSlotLabel.split(' - ');
-
-            // Check for overlap before adding
-            // Pass the *current* formData.schedule to checkOverlap to prevent overlaps within the form itself
-            const isOverlapping = checkOverlap(classroomToEdit?.id, selectedDay, startTimeStr, endTimeStr, allClassrooms, formData.schedule);
-            if (isOverlapping) {
-                setAlertMessage(`Η ώρα ${timeSlotLabel} για την ${selectedDay} επικαλύπτεται με υπάρχον μάθημα.`);
-                setOpenAlertDialog(true);
-                hasOverlap = true;
-                break; // Stop and show alert for the first overlap found
-            }
-
-            newScheduleEntries.push({
-                id: Date.now() + Math.random(), // Unique ID for each schedule entry
-                day: selectedDay,
-                startTime: startTimeStr,
-                endTime: endTimeStr,
-                duration: calculateDuration(startTimeStr, endTimeStr),
-            });
+        const isOverlapping = checkOverlap(classroomToEdit?.id, newEntry.day, newEntry.startTime, newEntry.endTime, allClassrooms, formData.schedule, []);
+        if (isOverlapping) {
+            setAlertMessage(`Η επιλεγμένη ώρα ${newEntry.startTime}-${newEntry.endTime} για την ${newEntry.day} επικαλύπτεται με υπάρχον μάθημα.`);
+            setOpenAlertDialog(true);
+            return;
         }
 
-        if (!hasOverlap) {
-            setFormData(prev => ({
-                ...prev,
-                schedule: [...prev.schedule, ...newScheduleEntries]
-            }));
-            setSelectedDay(''); // Clear selected day after adding
-            setSelectedTimeSlots([]); // Clear selected time slots after adding
-        }
+        setFormData(prev => ({
+            ...prev,
+            schedule: [...prev.schedule, newEntry]
+        }));
+        setSelectedDay('');
+        setSelectedStartTime('');
+        setSelectedEndTime('');
     };
 
     const handleRemoveScheduleEntry = (idToRemove) => {
@@ -335,34 +258,26 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
         e.preventDefault();
 
         if (!db || !appId) {
-            console.error("Firestore DB or appId not initialized. Cannot save classroom.");
             setAlertMessage("Σφάλμα: Η βάση δεδομένων ή το αναγνωριστικό εφαρμογής δεν είναι διαθέσιμα. Παρακαλώ δοκιμάστε ξανά.");
             setOpenAlertDialog(true);
             return;
         }
 
-        // Validate form data
         if (!formData.grade || !formData.subject || !formData.maxStudents || formData.maxStudents < 1) {
             setAlertMessage("Παρακαλώ συμπληρώστε όλα τα απαιτούμενα πεδία (Τάξη, Μάθημα, Μέγιστος Αριθμός Μαθητών).");
             setOpenAlertDialog(true);
             return;
         }
 
-        // Validate schedule entries
         if (formData.schedule.length === 0) {
             setAlertMessage("Παρακαλώ προσθέστε τουλάχιστον μία ώρα στο πρόγραμμα.");
             setOpenAlertDialog(true);
             return;
         }
 
-        // Final overlap check for all schedule entries before saving
-        // This check is crucial to catch any overlaps that might occur between entries
-        // within the same form's schedule, or with existing classrooms.
         for (const slot of formData.schedule) {
-            // Create a temporary schedule array excluding the current slot being checked
-            // This prevents a slot from "overlapping" with itself.
             const otherSlotsInForm = formData.schedule.filter(s => s.id !== slot.id);
-            const isOverlapping = checkOverlap(classroomToEdit?.id, slot.day, slot.startTime, slot.endTime, allClassrooms, otherSlotsInForm);
+            const isOverlapping = checkOverlap(classroomToEdit?.id, slot.day, slot.startTime, slot.endTime, allClassrooms, otherSlotsInForm, []);
             if (isOverlapping) {
                 setAlertMessage(`Το πρόγραμμα για την ${slot.day} από ${slot.startTime} έως ${slot.endTime} επικαλύπτεται με ένα υπάρχον μάθημα.`);
                 setOpenAlertDialog(true);
@@ -370,56 +285,83 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
             }
         }
 
-        // Prepare data for Firestore
         const dataToSave = {
             ...formData,
             color: selectedColor,
-            // Ensure schedule times are strings for saving
             schedule: formData.schedule.map(slot => ({
-                id: slot.id, // Keep the ID for potential future updates/deletions of individual slots
+                id: slot.id,
                 day: slot.day,
                 startTime: slot.startTime,
                 endTime: slot.endTime,
                 duration: slot.duration,
             })),
-            // totalDuration might need to be recalculated if multiple slots are allowed,
-            // or removed if not needed for the overall classroom. For now, keep it simple.
-            // For simplicity, we can just sum up durations or remove this field if not needed.
-            // Keeping it as a placeholder for now, might need more complex logic if
-            // total duration across multiple slots is required.
-            totalDuration: formData.schedule.length > 0 ? formData.schedule.map(s => dayjs(`2000-01-01T${s.endTime}`).diff(dayjs(`2000-01-01T${s.startTime}`), 'minute')).reduce((acc, curr) => acc + curr, 0) + ' λεπτά' : '',
-            lastUpdated: new Date(), // Add a timestamp
+            lastUpdated: new Date(),
         };
+        
+        const totalMinutes = formData.schedule.reduce((acc, curr) => {
+            const start = dayjs(`2000-01-01T${curr.startTime}`);
+            const end = dayjs(`2000-01-01T${curr.endTime}`);
+            return acc + end.diff(start, 'minute');
+        }, 0);
+        dataToSave.totalDuration = calculateDuration('00:00', dayjs('2000-01-01T00:00').add(totalMinutes, 'minute').format('HH:mm'));
 
-        if (!classroomToEdit) {
-            // Add new classroom
-            try {
+        try {
+            if (!classroomToEdit) {
                 const classroomsCollectionRef = collection(db, `artifacts/${appId}/public/data/classrooms`);
                 await addDoc(classroomsCollectionRef, dataToSave);
                 setAlertMessage('Τμήμα αποθηκεύτηκε επιτυχώς!');
-                setOpenAlertDialog(true);
-                if (onSaveSuccess) onSaveSuccess(); // Call success callback
-            } catch (error) {
-                console.error("Error adding document: ", error);
-                setAlertMessage('Σφάλμα κατά την αποθήκευση του τμήματος.');
-                setOpenAlertDialog(true);
-            }
-        } else {
-            // Update existing classroom
-            try {
+            } else {
                 const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToEdit.id);
                 await updateDoc(classroomDocRef, dataToSave);
                 setAlertMessage('Τμήμα ενημερώθηκε επιτυχώς!');
-                setOpenAlertDialog(true);
-                if (onSaveSuccess) onSaveSuccess(); // Call success callback
-            } catch (error) {
-                console.error("Error updating document: ", error);
-                setAlertMessage('Σφάλμα κατά την ενημέρωση του τμήματος.');
-                setOpenAlertDialog(true);
             }
+            setOpenAlertDialog(true);
+            if (onSaveSuccess) onSaveSuccess();
+        } catch (error) {
+            console.error("Error saving document: ", error);
+            setAlertMessage('Σφάλμα κατά την αποθήκευση του τμήματος.');
+            setOpenAlertDialog(true);
         }
     };
 
+    const availableStartTimes = useMemo(() => {
+        if (!selectedDay) return [];
+        const slots = getAvailableTimeSlotsForDay(selectedDay, allClassrooms, formData.schedule);
+        const uniqueStartTimes = new Set(slots.map(s => s.startTime));
+        if (selectedStartTime) {
+            const isSelectedStartTimeInCurrentSchedule = formData.schedule.some(s => s.day === selectedDay && s.startTime === selectedStartTime);
+            if (isSelectedStartTimeInCurrentSchedule) {
+                uniqueStartTimes.add(selectedStartTime);
+            }
+        }
+        return Array.from(uniqueStartTimes).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    }, [selectedDay, allClassrooms, formData.schedule, getAvailableTimeSlotsForDay, selectedStartTime]);
+
+    const availableEndTimes = useMemo(() => {
+        if (!selectedDay || !selectedStartTime) return [];
+        const startIndex = TIME_SLOTS.indexOf(selectedStartTime);
+        if (startIndex === -1) return [];
+        const possibleEndTimes = [];
+        const idsToIgnoreForInternalCheck = formData.schedule.map(s => s.id);
+        for (let i = startIndex + 1; i < TIME_SLOTS.length; i++) {
+            const potentialEndTime = TIME_SLOTS[i];
+            const isOverlapping = checkOverlap(classroomToEdit?.id, selectedDay, selectedStartTime, potentialEndTime, allClassrooms, formData.schedule, idsToIgnoreForInternalCheck);
+            if (!isOverlapping && dayjs(`2000-01-01T${potentialEndTime}`).isAfter(dayjs(`2000-01-01T${selectedStartTime}`))) {
+                possibleEndTimes.push(potentialEndTime);
+            } else if (isOverlapping) {
+                break;
+            }
+        }
+        if (selectedEndTime) {
+            const isSelectedEndTimeInCurrentSchedule = formData.schedule.some(s => s.day === selectedDay && s.startTime === selectedStartTime && s.endTime === selectedEndTime);
+            if (isSelectedEndTimeInCurrentSchedule && !possibleEndTimes.includes(selectedEndTime)) {
+                possibleEndTimes.push(selectedEndTime);
+            }
+        }
+        return possibleEndTimes.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    }, [selectedDay, selectedStartTime, allClassrooms, formData.schedule, checkOverlap, classroomToEdit, selectedEndTime]);
+
+    const formTitle = classroomToEdit ? 'Επεξεργασία Τμήματος' : 'Δημιουργία Νέου Τμήματος';
 
     return (
         <Container maxWidth="md">
@@ -427,7 +369,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                 <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', mb: 4 }}>
                     <Grid item xs={6} sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="h5" component="h3" sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: 3, color: '#3f51b5' }}>
-                            <i className="fas fa-chalkboard"></i> Στοιχεία Τμήματος
+                            <i className="fas fa-chalkboard"></i> {formTitle}
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
                             <Typography variant="body1">
@@ -518,13 +460,12 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                     </Grid>
                 </Paper>
 
-                {/* Schedule Selection */}
                 <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', mb: 4 }}>
                     <Typography variant="h5" component="h3" sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: 3, color: '#3f51b5' }}>
                         <i className="fas fa-calendar-alt"></i> Επιλογή Προγράμματος
                     </Typography>
                     <Grid container spacing={3} alignItems="flex-end">
-                        <Grid item xs={12} sm={5}>
+                        <Grid item xs={12} sm={4}>
                             <FormControl fullWidth variant="outlined" size="small" required>
                                 <InputLabel id="day-select-label">Ημέρα</InputLabel>
                                 <Select
@@ -541,45 +482,53 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={5}>
+                        <Grid item xs={12} sm={3}>
                             <FormControl fullWidth variant="outlined" size="small" required disabled={!selectedDay}>
-                                <InputLabel id="time-slot-select-label">Διαθέσιμη Ώρα(ες)</InputLabel>
+                                <InputLabel id="start-time-select-label">Ώρα Έναρξης</InputLabel>
                                 <Select
-                                    labelId="time-slot-select-label"
-                                    id="timeSlotSelect"
-                                    multiple
-                                    value={selectedTimeSlots}
-                                    onChange={handleTimeSlotChange}
-                                    renderValue={(selected) => selected.join(', ')} // Display selected values as comma-separated string
-                                    label="Διαθέσιμη Ώρα(ες)"
+                                    labelId="start-time-select-label"
+                                    id="startTimeSelect"
+                                    value={selectedStartTime}
+                                    onChange={handleStartTimeChange}
+                                    label="Ώρα Έναρξης"
                                 >
-                                    {availableTimeSlots.length > 0 ? (
-                                        availableTimeSlots.map(slot => (
-                                            <MenuItem key={slot.label} value={slot.label}>
-                                                <Checkbox checked={selectedTimeSlots.indexOf(slot.label) > -1} />
-                                                <ListItemText primary={slot.label} sx={{ ml: 1 }} /> {/* Added ml for spacing */}
-                                            </MenuItem>
-                                        ))
-                                    ) : (
-                                        <MenuItem disabled>Δεν υπάρχουν διαθέσιμες ώρες για αυτή την ημέρα.</MenuItem>
-                                    )}
+                                    <MenuItem value="">-- Επιλέξτε Ώρα --</MenuItem>
+                                    {availableStartTimes.map(time => (
+                                        <MenuItem key={time} value={time}>{time}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={3}>
+                            <FormControl fullWidth variant="outlined" size="small" required disabled={!selectedStartTime}>
+                                <InputLabel id="end-time-select-label">Ώρα Λήξης</InputLabel>
+                                <Select
+                                    labelId="end-time-select-label"
+                                    id="endTimeSelect"
+                                    value={selectedEndTime}
+                                    onChange={handleEndTimeChange}
+                                    label="Ώρα Λήξης"
+                                >
+                                    <MenuItem value="">-- Επιλέξτε Ώρα --</MenuItem>
+                                    {availableEndTimes.map(time => (
+                                        <MenuItem key={time} value={time}>{time}</MenuItem>
+                                    ))}
                                 </Select>
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} sm={2}>
                             <Button
-                                variant="contained" // Changed to outlined for transparency
-                                color="primary" // Ensures icon is blue
+                                variant="contained"
+                                color="primary"
                                 onClick={handleAddScheduleEntry}
-                                disabled={!selectedDay || selectedTimeSlots.length === 0}
-                                sx={{ borderRadius: '8px', padding: '13px 10px', boxShadow:'none'}}
+                                disabled={!selectedDay || !selectedStartTime || !selectedEndTime}
+                                sx={{ borderRadius: '8px', padding: '13px 10px', boxShadow: 'none' }}
                             >
-                                <i className="fas fa-add" sx={{ mr: 1 , color: '#3f51b5'}} /><i/>
+                                <Add />
                             </Button>
                         </Grid>
                     </Grid>
 
-                    {/* Display selected schedule entries */}
                     {formData.schedule.length > 0 && (
                         <Box sx={{ mt: 3 }}>
                             <Typography variant="h6" sx={{ mb: 1, color: '#3f51b5' }}>
@@ -604,7 +553,6 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                     )}
                 </Paper>
 
-                {/* Submit and Cancel Buttons */}
                 <Box sx={{ mt: 3, textAlign: 'right' }}>
                     <Button
                         variant="outlined"
@@ -620,7 +568,6 @@ function NewClassroomForm({ navigateTo, classroomToEdit, setClassroomToEdit, ini
                 </Box>
             </Box>
 
-            {/* Custom Alert Dialog */}
             <Dialog
                 open={openAlertDialog}
                 onClose={() => setOpenAlertDialog(false)}

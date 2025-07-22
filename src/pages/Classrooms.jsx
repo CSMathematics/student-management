@@ -167,7 +167,7 @@ function Classrooms({ navigateTo, setClassroomToEdit }) { // Added navigateTo an
     const handleEditClick = (classroom) => {
         if (setClassroomToEdit && navigateTo) {
             setClassroomToEdit(classroom); // Set the classroom to be edited
-            navigateTo('newClassroom'); // Navigate to the new classroom form
+            navigateTo('newClassroom', { classroomToEdit: classroom }); // Navigate to the new classroom form
         }
     };
 
