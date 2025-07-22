@@ -141,7 +141,7 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrol
                     onClick={(e) => { e.stopPropagation(); onAddMoreHours(id, fullClassroomData); }} // Pass id and fullClassroomData
                     title="Προσθήκη Ώρας"
                 >
-                    <AddCircleOutline sx={{ fontSize: '0.8rem' }} />
+                    <i className='fas fa-add fa-xs'></i>
                 </IconButton>
                 <IconButton
                     size="small"
@@ -149,7 +149,7 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrol
                     onClick={(e) => { e.stopPropagation(); onEdit(fullClassroomData); }}
                     title="Επεξεργασία"
                 >
-                    <Edit sx={{ fontSize: '0.8rem' }} />
+                    <i class="fa-solid fa-edit fa-2xs"></i>
                 </IconButton>
                 <IconButton
                     size="small"
@@ -157,7 +157,7 @@ const FloatingEventBlock = ({ id, day, startTime, endTime, subject, grade, enrol
                     onClick={(e) => { e.stopPropagation(); onOpenColorPicker(fullClassroomData); }} // New color picker button
                     title="Αλλαγή Χρώματος"
                 >
-                    <Palette sx={{ fontSize: '0.8rem' }} />
+                    <i class="fa-solid fa-paintbrush fa-2xs"></i>
                 </IconButton>
                 <IconButton
                     size="small"
@@ -1185,7 +1185,9 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
                         gridTemplateColumns: `${TIME_COLUMN_WIDTH_PX}px repeat(${DAYS_OF_WEEK.length}, 1fr)`, // Time column + Days columns
                         gridAutoRows: `${gridDimensions.cellHeight}px`, // Fixed row height
                         border: '1px solid #e0e0e0',
-                        borderRadius: '8px',
+                        // borderRadius: '8px',
+                        borderLeft: '0',
+                        borderTop: '0',
                         overflow: 'auto',
                         userSelect: isDraggingNewSelection ? 'none' : 'auto',
                         WebkitUserSelect: isDraggingNewSelection ? 'none' : 'auto',
@@ -1194,7 +1196,7 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
                     }}
                 >
                     {/* Grid Header (Days of Week) */}
-                    <Box sx={{ gridColumn: 'span 1', backgroundColor: '#1e86cc', color: '#fff', fontWeight: 'bold', padding: '10px', textAlign: 'center', borderRight: '1px solid #fff' }}>
+                    <Box sx={{ gridColumn: 'span 1', backgroundColor: '#fff', color: '#000', fontWeight: 'bold', padding: '10px', textAlign: 'center', borderRight: '1px solid #fff' }}>
                         Ώρα
                     </Box>
                     {DAYS_OF_WEEK.map(day => (
@@ -1211,15 +1213,27 @@ function WeeklyScheduleCalendar({ classrooms, loading, onCreateClassroomFromCale
                                 gridColumn: 'span 1',
                                 border: '1px solid #e0e0e0',
                                 borderTop: 'none',
-                                backgroundColor: '#f5f5f5',
-                                fontWeight: 'bold',
-                                padding: '4px 8px',
+                                backgroundColor: '#fff',
+                                borderLeft: '0',
+                                padding: '0 8px',
                                 display: 'flex',
-                                alignItems: 'flex-start',
+                                alignItems: 'flex-start', // Keep at top of cell for baseline for label
                                 justifyContent: 'flex-start',
-                                fontSize: '0.75rem',
+                                position: 'relative', // Enable absolute positioning for the label
                             }}>
-                                {time}
+                                <Typography variant="caption" sx={{
+                                    position: 'absolute',
+                                    top: '0px', // Align with the top of the cell
+                                    left: '0px', // Maintain horizontal padding
+                                    transform: 'translateY(-50%)', // Shift up by half its height to center on the line
+                                    fontSize: '0.75rem', // Apply font size here
+                                    // fontWeight: 'bold',
+                                    backgroundColor: '#fff', // Grey background for the time label
+                                    padding: '2px 15px 2px 2px', // Padding inside the grey box
+                                    zIndex: 2, // Ensure it's above the grid lines
+                                }}>
+                                    {time}
+                                </Typography>
                             </Box>
                             {/* Data Cells */}
                             {DAYS_OF_WEEK.map((day, dayIndex) => (
