@@ -1,12 +1,12 @@
-// src/pages/NewStudentForm.jsx
-import React, { useState, useMemo, useEffect } from 'react';
+// src/pages/EditStudentForm.jsx
+import React, { useState, useEffect, useMemo } from 'react'; // <-- ΔΙΟΡΘΩΣΗ: Προστέθηκε το useMemo
 import {
     Box, Button, Container, Grid, Paper, Typography, TextField,
     FormControl, InputLabel, Select, MenuItem, FormGroup, FormControlLabel,
     Checkbox, IconButton, CircularProgress, Alert, ListItemText, RadioGroup, Radio, Divider
 } from '@mui/material';
 import { Delete, Add } from '@mui/icons-material';
-import { addDoc, collection, doc, writeBatch, arrayUnion } from 'firebase/firestore';
+import { doc, updateDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
 
 const formatSchedule = (schedule) => {
@@ -15,22 +15,8 @@ const formatSchedule = (schedule) => {
     return schedule.map(slot => `${dayMapping[slot.day] || slot.day.substring(0, 2)} ${slot.startTime}-${slot.endTime}`).join(', ');
 };
 
-// <-- ΑΛΛΑΓΗ: Προστέθηκε το prop 'openModalWithData' -->
-function NewStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, openModalWithData }) {
-    const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        dob: '',
-        studentPhone: '',
-        address: '',
-        email: '',
-        parents: [{ id: Date.now(), name: '', phones: [{ id: Date.now() + 1, value: '' }] }],
-        grade: '',
-        specialization: '',
-        payment: '',
-        debt: ''
-    });
-
+function EditStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, studentToEdit }) {
+    const [formData, setFormData] = useState(null);
     const [availableSpecializations, setAvailableSpecializations] = useState([]);
     const [availableSubjects, setAvailableSubjects] = useState([]);
     const [selectedSubjects, setSelectedSubjects] = useState([]);
@@ -38,41 +24,52 @@ function NewStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, ope
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
 
-    const classroomEnrollmentCounts = useMemo(() => {
-        const counts = new Map();
-        if (!allStudents || !allClassrooms) return counts;
-        allStudents.forEach(student => {
-            if (student.enrolledClassrooms && Array.isArray(student.enrolledClassrooms)) {
-                student.enrolledClassrooms.forEach(classroomId => {
-                    counts.set(classroomId, (counts.get(classroomId) || 0) + 1);
-                });
-            }
-        });
-        return counts;
-    }, [allStudents, allClassrooms]);
+    // Effect to populate the form when studentToEdit is available
+    useEffect(() => {
+        if (studentToEdit) {
+            const studentData = {
+                ...studentToEdit,
+                parents: studentToEdit.parents && studentToEdit.parents.length > 0 
+                    ? studentToEdit.parents.map(p => ({...p, id: p.id || Date.now() + Math.random()})) 
+                    : [{ id: Date.now(), name: '', phones: [{ id: Date.now() + 1, value: '' }] }]
+            };
+            setFormData(studentData);
+
+            const initialSubjects = new Set();
+            const initialClassrooms = {};
+            
+            allClassrooms.forEach(classroom => {
+                if (studentToEdit.enrolledClassrooms?.includes(classroom.id)) {
+                    initialSubjects.add(classroom.subject);
+                    initialClassrooms[classroom.subject] = classroom.id;
+                }
+            });
+
+            setSelectedSubjects(Array.from(initialSubjects));
+            setSelectedClassrooms(initialClassrooms);
+        }
+    }, [studentToEdit, allClassrooms]);
 
     useEffect(() => {
-        const specs = getSpecializations(formData.grade);
-        setAvailableSpecializations(specs);
-        if (specs.length > 0 && !specs.includes(formData.specialization)) {
-            setFormData(prev => ({ ...prev, specialization: '' }));
+        if (formData) {
+            const specs = getSpecializations(formData.grade);
+            setAvailableSpecializations(specs);
+            const subjects = getSubjects(formData.grade, formData.specialization);
+            setAvailableSubjects(subjects);
         }
-        const newAvailableSubjects = getSubjects(formData.grade, formData.specialization);
-        setAvailableSubjects(newAvailableSubjects);
-        const stillValidSelectedSubjects = selectedSubjects.filter(subject => newAvailableSubjects.includes(subject));
-        setSelectedSubjects(stillValidSelectedSubjects);
-        const stillValidSelectedClassrooms = {};
-        Object.keys(selectedClassrooms).forEach(subject => {
-            if (stillValidSelectedSubjects.includes(subject)) {
-                const classroomId = selectedClassrooms[subject];
-                const classroom = allClassrooms.find(c => c.id === classroomId);
-                if (classroom && classroom.grade === formData.grade && (classroom.specialization || '') === formData.specialization) {
-                    stillValidSelectedClassrooms[subject] = classroomId;
-                }
-            }
-        });
-        setSelectedClassrooms(stillValidSelectedClassrooms);
-    }, [formData.grade, formData.specialization, allClassrooms]);
+    }, [formData?.grade, formData?.specialization]);
+
+    const classroomEnrollmentCounts = useMemo(() => {
+        const counts = new Map();
+        if (allStudents) {
+            allStudents.forEach(student => {
+                student.enrolledClassrooms?.forEach(classroomId => {
+                    counts.set(classroomId, (counts.get(classroomId) || 0) + 1);
+                });
+            });
+        }
+        return counts;
+    }, [allStudents]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -80,26 +77,28 @@ function NewStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, ope
     };
 
     const handleParentNameChange = (parentIndex, e) => {
-        const newParents = [...formData.parents];
+        const newParents = JSON.parse(JSON.stringify(formData.parents));
         newParents[parentIndex].name = e.target.value;
         setFormData(prev => ({ ...prev, parents: newParents }));
     };
 
     const handleParentPhoneChange = (parentIndex, phoneId, e) => {
-        const newParents = [...formData.parents];
+        const newParents = JSON.parse(JSON.stringify(formData.parents));
         const phoneIndex = newParents[parentIndex].phones.findIndex(p => p.id === phoneId);
-        newParents[parentIndex].phones[phoneIndex].value = e.target.value;
-        setFormData(prev => ({ ...prev, parents: newParents }));
+        if(phoneIndex !== -1) {
+            newParents[parentIndex].phones[phoneIndex].value = e.target.value;
+            setFormData(prev => ({ ...prev, parents: newParents }));
+        }
     };
 
     const addParentPhone = (parentIndex) => {
-        const newParents = [...formData.parents];
+        const newParents = JSON.parse(JSON.stringify(formData.parents));
         newParents[parentIndex].phones.push({ id: Date.now(), value: '' });
         setFormData(prev => ({ ...prev, parents: newParents }));
     };
 
     const removeParentPhone = (parentIndex, phoneId) => {
-        const newParents = [...formData.parents];
+        const newParents = JSON.parse(JSON.stringify(formData.parents));
         newParents[parentIndex].phones = newParents[parentIndex].phones.filter(p => p.id !== phoneId);
         setFormData(prev => ({ ...prev, parents: newParents }));
     };
@@ -128,14 +127,6 @@ function NewStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, ope
             const newSelectedClassrooms = { ...selectedClassrooms };
             delete newSelectedClassrooms[subject];
             setSelectedClassrooms(newSelectedClassrooms);
-        } else {
-            const matching = allClassrooms.filter(c => c.grade === formData.grade && (c.specialization || '') === formData.specialization && c.subject === subject);
-            if (matching.length === 1) {
-                const enrolledCount = classroomEnrollmentCounts.get(matching[0].id) || 0;
-                if (enrolledCount < matching[0].maxStudents) {
-                    handleClassroomSelectionChange(subject, matching[0].id);
-                }
-            }
         }
     };
 
@@ -143,70 +134,58 @@ function NewStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, ope
         setSelectedClassrooms(prev => ({ ...prev, [subject]: classroomId }));
     };
 
-    // <-- ΑΛΛΑΓΗ: Η συνάρτηση καλεί πλέον το openModalWithData -->
-    const handleCreateNewClassroom = (subject) => {
-        const prefilledData = {
-            grade: formData.grade,
-            specialization: formData.specialization,
-            subject: subject
-        };
-        openModalWithData(prefilledData);
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!db || !appId) {
-            setFeedback({ type: 'error', message: 'Η σύνδεση με τη βάση δεδομένων απέτυχε.' });
-            return;
-        }
         setLoading(true);
-        setFeedback({ type: '', message: '' });
+
+        const originalClassroomIds = new Set(studentToEdit.enrolledClassrooms || []);
+        const newClassroomIds = new Set(Object.values(selectedClassrooms));
+
+        const classroomsToAdd = [...newClassroomIds].filter(id => !originalClassroomIds.has(id));
+        const classroomsToRemove = [...originalClassroomIds].filter(id => !newClassroomIds.has(id));
 
         const cleanedParents = formData.parents.map(parent => ({
             name: parent.name,
             phones: parent.phones.map(p => p.value).filter(Boolean)
         })).filter(parent => parent.name);
 
-        const studentData = {
-            ...formData,
-            parents: cleanedParents,
-            enrolledClassrooms: Object.values(selectedClassrooms),
-            createdAt: new Date(),
-        };
-        delete studentData.parentName;
-        delete studentData.parentPhones;
+        const studentData = { ...formData, parents: cleanedParents, enrolledClassrooms: Object.values(selectedClassrooms) };
 
         try {
-            const studentsCollectionRef = collection(db, `artifacts/${appId}/public/data/students`);
-            const newStudentRef = await addDoc(studentsCollectionRef, studentData);
-            const newStudentId = newStudentRef.id;
+            const batch = writeBatch(db);
+            const studentRef = doc(db, `artifacts/${appId}/public/data/students`, studentToEdit.id);
+            batch.update(studentRef, studentData);
 
-            const finalSelectedClassroomIds = Object.values(selectedClassrooms);
-            if (finalSelectedClassroomIds.length > 0) {
-                const batch = writeBatch(db);
-                finalSelectedClassroomIds.forEach(classroomId => {
-                    const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
-                    batch.update(classroomDocRef, { enrolledStudents: arrayUnion(newStudentId) });
-                });
-                await batch.commit();
-            }
+            classroomsToAdd.forEach(classroomId => {
+                const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
+                batch.update(classroomRef, { enrolledStudents: arrayUnion(studentToEdit.id) });
+            });
 
-            setFeedback({ type: 'success', message: 'Ο μαθητής αποθηκεύτηκε και εγγράφηκε στα τμήματα επιτυχώς!' });
-            setTimeout(() => navigateTo('studentsList'), 2000);
+            classroomsToRemove.forEach(classroomId => {
+                const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
+                batch.update(classroomRef, { enrolledStudents: arrayRemove(studentToEdit.id) });
+            });
+
+            await batch.commit();
+            setFeedback({ type: 'success', message: 'Οι αλλαγές αποθηκεύτηκαν επιτυχώς!' });
+            setTimeout(() => navigateTo('studentsList'), 1500);
         } catch (error) {
-            console.error("Error adding student:", error);
-            setFeedback({ type: 'error', message: 'Αποτυχία αποθήκευσης. Παρακαλώ δοκιμάστε ξανά.' });
+            console.error("Error updating student:", error);
+            setFeedback({ type: 'error', message: 'Αποτυχία ενημέρωσης.' });
         } finally {
             setLoading(false);
         }
     };
 
+    if (!formData) {
+        return <Container sx={{ mt: 4, textAlign: 'center' }}><CircularProgress /></Container>;
+    }
+
     return (
         <Container maxWidth="md">
             <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-                {/* ... (το υπόλοιπο JSX της φόρμας παραμένει ακριβώς το ίδιο) ... */}
                  <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-                    <Typography variant="h5" sx={{ mb: 3 }}>Στοιχεία Μαθητή</Typography>
+                    <Typography variant="h5" sx={{ mb: 3 }}>Επεξεργασία Στοιχείων Μαθητή</Typography>
                     <Grid container spacing={3}>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Όνομα" name="firstName" value={formData.firstName} onChange={handleInputChange} required size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Επώνυμο" name="lastName" value={formData.lastName} onChange={handleInputChange} required size="small" /></Grid>
@@ -219,7 +198,7 @@ function NewStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, ope
                 <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
                     <Typography variant="h5" sx={{ mb: 3 }}>Στοιχεία Γονέα/Κηδεμόνα</Typography>
                     {formData.parents.map((parent, parentIndex) => (
-                        <Box key={parent.id}>
+                        <Box key={parent.id || parentIndex}>
                             {parentIndex > 0 && <Divider sx={{ my: 3 }} />}
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                                 <Typography variant="h6" component="h4" color="textSecondary">Γονέας {parentIndex + 1}</Typography>
@@ -233,7 +212,7 @@ function NewStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, ope
                                 </Grid>
                                 <Grid item xs={12}>
                                     {parent.phones.map((phoneEntry, phoneIndex) => (
-                                        <Box key={phoneEntry.id} sx={{ display: 'flex', gap: '10px', mb: 2, alignItems: 'center' }}>
+                                        <Box key={phoneEntry.id || phoneIndex} sx={{ display: 'flex', gap: '10px', mb: 2, alignItems: 'center' }}>
                                             <TextField fullWidth label={`Τηλέφωνο ${phoneIndex + 1}`} value={phoneEntry.value} onChange={(e) => handleParentPhoneChange(parentIndex, phoneEntry.id, e)} size="small" />
                                             {parent.phones.length > 1 && (<IconButton color="error" onClick={() => removeParentPhone(parentIndex, phoneEntry.id)}><Delete /></IconButton>)}
                                         </Box>
@@ -247,7 +226,7 @@ function NewStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, ope
                         <Button variant="contained" onClick={addSecondParent} sx={{ mt: 3 }}>Προσθήκη Δεύτερου Γονέα</Button>
                     )}
                 </Paper>
-                <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+                 <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
                     <Typography variant="h5" component="h3" sx={{ mb: 3 }}>Ακαδημαϊκά & Εγγραφή</Typography>
                     <Grid container spacing={3}>
                         <Grid item xs={12} sm={6}>
@@ -277,7 +256,7 @@ function NewStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, ope
                                             const matching = allClassrooms.filter(c => c.grade === formData.grade && (c.specialization || '') === formData.specialization && c.subject === subject);
                                             const isSubjectSelected = selectedSubjects.includes(subject);
                                             return (
-                                                <Box key={subject} sx={{ mb: 1, p: 1, borderLeft: '4px solid', borderColor: isSubjectSelected ? 'primary.main' : 'transparent', transition: 'border-color 0.3s' }}>
+                                                <Box key={subject} sx={{ mb: 1, p: 1, borderLeft: '4px solid', borderColor: isSubjectSelected ? 'primary.main' : 'transparent' }}>
                                                     <FormControlLabel control={<Checkbox value={subject} checked={isSubjectSelected} onChange={(e) => handleSubjectChange(e, subject)} />} label={<Typography variant="h6" sx={{ fontWeight: 500 }}>{subject}</Typography>} />
                                                     {isSubjectSelected && (
                                                         <Box sx={{ pl: 4, mt: 0.5 }}>
@@ -285,31 +264,28 @@ function NewStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, ope
                                                                 <RadioGroup value={selectedClassrooms[subject] || ''} onChange={(e) => handleClassroomSelectionChange(subject, e.target.value)}>
                                                                     {matching.map(c => {
                                                                         const enrolledCount = classroomEnrollmentCounts.get(c.id) || 0;
-                                                                        const isFull = enrolledCount >= c.maxStudents;
-                                                                        const vacancies = c.maxStudents - enrolledCount;
+                                                                        const isCurrentlyEnrolled = studentToEdit.enrolledClassrooms?.includes(c.id);
+                                                                        const isFull = enrolledCount >= c.maxStudents && !isCurrentlyEnrolled;
                                                                         return (
                                                                             <FormControlLabel key={c.id} value={c.id} disabled={isFull} control={<Radio size="small"/>}
                                                                                 label={
                                                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                                                         <Box sx={{ width: 16, height: 16, borderRadius: '50%', backgroundColor: c.color || '#ccc', flexShrink: 0 }} />
-                                                                                        <ListItemText primary={<Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Typography component="span" variant="body1">{c.classroomName || 'N/A'} -</Typography><Typography component="span" variant="body2" sx={{ color: isFull ? 'error.main' : 'text.secondary', fontWeight: 'bold' }}>Θέσεις: {enrolledCount}/{c.maxStudents} ({vacancies > 0 ? `${vacancies} κενές` : 'Γεμάτο'})</Typography></Box>} secondary={formatSchedule(c.schedule)} sx={{ m: 0 }} />
+                                                                                        <ListItemText primary={<Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Typography component="span" variant="body1">{c.classroomName || 'N/A'} -</Typography><Typography component="span" variant="body2" sx={{ color: isFull ? 'error.main' : 'text.secondary', fontWeight: 'bold' }}>Θέσεις: {enrolledCount}/{c.maxStudents}</Typography></Box>} secondary={formatSchedule(c.schedule)} sx={{ m: 0 }} />
                                                                                     </Box>
                                                                                 }
                                                                             />
                                                                         );
                                                                     })}
                                                                 </RadioGroup>
-                                                            ) : <Typography color="textSecondary" sx={{ pl: 1, fontStyle: 'italic', my: 1 }}>Δεν υπάρχουν διαθέσιμα τμήματα.</Typography>}
-                                                            <Button size="small" startIcon={<Add />} onClick={() => handleCreateNewClassroom(subject)} sx={{ mt: 1 }}>
-                                                                Δημιουργία Νέου Τμήματος
-                                                            </Button>
+                                                            ) : <Typography color="textSecondary" sx={{ pl: 1, fontStyle: 'italic' }}>Δεν υπάρχουν διαθέσιμα τμήματα.</Typography>}
                                                         </Box>
                                                     )}
                                                 </Box>
                                             );
                                         })}
                                     </FormGroup>
-                                ) : <Typography color="textSecondary">Επιλέξτε τάξη για να δείτε τα διαθέσιма μαθήματα.</Typography>}
+                                ) : <Typography color="textSecondary">Επιλέξτε τάξη.</Typography>}
                             </Paper>
                         </Grid>
                     </Grid>
@@ -322,8 +298,9 @@ function NewStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, ope
                     </Grid>
                 </Paper>
                 <Box sx={{ mt: 3, textAlign: 'right' }}>
+                    <Button variant="outlined" color="secondary" sx={{ mr: 2 }} onClick={() => navigateTo('studentsList')}>Ακύρωση</Button>
                     <Button type="submit" variant="contained" color="primary" disabled={loading}>
-                        {loading ? <CircularProgress size={24} /> : 'Αποθήκευση Μαθητή'}
+                        {loading ? <CircularProgress size={24} /> : 'Αποθήκευση Αλλαγών'}
                     </Button>
                 </Box>
                 {feedback.message && (<Alert severity={feedback.type} sx={{ mt: 2 }}>{feedback.message}</Alert>)}
@@ -332,4 +309,4 @@ function NewStudentForm({ db, appId, allClassrooms, allStudents, navigateTo, ope
     );
 }
 
-export default NewStudentForm;
+export default EditStudentForm;

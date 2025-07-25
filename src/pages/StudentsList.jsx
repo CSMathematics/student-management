@@ -1,51 +1,54 @@
-// js/components/StudentsList.jsx
+// src/pages/StudentsList.jsx
 import React, { useState, useMemo } from 'react';
 import {
     Box, Container, Grid, Paper, Typography, TextField,
     FormControl, InputLabel, Select, MenuItem, Table, TableBody,
     TableCell, TableContainer, TableHead, TableRow, TablePagination,
-    IconButton, Button
+    IconButton, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, CircularProgress
 } from '@mui/material';
-import { MOCK_STUDENTS } from '../data.js'; // Import mock data
+import { Edit, Delete } from '@mui/icons-material';
+import { doc, deleteDoc } from 'firebase/firestore';
 
-function StudentsList() {
-    const [students, setStudents] = useState(MOCK_STUDENTS);
+// The component now receives props from App.jsx
+function StudentsList({ allStudents, loading, db, appId, navigateTo }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [page, setPage] = useState(0);
     const [selectedStudent, setSelectedStudent] = useState(null);
-    const [sortColumn, setSortColumn] = useState(null);
-    const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
+    const [sortColumn, setSortColumn] = useState('lastName');
+    const [sortDirection, setSortDirection] = useState('asc');
+    
+    // State for delete confirmation
+    const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
+    const [studentToDelete, setStudentToDelete] = useState(null);
 
-    // Filter and sort students
     const filteredAndSortedStudents = useMemo(() => {
-        let filtered = students.filter(student =>
-            student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            student.grade.toLowerCase().includes(searchTerm.toLowerCase())
+        let filtered = (allStudents || []).filter(student =>
+            (student.firstName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (student.lastName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (student.grade?.toLowerCase() || '').includes(searchTerm.toLowerCase())
         );
 
         if (sortColumn) {
             filtered.sort((a, b) => {
-                const aValue = a[sortColumn];
-                const bValue = b[sortColumn];
-
+                const aValue = a[sortColumn] || '';
+                const bValue = b[sortColumn] || '';
                 if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
                 if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
                 return 0;
             });
         }
         return filtered;
-    }, [students, searchTerm, sortColumn, sortDirection]);
+    }, [allStudents, searchTerm, sortColumn, sortDirection]);
 
     const handleSearchChange = (event) => {
         setSearchTerm(event.target.value);
-        setPage(0); // Reset page when searching
+        setPage(0);
     };
 
     const handleRowsPerPageChange = (event) => {
         setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0); // Reset page when rows per page changes
+        setPage(0);
     };
 
     const handlePageChange = (event, newPage) => {
@@ -65,169 +68,77 @@ function StudentsList() {
         }
     };
 
-    // Function to handle PDF export
-    const handleExportPdf = () => {
-        // Ensure jsPDF is available
-        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
-            console.error("jsPDF library not loaded. Please check CDN link.");
-            return;
-        }
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-
-        // Define columns for the PDF table
-        const columns = [
-            { header: '#', dataKey: 'id' },
-            { header: 'Όνομα', dataKey: 'firstName' },
-            { header: 'Επώνυμο', dataKey: 'lastName' },
-            { header: 'Ημ. Γέννησης', dataKey: 'dob' },
-            { header: 'Τάξη', dataKey: 'grade' },
-            { header: 'Τηλέφωνο', dataKey: 'studentPhone' },
-            { header: 'Email', dataKey: 'email' },
-        ];
-
-        // Prepare data for the PDF table
-        const data = filteredAndSortedStudents.map(student => ({
-            id: student.id,
-            firstName: student.firstName,
-            lastName: student.lastName,
-            dob: student.dob,
-            grade: student.grade,
-            studentPhone: student.studentPhone,
-            email: student.email,
-        }));
-
-        doc.text("Λίστα Μαθητών", 14, 15); // Title for the PDF
-        doc.autoTable({
-            startY: 20, // Start table below the title
-            head: [columns.map(col => col.header)],
-            body: data.map(row => columns.map(col => row[col.dataKey])),
-            theme: 'striped', // Optional: 'striped', 'grid', 'plain'
-            styles: {
-                font: 'helvetica',
-                fontSize: 10,
-                cellPadding: 3,
-                valign: 'middle',
-            },
-            headStyles: {
-                fillColor: [30, 134, 204], // Corresponds to #1e86cc
-                textColor: [255, 255, 255],
-                fontStyle: 'bold',
-            },
-            alternateRowStyles: {
-                fillColor: [249, 249, 249], // Corresponds to #f9f9f9
-            },
-            bodyStyles: {
-                textColor: [51, 51, 51], // Corresponds to #333
-            },
-        });
-
-        doc.save('students_list.pdf'); // Save the PDF
+    // <-- ΑΛΛΑΓΗ: Η handleEditClick περνάει τα δεδομένα απευθείας στη navigateTo -->
+    const handleEditClick = (student) => {
+        navigateTo('editStudent', { studentToEdit: student });
     };
 
-    // Calculate students for the current page
+    const handleDeleteClick = (student) => {
+        setStudentToDelete(student);
+        setOpenDeleteConfirm(true);
+    };
+
+    const handleCloseDeleteConfirm = () => {
+        setOpenDeleteConfirm(false);
+        setStudentToDelete(null);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!db || !appId || !studentToDelete) return;
+        try {
+            const studentDocRef = doc(db, `artifacts/${appId}/public/data/students`, studentToDelete.id);
+            await deleteDoc(studentDocRef);
+            setSelectedStudent(null);
+        } catch (error) {
+            console.error("Error deleting student:", error);
+        } finally {
+            handleCloseDeleteConfirm();
+        }
+    };
+
     const paginatedStudents = filteredAndSortedStudents.slice(
         page * rowsPerPage,
         page * rowsPerPage + rowsPerPage
     );
 
+    if (loading) {
+        return <Container sx={{ mt: 4, textAlign: 'center' }}><CircularProgress /></Container>;
+    }
+
     return (
         <Container maxWidth="lg">
-            {/* Search, Rows per page, and PDF Export Button */}
-            <Box sx={{ mt: 3, mb: 3, display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'center', justifyContent: 'space-between' }}>
-                <TextField
-                    fullWidth
-                    label="Αναζήτηση με όνομα ή τάξη..."
-                    variant="outlined"
-                    size="small"
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    sx={{ flexGrow: 1, minWidth: '250px' }}
-                />
-                <FormControl variant="outlined" size="small" sx={{ minWidth: '150px' }}>
-                    <InputLabel>Εγγραφές ανά σελίδα</InputLabel>
-                    <Select
-                        value={rowsPerPage}
-                        onChange={handleRowsPerPageChange}
-                        label="Εγγραφές ανά σελίδα"
-                    >
-                        <MenuItem value={5}>5</MenuItem>
-                        <MenuItem value={10}>10</MenuItem>
-                        <MenuItem value={20}>20</MenuItem>
-                        <MenuItem value={50}>50</MenuItem>
-                    </Select>
-                </FormControl>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleExportPdf}
-                    sx={{ borderRadius: '8px', padding: '10px 20px', minWidth: '150px' }}
-                >
-                    <i className="fas fa-file-pdf" style={{ marginRight: '8px' }}></i> Εξαγωγή PDF
-                </Button>
+            <Box sx={{ mt: 3, mb: 3 }}>
+                <TextField fullWidth label="Αναζήτηση με όνομα ή τάξη..." variant="outlined" size="small" value={searchTerm} onChange={handleSearchChange} />
             </Box>
 
-            {/* Total Count */}
-            <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 2 }}>
-                Συνολικός Αριθμός Μαθητών: {filteredAndSortedStudents.length}
-            </Typography>
-
             <Grid container spacing={3}>
-                {/* Student Table */}
                 <Grid item xs={12} md={8}>
                     <TableContainer component={Paper} elevation={3} sx={{ borderRadius: '12px', overflowX: 'auto' }}>
-                        <Table sx={{ minWidth: 650 }} aria-label="student table">
+                        <Table>
                             <TableHead sx={{ backgroundColor: '#1e86cc' }}>
                                 <TableRow>
                                     <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>#</TableCell>
-                                    <TableCell sx={{ color: '#fff', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => handleSort('firstName')}>Όνομα {sortColumn === 'firstName' ? (sortDirection === 'asc' ? '↑' : '↓') : '⬍'}</TableCell>
-                                    <TableCell sx={{ color: '#fff', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => handleSort('lastName')}>Επώνυμο {sortColumn === 'lastName' ? (sortDirection === 'asc' ? '↑' : '↓') : '⬍'}</TableCell>
-                                    <TableCell sx={{ color: '#fff', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => handleSort('dob')}>Ημ. Γέννησης {sortColumn === 'dob' ? (sortDirection === 'asc' ? '↑' : '↓') : '⬍'}</TableCell>
-                                    <TableCell sx={{ color: '#fff', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => handleSort('grade')}>Τάξη {sortColumn === 'grade' ? (sortDirection === 'asc' ? '↑' : '↓') : '⬍'}</TableCell>
+                                    <TableCell sx={{ color: '#fff', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => handleSort('lastName')}>Επώνυμο</TableCell>
+                                    <TableCell sx={{ color: '#fff', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => handleSort('firstName')}>Όνομα</TableCell>
+                                    <TableCell sx={{ color: '#fff', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => handleSort('grade')}>Τάξη</TableCell>
                                     <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Τηλέφωνο</TableCell>
-                                    <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Email</TableCell>
                                     <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Ενέργειες</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {paginatedStudents.length > 0 ? (
-                                    paginatedStudents.map((student) => (
-                                        <TableRow
-                                            key={student.id}
-                                            onClick={() => handleRowClick(student)}
-                                            sx={{
-                                                '&:nth-of-type(odd)': { backgroundColor: '#f9f9f9' },
-                                                '&:nth-of-type(even)': { backgroundColor: '#ffffff' },
-                                                '&:hover': { backgroundColor: '#eef6fb', cursor: 'pointer' },
-                                            }}
-                                        >
-                                            <TableCell>{student.id}</TableCell>
-                                            <TableCell>{student.firstName}</TableCell>
-                                            <TableCell>{student.lastName}</TableCell>
-                                            <TableCell>{student.dob}</TableCell>
-                                            <TableCell>{student.grade}</TableCell>
-                                            <TableCell>{student.studentPhone}</TableCell>
-                                            <TableCell>{student.email}</TableCell>
-                                            <TableCell>
-                                                <Box className="action-buttons">
-                                                    <IconButton size="small" color="primary" title="Επεξεργασία">
-                                                        <i className="fas fa-edit"></i>
-                                                    </IconButton>
-                                                    <IconButton size="small" color="error" title="Διαγραφή">
-                                                        <i className="fas fa-trash-alt"></i>
-                                                    </IconButton>
-                                                </Box>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={8} align="center">
-                                            Δεν βρέθηκαν μαθητές.
+                                {paginatedStudents.map((student, index) => (
+                                    <TableRow key={student.id} onClick={() => handleRowClick(student)} hover sx={{ cursor: 'pointer' }}>
+                                        <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                                        <TableCell>{student.lastName}</TableCell>
+                                        <TableCell>{student.firstName}</TableCell>
+                                        <TableCell>{student.grade}</TableCell>
+                                        <TableCell>{student.studentPhone}</TableCell>
+                                        <TableCell>
+                                            <IconButton size="small" color="primary" onClick={(e) => { e.stopPropagation(); handleEditClick(student); }}><Edit /></IconButton>
+                                            <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); handleDeleteClick(student); }}><Delete /></IconButton>
                                         </TableCell>
                                     </TableRow>
-                                )}
+                                ))}
                             </TableBody>
                         </Table>
                     </TableContainer>
@@ -239,40 +150,46 @@ function StudentsList() {
                         page={page}
                         onPageChange={handlePageChange}
                         onRowsPerPageChange={handleRowsPerPageChange}
-                        labelRowsPerPage="Εγγραφές ανά σελίδα:"
-                        labelDisplayedRows={({ from, to, count }) => `${from}-${to} από ${count}`}
-                        sx={{ mt: 2, borderRadius: '8px', backgroundColor: '#fff', boxShadow: '0 0 5px rgba(0,0,0,0.05)' }}
                     />
                 </Grid>
 
-                {/* Student Details Box */}
                 <Grid item xs={12} md={4}>
                     <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', minHeight: '300px' }}>
-                        <Typography variant="h5" component="h4" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: '8px', color: '#3f51b5' }}>
-                            <i className="fas fa-user"></i> Λεπτομέρειες Μαθητή
-                        </Typography>
-                        <Box sx={{ color: '#333', fontSize: '14px' }}>
-                            {selectedStudent ? (
-                                <Box>
-                                    <Typography variant="body1"><strong>Όνομα:</strong> {selectedStudent.firstName} {selectedStudent.lastName}</Typography>
-                                    <Typography variant="body1"><strong>Ημ. Γέννησης:</strong> {selectedStudent.dob}</Typography>
-                                    <Typography variant="body1"><strong>Τάξη:</strong> {selectedStudent.grade}</Typography>
-                                    <Typography variant="body1"><strong>Τηλέφωνο:</strong> {selectedStudent.studentPhone}</Typography>
-                                    <Typography variant="body1"><strong>Email:</strong> {selectedStudent.email}</Typography>
-                                    <Typography variant="body1"><strong>Διεύθυνση:</strong> {selectedStudent.address}</Typography>
-                                    <Typography variant="body1"><strong>Όνομα Γονέα:</strong> {selectedStudent.parentName}</Typography>
-                                    <Typography variant="body1"><strong>Τηλέφωνα Γονέα:</strong> {selectedStudent.parentPhones.join(', ')}</Typography>
-                                    {/* Add more details as needed */}
-                                </Box>
-                            ) : (
-                                <Typography variant="body2" sx={{ fontStyle: 'italic', color: '#757575' }}>
-                                    Κάντε κλικ σε μία γραμμή για να δείτε λεπτομέρειες...
-                                </Typography>
-                            )}
-                        </Box>
+                        <Typography variant="h5" component="h4" sx={{ mb: 2 }}>Λεπτομέρειες Μαθητή</Typography>
+                        {selectedStudent ? (
+                            <Box>
+                                <Typography><strong>Όνομα:</strong> {selectedStudent.firstName} {selectedStudent.lastName}</Typography>
+                                <Typography><strong>Ημ. Γέννησης:</strong> {selectedStudent.dob}</Typography>
+                                <Typography><strong>Τάξη:</strong> {selectedStudent.grade}</Typography>
+                                <Typography><strong>Τηλέφωνο:</strong> {selectedStudent.studentPhone}</Typography>
+                                <Typography><strong>Email:</strong> {selectedStudent.email}</Typography>
+                                <Typography><strong>Διεύθυνση:</strong> {selectedStudent.address}</Typography>
+                                {selectedStudent.parents?.map((parent, i) => (
+                                    <Box key={i} mt={1}>
+                                        <Typography><strong>Γονέας {i+1}:</strong> {parent.name}</Typography>
+                                        <Typography><strong>Τηλ. Γονέα:</strong> {parent.phones?.join(', ')}</Typography>
+                                    </Box>
+                                ))}
+                            </Box>
+                        ) : (
+                            <Typography>Επιλέξτε έναν μαθητή για να δείτε λεπτομέρειες.</Typography>
+                        )}
                     </Paper>
                 </Grid>
             </Grid>
+            
+            <Dialog open={openDeleteConfirm} onClose={handleCloseDeleteConfirm}>
+                <DialogTitle>Επιβεβαίωση Διαγραφής</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Είστε σίγουροι ότι θέλετε να διαγράψετε τον μαθητή {studentToDelete?.firstName} {studentToDelete?.lastName};
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDeleteConfirm}>Ακύρωση</Button>
+                    <Button onClick={handleConfirmDelete} color="error">Διαγραφή</Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 }

@@ -1,57 +1,48 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { Box } from '@mui/material';
-
-// Firebase Imports
+import { Box, Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, collection, query, onSnapshot } from 'firebase/firestore';
-
-// Import your components
 import Sidebar from './pages/Sidebar.jsx';
 import DashboardHeader from './pages/DashboardHeader.jsx';
 import DashboardContent from './pages/DashboardContent.jsx';
 import NewStudentForm from './pages/NewStudentForm.jsx';
 import StudentsList from './pages/StudentsList.jsx';
-import Classrooms from './pages/Classrooms.jsx'; // Import Classrooms list
-import NewClassroomForm from './pages/NewClassroomForm.jsx'; // Import NewClassroomForm
-import WeeklyScheduleCalendar from './pages/WeeklyScheduleCalendar.jsx'; // Import your existing WeeklyScheduleCalendar component
+import Classrooms from './pages/Classrooms.jsx';
+import NewClassroomForm from './pages/NewClassroomForm.jsx';
+import WeeklyScheduleCalendar from './pages/WeeklyScheduleCalendar.jsx';
+import EditStudentForm from './pages/EditStudentForm.jsx';
 
-// Main App component
 function App() {
-    const [currentPage, setCurrentPage] = useState('dashboard'); // State to manage current page
-    const [classroomToEdit, setClassroomToEdit] = useState(null); // State for editing classroom
-    const [initialScheduleForNewClassroom, setInitialScheduleForNewClassroom] = useState([]); // State for calendar-initiated new classroom
-    const [classrooms, setClassrooms] = useState([]); // State to store fetched classrooms
-    const [loadingClassrooms, setLoadingClassrooms] = useState(true); // Loading state for classrooms
-    const [db, setDb] = useState(null); // State for Firestore instance
-    const [auth, setAuth] = useState(null); // State for Auth instance
-    const [userId, setUserId] = useState(null); // State for user ID
-    const [appId, setAppId] = useState(null); // State for appId
+    const [currentPage, setCurrentPage] = useState('dashboard');
+    const [classroomToEdit, setClassroomToEdit] = useState(null);
+    const [studentToEdit, setStudentToEdit] = useState(null);
+    const [initialScheduleForNewClassroom, setInitialScheduleForNewClassroom] = useState([]);
+    const [classrooms, setClassrooms] = useState([]);
+    const [allStudents, setAllStudents] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [db, setDb] = useState(null);
+    const [auth, setAuth] = useState(null);
+    const [userId, setUserId] = useState(null);
+    const [appId, setAppId] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalData, setModalData] = useState(null);
 
-    // Initialize Firebase and authenticate, then set up real-time listener for classrooms
     useEffect(() => {
-        let unsubscribe = () => {}; // Initialize unsubscribe function
-        let isMounted = true; // Flag to track if component is mounted
+        let unsubscribeClassrooms = () => {};
+        let unsubscribeStudents = () => {};
+        let isMounted = true;
 
         try {
-            const firebaseConfigString = typeof __firebase_config !== 'undefined'
-                ? __firebase_config
-                : import.meta.env.VITE_FIREBASE_CONFIG;
-
-            const currentAppId = typeof __app_id !== 'undefined'
-                ? __app_id
-                : import.meta.env.VITE_APP_ID || 'default-local-app-id';
-
-            const initialAuthToken = typeof __initial_auth_token !== 'undefined'
-                ? __initial_auth_token
-                : import.meta.env.VITE_INITIAL_AUTH_TOKEN;
-
+            const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : import.meta.env.VITE_FIREBASE_CONFIG;
+            const currentAppId = typeof __app_id !== 'undefined' ? __app_id : import.meta.env.VITE_APP_ID || 'default-local-app-id';
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : import.meta.env.VITE_INITIAL_AUTH_TOKEN;
             const parsedFirebaseConfig = firebaseConfigString ? JSON.parse(firebaseConfigString) : {};
 
             if (Object.keys(parsedFirebaseConfig).length === 0 || !parsedFirebaseConfig.apiKey) {
-                console.error("Firebase config is missing or incomplete.");
-                if (isMounted) setLoadingClassrooms(false);
+                if (isMounted) setLoading(false);
                 return;
             }
 
@@ -60,208 +51,208 @@ function App() {
             const firebaseAuth = getAuth(app);
 
             if (isMounted) {
-                setDb(firestoreDb); // Set db state
-                setAuth(firebaseAuth); // Set auth state
-                setAppId(currentAppId); // Set appId state
+                setDb(firestoreDb);
+                setAuth(firebaseAuth);
+                setAppId(currentAppId);
             }
 
             const authenticateAndListen = async () => {
                 try {
                     if (initialAuthToken) {
                         await signInWithCustomToken(firebaseAuth, initialAuthToken);
-                        console.log("Authenticated with custom token.");
                     } else {
                         await signInAnonymously(firebaseAuth);
-                        console.log("Authenticated anonymously.");
                     }
                     if (isMounted) {
-                        const currentUserId = firebaseAuth.currentUser?.uid || crypto.randomUUID();
-                        setUserId(currentUserId);
-                        console.log("Firebase Auth User ID:", currentUserId);
+                        setUserId(firebaseAuth.currentUser?.uid || crypto.randomUUID());
                     }
 
-                    // Set up real-time listener for classrooms
                     const classroomsCollectionRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/classrooms`);
-                    const q = query(classroomsCollectionRef);
+                    unsubscribeClassrooms = onSnapshot(query(classroomsCollectionRef), (snapshot) => {
+                        if (isMounted) setClassrooms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                    });
 
-                    unsubscribe = onSnapshot(q, (snapshot) => {
+                    const studentsCollectionRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/students`);
+                    unsubscribeStudents = onSnapshot(query(studentsCollectionRef), (snapshot) => {
                         if (isMounted) {
-                            const fetchedClassrooms = snapshot.docs.map(doc => ({
-                                id: doc.id,
-                                ...doc.data()
-                            }));
-                            setClassrooms(fetchedClassrooms);
-                            setLoadingClassrooms(false);
-                        }
-                    }, (err) => {
-                        console.error("Error fetching classrooms in App.jsx:", err);
-                        if (isMounted) {
-                            setLoadingClassrooms(false);
+                            setAllStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                            setLoading(false);
                         }
                     });
 
                 } catch (authError) {
-                    console.error("Error during Firebase authentication in App.jsx:", authError);
-                    if (isMounted) {
-                        setLoadingClassrooms(false);
-                    }
+                    console.error("Error during Firebase authentication:", authError);
+                    if (isMounted) setLoading(false);
                 }
             };
-
             authenticateAndListen();
-
         } catch (initError) {
-            console.error("Error during Firebase initialization in App.jsx (outside auth block):", initError);
-            if (isMounted) {
-                setLoadingClassrooms(false);
-            }
+            console.error("Error during Firebase initialization:", initError);
+            if (isMounted) setLoading(false);
         }
 
-        // Cleanup function for onSnapshot listener
         return () => {
-            unsubscribe();
-            isMounted = false; // Set flag to false on unmount
+            unsubscribeClassrooms();
+            unsubscribeStudents();
+            isMounted = false;
         };
-    }, []); // Empty dependency array means this runs once on mount
+    }, []);
 
-
-    const navigateTo = (page, params = {}) => { // Added params for navigation
-        setCurrentPage(page);
-        // Clear classroomToEdit and initialSchedule when navigating away from relevant forms
-        if (page !== 'newClassroom') {
-            setClassroomToEdit(null);
-            setInitialScheduleForNewClassroom([]);
-        }
-
-        // Set state based on navigation parameters
-        if (params.classroomToEdit) {
-            setClassroomToEdit(params.classroomToEdit);
-        } else {
-            setClassroomToEdit(null); // Clear if not editing
-        }
-        if (params.initialSchedule) {
-            setInitialScheduleForNewClassroom(params.initialSchedule);
-        } else {
-            setInitialScheduleForNewClassroom([]); // Clear if not creating from calendar
-        }
+    const openModalWithData = (data) => {
+        setModalData(data);
+        setIsModalOpen(true);
     };
 
-    // Callback from WeeklyScheduleCalendar when a slot is selected
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setModalData(null);
+    };
+
+    // <-- ΑΛΛΑΓΗ: Η navigateTo χειρίζεται πλέον και το studentToEdit -->
+    const navigateTo = (page, params = {}) => {
+        setCurrentPage(page);
+        setClassroomToEdit(params.classroomToEdit || null);
+        setStudentToEdit(params.studentToEdit || null); 
+        setInitialScheduleForNewClassroom(params.initialSchedule || []);
+    };
+    
     const handleCreateClassroomFromCalendar = (initialSchedule) => {
         setInitialScheduleForNewClassroom(initialSchedule);
         navigateTo('newClassroom');
     };
 
-    // Callback for when NewClassroomForm successfully saves/updates
     const handleNewClassroomSaveSuccess = () => {
-        // Clear initial schedule and classroom to edit after save
         setInitialScheduleForNewClassroom([]);
         setClassroomToEdit(null);
-        // Navigate back to classrooms list or calendar
         navigateTo('classroomsList');
     };
 
-    // Callback for when NewClassroomForm is cancelled
     const handleNewClassroomFormCancel = () => {
         setInitialScheduleForNewClassroom([]);
         setClassroomToEdit(null);
-        // Navigate back to the previous page, or dashboard if no clear previous page
-        navigateTo('dashboard'); // Or 'calendar' if it was opened from there
+        navigateTo('dashboard');
     };
-
 
     const getPageTitle = () => {
         switch (currentPage) {
-            case 'dashboard':
-                return 'Σχολικό έτος';
-            case 'newStudent':
-                return 'Προσθήκη Νέου Μαθητή';
-            case 'studentsList':
-                return 'Λίστα Μαθητών';
-            case 'newClassroom':
-                return classroomToEdit ? 'Επεξεργασία Τμήματος' : 'Δημιουργία Νέου Τμήματος';
-            case 'classroomsList':
-                return 'Λίστα Τμημάτων';
-            case 'calendar':
-                return 'Πρόγραμμα';
-            default:
-                return 'Student Management';
+            case 'dashboard': return 'Σχολικό έτος';
+            case 'newStudent': return 'Προσθήκη Νέου Μαθητή';
+            case 'editStudent': return 'Επεξεργασία Μαθητή';
+            case 'studentsList': return 'Λίστα Μαθητών';
+            case 'newClassroom': return classroomToEdit && classroomToEdit.id ? 'Επεξεργασία Τμήματος' : 'Δημιουργία Νέου Τμήματος';
+            case 'classroomsList': return 'Λίστα Τμημάτων';
+            case 'calendar': return 'Πρόγραμμα';
+            default: return 'Student Management';
         }
     };
-
-    const showBackButton = currentPage !== 'dashboard';
 
     return (
         <Box sx={{ display: 'flex', width: '100%' }}>
             <Sidebar navigateTo={navigateTo} currentPage={currentPage}/>
             <Box className="main-content-area">
-                <DashboardHeader
-                    pageTitle={getPageTitle()}
-                    onBackClick={() => navigateTo('dashboard')} // Simple back to dashboard for now
-                    showBackButton={showBackButton}
-                />
+                <DashboardHeader pageTitle={getPageTitle()} onBackClick={() => navigateTo('dashboard')} showBackButton={currentPage !== 'dashboard'} />
+                
                 {currentPage === 'dashboard' && (
                     <DashboardContent
                         onNewStudentClick={() => navigateTo('newStudent')}
                         onStudentsListClick={() => navigateTo('studentsList')}
-                        onNewClassroomClick={() => navigateTo('newClassroom')} // For manual new classroom
+                        onNewClassroomClick={() => navigateTo('newClassroom')}
                         onClassroomsListClick={() => navigateTo('classroomsList')}
-                        navigateTo={navigateTo} // Pass navigateTo to DashboardContent
-                        classrooms={classrooms} // Pass classrooms to DashboardContent for Calendar
-                        loadingClassrooms={loadingClassrooms} // Pass loading state
-                        db={db} // Pass db instance
-                        userId={userId} // Pass userId
-                        appId={appId} // Pass appId
+                        navigateTo={navigateTo}
+                        classrooms={classrooms}
+                        loadingClassrooms={loading}
+                        db={db}
+                        userId={userId}
+                        appId={appId}
                     />
                 )}
+                
                 {currentPage === 'newStudent' && (
-                    <NewStudentForm />
+                    <NewStudentForm 
+                        db={db}
+                        appId={appId}
+                        allClassrooms={classrooms}
+                        allStudents={allStudents}
+                        navigateTo={navigateTo}
+                        openModalWithData={openModalWithData}
+                    />
                 )}
+
                 {currentPage === 'studentsList' && (
-                    <StudentsList />
+                    <StudentsList 
+                        allStudents={allStudents}
+                        loading={loading}
+                        db={db}
+                        appId={appId}
+                        navigateTo={navigateTo}
+                        // setStudentToEdit is no longer needed here
+                    />
                 )}
+
+                {currentPage === 'editStudent' && (
+                    <EditStudentForm
+                        db={db}
+                        appId={appId}
+                        allClassrooms={classrooms}
+                        allStudents={allStudents}
+                        navigateTo={navigateTo}
+                        studentToEdit={studentToEdit}
+                    />
+                )}
+
                 {currentPage === 'newClassroom' && (
-                    <>
-                        {/* Add a log here to check the classrooms state just before passing */}
-                        {console.log("App.jsx: Classrooms state before passing to NewClassroomForm:", classrooms)}
-                        <NewClassroomForm
-                            navigateTo={navigateTo}
-                            classroomToEdit={classroomToEdit}
-                            setClassroomToEdit={setClassroomToEdit}
-                            initialSchedule={initialScheduleForNewClassroom} // Pass initial schedule
-                            onSaveSuccess={handleNewClassroomSaveSuccess} // Pass success callback
-                            onCancel={handleNewClassroomFormCancel} // Pass cancel callback
-                            db={db} // Pass db instance
-                            userId={userId} // Pass userId
-                            appId={appId} // Pass appId
-                            allClassrooms={classrooms} // Pass all classrooms for overlap checking
-                        />
-                    </>
+                    <NewClassroomForm
+                        navigateTo={navigateTo}
+                        classroomToEdit={classroomToEdit}
+                        initialSchedule={initialScheduleForNewClassroom}
+                        onSaveSuccess={handleNewClassroomSaveSuccess}
+                        onCancel={handleNewClassroomFormCancel}
+                        db={db}
+                        userId={userId}
+                        appId={appId}
+                        allClassrooms={classrooms}
+                    />
                 )}
                 {currentPage === 'classroomsList' && (
                     <Classrooms
                         navigateTo={navigateTo}
                         setClassroomToEdit={setClassroomToEdit}
-                        classrooms={classrooms} // Pass fetched classrooms
-                        loading={loadingClassrooms} // Pass loading state
-                        db={db} // Pass db instance
-                        userId={userId} // Pass userId
-                        appId={appId} // Pass appId
+                        classrooms={classrooms}
+                        loading={loading}
+                        db={db}
+                        appId={appId}
                     />
                 )}
                 {currentPage === 'calendar' && (
-                    <WeeklyScheduleCalendar
-                        classrooms={classrooms} // Pass fetched classrooms
-                        loading={loadingClassrooms} // Pass loading state
+                     <WeeklyScheduleCalendar
+                        classrooms={classrooms}
+                        loading={loading}
                         onCreateClassroomFromCalendar={handleCreateClassroomFromCalendar}
-                        onEditClassroom={setClassroomToEdit} // Pass setClassroomToEdit for direct edit
-                        navigateTo={navigateTo} // Pass navigateTo for navigation
-                        db={db} // Pass db instance
-                        userId={userId} // Pass userId
-                        appId={appId} // Pass appId
+                        navigateTo={navigateTo}
+                        db={db}
+                        userId={userId}
+                        appId={appId}
                     />
                 )}
             </Box>
+
+            <Dialog open={isModalOpen} onClose={closeModal} maxWidth="md" fullWidth>
+                 <DialogTitle>
+                    Δημιουργία Νέου Τμήματος
+                    <IconButton onClick={closeModal} sx={{ position: 'absolute', right: 8, top: 8 }}><CloseIcon /></IconButton>
+                </DialogTitle>
+                <DialogContent dividers>
+                    <NewClassroomForm
+                        classroomToEdit={modalData}
+                        onSaveSuccess={closeModal}
+                        onCancel={closeModal}
+                        db={db}
+                        userId={userId}
+                        appId={appId}
+                        allClassrooms={classrooms}
+                    />
+                </DialogContent>
+            </Dialog>
         </Box>
     );
 }
