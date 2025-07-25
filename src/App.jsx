@@ -6,23 +6,36 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, collection, query, onSnapshot } from 'firebase/firestore';
+import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
+
 import Sidebar from './pages/Sidebar.jsx';
 import DashboardHeader from './pages/DashboardHeader.jsx';
 import DashboardContent from './pages/DashboardContent.jsx';
-import NewStudentForm from './pages/NewStudentForm.jsx';
 import StudentsList from './pages/StudentsList.jsx';
 import Classrooms from './pages/Classrooms.jsx';
 import NewClassroomForm from './pages/NewClassroomForm.jsx';
 import WeeklyScheduleCalendar from './pages/WeeklyScheduleCalendar.jsx';
-import EditStudentForm from './pages/EditStudentForm.jsx';
+import StudentForm from './pages/StudentForm.jsx'; 
 
 const drawerWidth = 280;
 
+// Wrapper component to pass route params (studentId) to the StudentForm
+const StudentFormWrapper = (props) => {
+    const { studentId } = useParams();
+    const studentToEdit = props.allStudents.find(s => s.id === studentId);
+    return <StudentForm {...props} initialData={studentToEdit} key={studentId} />;
+};
+
+// Wrapper component to pass route params (classroomId) to the NewClassroomForm
+const ClassroomFormWrapper = (props) => {
+    const { classroomId } = useParams();
+    // --- ΔΙΟΡΘΩΣΗ: Χρησιμοποιούμε το props.classrooms αντί για το ανύπαρκτο allClassrooms ---
+    const classroomToEdit = props.classrooms.find(c => c.id === classroomId);
+    return <NewClassroomForm {...props} classroomToEdit={classroomToEdit} key={classroomId} />;
+};
+
+
 function App() {
-    const [currentPage, setCurrentPage] = useState('dashboard');
-    const [classroomToEdit, setClassroomToEdit] = useState(null);
-    const [studentToEdit, setStudentToEdit] = useState(null);
-    const [initialScheduleForNewClassroom, setInitialScheduleForNewClassroom] = useState([]);
     const [classrooms, setClassrooms] = useState([]);
     const [allStudents, setAllStudents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -32,12 +45,13 @@ function App() {
     const [appId, setAppId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalData, setModalData] = useState(null);
-    
     const [mobileOpen, setMobileOpen] = useState(false);
+    
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
     };
 
+    // Firebase initialization and data fetching useEffect remains the same
     useEffect(() => {
         let unsubscribeClassrooms = () => {};
         let unsubscribeStudents = () => {};
@@ -50,8 +64,7 @@ function App() {
             const parsedFirebaseConfig = firebaseConfigString ? JSON.parse(firebaseConfigString) : {};
 
             if (Object.keys(parsedFirebaseConfig).length === 0 || !parsedFirebaseConfig.apiKey) {
-                if (isMounted) setLoading(false);
-                return;
+                if (isMounted) setLoading(false); return;
             }
 
             const app = initializeApp(parsedFirebaseConfig);
@@ -115,124 +128,68 @@ function App() {
         setIsModalOpen(false);
         setModalData(null);
     };
-
-    const navigateTo = (page, params = {}) => {
-        setCurrentPage(page);
-        setClassroomToEdit(params.classroomToEdit || null);
-        setStudentToEdit(params.studentToEdit || null);
-        setInitialScheduleForNewClassroom(params.initialSchedule || []);
-        if (mobileOpen) {
-            handleDrawerToggle();
-        }
-    };
     
-    const handleCreateClassroomFromCalendar = (initialSchedule) => {
-        setInitialScheduleForNewClassroom(initialSchedule);
-        navigateTo('newClassroom');
-    };
-
-    const handleNewClassroomSaveSuccess = () => {
-        setInitialScheduleForNewClassroom([]);
-        setClassroomToEdit(null);
-        if (isModalOpen) {
-            closeModal();
-        } else {
-            navigateTo('classroomsList');
-        }
-    };
-
-    const handleNewClassroomFormCancel = () => {
-        setInitialScheduleForNewClassroom([]);
-        setClassroomToEdit(null);
-        if (isModalOpen) {
-            closeModal();
-        } else {
-            navigateTo('dashboard');
-        }
-    };
-
-    const getPageTitle = () => {
-        switch (currentPage) {
-            case 'dashboard': return 'Σχολικό έτος';
-            case 'newStudent': return 'Προσθήκη Νέου Μαθητή';
-            case 'editStudent': return 'Επεξεργασία Μαθητή';
-            case 'studentsList': return 'Λίστα Μαθητών';
-            case 'newClassroom': return classroomToEdit && !classroomToEdit.id ? 'Δημιουργία Νέου Τμήματος' : (classroomToEdit ? 'Επεξεργασία Τμήματος' : 'Δημιουργία Νέου Τμήματος');
-            case 'classroomsList': return 'Λίστα Τμημάτων';
-            case 'calendar': return 'Πρόγραμμα';
-            default: return 'Student Management';
-        }
-    };
+    // --- ΔΙΟΡΘΩΣΗ: Περνάμε τη σωστή μεταβλητή 'classrooms' αντί για το ανύπαρκτο 'allClassrooms' ---
+    const commonProps = { db, appId, classrooms, allStudents, openModalWithData, loading, userId };
 
     return (
-        <Box sx={{ display: 'flex' }}>
-            <Sidebar 
-                navigateTo={navigateTo} 
-                currentPage={currentPage}
-                mobileOpen={mobileOpen}
-                handleDrawerToggle={handleDrawerToggle}
-            />
-            <Box 
-                component="main"
-                sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - ${drawerWidth}px)` } }}
-            >
-                <AppBar
-                    position="fixed"
-                    sx={{
-                        width: { md: `calc(100% - ${drawerWidth}px)` },
-                        ml: { md: `${drawerWidth}px` },
-                        backgroundColor: 'white',
-                        boxShadow: 'none',
-                        borderBottom: '1px solid #e0e0e0'
-                    }}
+        <BrowserRouter>
+            <Box sx={{ display: 'flex' }}>
+                <Sidebar handleDrawerToggle={handleDrawerToggle} mobileOpen={mobileOpen} />
+                <Box 
+                    component="main"
+                    sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - ${drawerWidth}px)` } }}
                 >
-                    <Toolbar>
-                        <IconButton
-                            color="inherit"
-                            aria-label="open drawer"
-                            edge="start"
-                            onClick={handleDrawerToggle}
-                            sx={{ mr: 2, display: { md: 'none' }, color: 'text.primary' }}
-                        >
-                            <MenuIcon />
-                        </IconButton>
-                        <DashboardHeader 
-                            pageTitle={getPageTitle()} 
-                            onBackClick={() => navigateTo('dashboard')} 
-                            showBackButton={currentPage !== 'dashboard'} 
+                    <AppBar
+                        position="fixed"
+                        sx={{
+                            width: { md: `calc(100% - ${drawerWidth}px)` },
+                            ml: { md: `${drawerWidth}px` },
+                            backgroundColor: 'white', boxShadow: 'none', borderBottom: '1px solid #e0e0e0'
+                        }}
+                    >
+                        <Toolbar>
+                            <IconButton
+                                color="inherit" aria-label="open drawer" edge="start"
+                                onClick={handleDrawerToggle}
+                                sx={{ mr: 2, display: { md: 'none' }, color: 'text.primary' }}
+                            >
+                                <MenuIcon />
+                            </IconButton>
+                            <DashboardHeader />
+                        </Toolbar>
+                    </AppBar>
+                    
+                    <Toolbar />
+
+                    <Routes>
+                        <Route path="/" element={<DashboardContent {...commonProps} />} />
+                        <Route path="/students" element={<StudentsList {...commonProps} />} />
+                        <Route path="/student/new" element={<StudentForm {...commonProps} />} />
+                        <Route path="/student/edit/:studentId" element={<StudentFormWrapper {...commonProps} />} />
+                        <Route path="/classrooms" element={<Classrooms {...commonProps} />} />
+                        <Route path="/classroom/new" element={<NewClassroomForm {...commonProps} />} />
+                        <Route path="/classroom/edit/:classroomId" element={<ClassroomFormWrapper {...commonProps} />} />
+                        <Route path="/calendar" element={<WeeklyScheduleCalendar {...commonProps} />} />
+                    </Routes>
+                </Box>
+
+                <Dialog open={isModalOpen} onClose={closeModal} maxWidth="md" fullWidth>
+                     <DialogTitle>
+                        Δημιουργία Νέου Τμήματος
+                        <IconButton onClick={closeModal} sx={{ position: 'absolute', right: 8, top: 8 }}><CloseIcon /></IconButton>
+                    </DialogTitle>
+                    <DialogContent dividers>
+                        <NewClassroomForm
+                            classroomToEdit={modalData}
+                            onSaveSuccess={closeModal}
+                            onCancel={closeModal}
+                            {...commonProps}
                         />
-                    </Toolbar>
-                </AppBar>
-                
-                <Toolbar />
-
-                {currentPage === 'dashboard' && <DashboardContent navigateTo={navigateTo} classrooms={classrooms} loadingClassrooms={loading} db={db} userId={userId} appId={appId} />}
-                {currentPage === 'newStudent' && <NewStudentForm db={db} appId={appId} allClassrooms={classrooms} allStudents={allStudents} navigateTo={navigateTo} openModalWithData={openModalWithData} />}
-                {currentPage === 'studentsList' && <StudentsList allStudents={allStudents} loading={loading} db={db} appId={appId} navigateTo={navigateTo} />}
-                {currentPage === 'editStudent' && <EditStudentForm db={db} appId={appId} allClassrooms={classrooms} allStudents={allStudents} navigateTo={navigateTo} studentToEdit={studentToEdit} />}
-                {currentPage === 'newClassroom' && <NewClassroomForm navigateTo={navigateTo} classroomToEdit={classroomToEdit} initialSchedule={initialScheduleForNewClassroom} onSaveSuccess={handleNewClassroomSaveSuccess} onCancel={handleNewClassroomFormCancel} db={db} userId={userId} appId={appId} allClassrooms={classrooms} />}
-                {currentPage === 'classroomsList' && <Classrooms navigateTo={navigateTo} setClassroomToEdit={setClassroomToEdit} classrooms={classrooms} allStudents={allStudents} loading={loading} db={db} appId={appId} />}
-                {currentPage === 'calendar' && <WeeklyScheduleCalendar classrooms={classrooms} loading={loading} onCreateClassroomFromCalendar={handleCreateClassroomFromCalendar} navigateTo={navigateTo} db={db} userId={userId} appId={appId} />}
+                    </DialogContent>
+                </Dialog>
             </Box>
-
-            <Dialog open={isModalOpen} onClose={closeModal} maxWidth="md" fullWidth>
-                 <DialogTitle>
-                    Δημιουργία Νέου Τμήματος
-                    <IconButton onClick={closeModal} sx={{ position: 'absolute', right: 8, top: 8 }}><CloseIcon /></IconButton>
-                </DialogTitle>
-                <DialogContent dividers>
-                    <NewClassroomForm
-                        classroomToEdit={modalData}
-                        onSaveSuccess={closeModal}
-                        onCancel={closeModal}
-                        db={db}
-                        userId={userId}
-                        appId={appId}
-                        allClassrooms={classrooms}
-                    />
-                </DialogContent>
-            </Dialog>
-        </Box>
+        </BrowserRouter>
     );
 }
 

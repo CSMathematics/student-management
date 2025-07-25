@@ -1,18 +1,19 @@
-// src/components/WeeklyScheduleCalendar.jsx
+// src/pages/WeeklyScheduleCalendar.jsx
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
     Box, Container, Paper, Typography, Button, IconButton,
     FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle,
-    DialogContent, DialogActions, TextField
+    DialogContent, DialogActions, TextField, DialogContentText
 } from '@mui/material';
 import { ClearAll, Save, Edit, Delete, CheckCircleOutline, Cancel } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import { doc, deleteDoc, collection, query, getDocs, updateDoc } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
+
 dayjs.extend(duration);
 dayjs.extend(isSameOrBefore);
-
-import { doc, deleteDoc, collection, query, getDocs, updateDoc } from 'firebase/firestore';
 
 const DAYS_OF_WEEK = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο'];
 const TIME_COLUMN_WIDTH_PX = 80;
@@ -28,129 +29,52 @@ const generateTimeSlots = (startHour, endHour) => {
     return slots;
 };
 
-const calculateDuration = (startTimeStr, endTimeStr) => {
-    if (!startTimeStr || !endTimeStr) return '';
-    const start = dayjs(`2000-01-01T${startTimeStr}`);
-    const end = dayjs(`2000-01-01T${endTimeStr}`);
-    if (end.isBefore(start) || end.isSame(start)) return "Invalid Time";
-    const diffMinutes = end.diff(start, 'minute');
-    const hours = Math.floor(diffMinutes / 60);
-    const minutes = diffMinutes % 60;
-    let durationString = '';
-    if (hours > 0) durationString += `${hours} ${hours > 1 ? 'ώρες' : 'ώρα'}`;
-    if (minutes > 0) {
-        if (hours > 0) durationString += ' και ';
-        durationString += `${minutes} λεπτά`;
-    }
-    return durationString || '0 λεπτά';
-};
-
-const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, enrolledStudentsCount, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker, onAddMoreHours }) => {
-    return (
-        <Box
-            id={`event-block-${id}`}
-            sx={{
-                position: 'absolute', left, top, width, height, backgroundColor: backgroundColor || '#2196f3',
-                color: '#fff', borderRadius: '4px', padding: '5px', textAlign: 'left',
-                overflow: 'hidden', zIndex: 5, boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                cursor: 'grab', touchAction: 'none', display: 'flex', flexDirection: 'column',
-                justifyContent: 'space-between', fontSize: '0.75rem', boxSizing: 'border-box',
-                transition: 'background-color 0.3s ease',
-            }}
-            onMouseDown={(e) => onDragStart(e, id)}
-        >
-            <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', cursor: 'ns-resize', zIndex: 6 }} onMouseDown={(e) => onResizeStart(e, id, 'top')} />
-            <Box sx={{ flexGrow: 1, overflow: 'hidden', pr: '40px' }}>
-                <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', textWrap: 'wrap', fontSize: '1rem', lineHeight: '1.25rem' }}>{subject}</Typography>
-                <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>{grade}</Typography>
-                {/* <-- ΑΛΛΑΓΗ: Εμφάνιση του αριθμού των μαθητών --> */}
-                <Typography variant="caption" sx={{ display: 'block' }}>Μαθητές: {enrolledStudentsCount || 0}/{maxStudents}</Typography>
-                <Typography variant="caption" sx={{ display: 'block' }}>{startTime} - {endTime}</Typography>
-            </Box>
-            <Box sx={{ position: 'absolute', bottom: '2px', right: '2px', display: 'flex', gap: '2px', zIndex: 7 }}>
-                <IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onAddMoreHours(fullClassroomData); }} title="Προσθήκη Ώρας">
-                    <i className='fas fa-add fa-xs'></i>
-                </IconButton>
-                <IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onEdit(fullClassroomData); }} title="Επεξεργασία">
-                    <i className="fa-solid fa-edit fa-2xs"></i>
-                </IconButton>
-                <IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onOpenColorPicker(fullClassroomData); }} title="Αλλαγή Χρώματος">
-                    <i className="fa-solid fa-paintbrush fa-2xs"></i>
-                </IconButton>
-                <IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onDelete(id); }} title="Διαγραφή">
-                    <Delete sx={{ fontSize: '0.8rem' }} />
-                </IconButton>
-            </Box>
-            <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '8px', cursor: 'ns-resize', zIndex: 6 }} onMouseDown={(e) => onResizeStart(e, id, 'bottom')} />
+const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, enrolledStudentsCount, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker, onAddMoreHours }) => (
+    <Box
+        id={`event-block-${id}`}
+        sx={{
+            position: 'absolute', left, top, width, height, backgroundColor: backgroundColor || '#2196f3',
+            color: '#fff', borderRadius: '4px', padding: '5px', textAlign: 'left',
+            overflow: 'hidden', zIndex: 5, boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+            cursor: 'grab', touchAction: 'none', display: 'flex', flexDirection: 'column',
+            justifyContent: 'space-between', fontSize: '0.75rem', boxSizing: 'border-box',
+            transition: 'background-color 0.3s ease',
+        }}
+        onMouseDown={(e) => onDragStart(e, id)}
+    >
+        <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', cursor: 'ns-resize', zIndex: 6 }} onMouseDown={(e) => onResizeStart(e, id, 'top')} />
+        <Box sx={{ flexGrow: 1, overflow: 'hidden', pr: '40px' }}>
+            <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', textWrap: 'wrap', fontSize: '1rem', lineHeight: '1.25rem' }}>{subject}</Typography>
+            <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>{grade}</Typography>
+            <Typography variant="caption" sx={{ display: 'block' }}>Μαθητές: {enrolledStudentsCount || 0}/{maxStudents}</Typography>
+            <Typography variant="caption" sx={{ display: 'block' }}>{startTime} - {endTime}</Typography>
         </Box>
-    );
-};
+        <Box sx={{ position: 'absolute', bottom: '2px', right: '2px', display: 'flex', gap: '2px', zIndex: 7 }}>
+            <IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onAddMoreHours(fullClassroomData); }} title="Προσθήκη Ώρας">
+                <i className='fas fa-add fa-xs'></i>
+            </IconButton>
+            <IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onEdit(fullClassroomData); }} title="Επεξεργασία">
+                <i className="fa-solid fa-edit fa-2xs"></i>
+            </IconButton>
+            <IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onOpenColorPicker(fullClassroomData); }} title="Αλλαγή Χρώματος">
+                <i className="fa-solid fa-paintbrush fa-2xs"></i>
+            </IconButton>
+            <IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onDelete(id); }} title="Διαγραφή">
+                <Delete sx={{ fontSize: '0.8rem' }} />
+            </IconButton>
+        </Box>
+        <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '8px', cursor: 'ns-resize', zIndex: 6 }} onMouseDown={(e) => onResizeStart(e, id, 'bottom')} />
+    </Box>
+);
 
-function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, appId }) {
+function WeeklyScheduleCalendar({ classrooms, loading, db, userId, appId }) {
+    const navigate = useNavigate();
     const [calendarStartHour, setCalendarStartHour] = useState(8);
     const [calendarEndHour, setCalendarEndHour] = useState(20);
     const TIME_SLOTS = useMemo(() => generateTimeSlots(calendarStartHour, calendarEndHour), [calendarStartHour, calendarEndHour]);
     const gridContainerRef = useRef(null);
     const [gridDimensions, setGridDimensions] = useState({ width: 0, height: 0, cellWidth: 0, cellHeight: 40 });
-
-    // <-- ΑΛΛΑΓΗ: Νέο state για την αποθήκευση όλων των μαθητών -->
     const [allStudents, setAllStudents] = useState([]);
-
-    useEffect(() => {
-        const updateGridDimensions = () => {
-            if (gridContainerRef.current) {
-                const rect = gridContainerRef.current.getBoundingClientRect();
-                const availableWidthForDataColumns = rect.width - TIME_COLUMN_WIDTH_PX;
-                const cellWidth = availableWidthForDataColumns / DAYS_OF_WEEK.length;
-                setGridDimensions({ width: rect.width, height: rect.height, cellWidth, cellHeight: 40 });
-            }
-        };
-        updateGridDimensions();
-        window.addEventListener('resize', updateGridDimensions);
-        return () => window.removeEventListener('resize', updateGridDimensions);
-    }, [TIME_SLOTS]);
-
-    // <-- ΑΛΛΑΓΗ: Νέο useEffect για τη φόρτωση των μαθητών -->
-    useEffect(() => {
-        const fetchStudents = async () => {
-            if (!db || !appId) return;
-            try {
-                const studentsCollectionRef = collection(db, `artifacts/${appId}/public/data/students`);
-                const studentSnapshot = await getDocs(studentsCollectionRef);
-                const studentList = studentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setAllStudents(studentList);
-            } catch (error) {
-                console.error("Error fetching students:", error);
-            }
-        };
-        fetchStudents();
-    }, [db, appId]);
-
-    // <-- ΑΛΛΑΓΗ: Νέο useMemo για τον εμπλουτισμό των τμημάτων με τον αριθμό μαθητών -->
-    const enrichedClassrooms = useMemo(() => {
-        if (!classrooms.length) return [];
-        if (!allStudents.length) {
-            return classrooms.map(c => ({
-                ...c,
-                enrolledStudentsCount: (c.enrolledStudents || []).length
-            }));
-        }
-
-        const studentCountMap = new Map();
-        allStudents.forEach(student => {
-            if (student.enrolledClassrooms && Array.isArray(student.enrolledClassrooms)) {
-                student.enrolledClassrooms.forEach(classroomId => {
-                    studentCountMap.set(classroomId, (studentCountMap.get(classroomId) || 0) + 1);
-                });
-            }
-        });
-
-        return classrooms.map(classroom => ({
-            ...classroom,
-            enrolledStudentsCount: studentCountMap.get(classroom.id) || 0,
-        }));
-    }, [classrooms, allStudents]);
-
     const [isDraggingNewSelection, setIsDraggingNewSelection] = useState(false);
     const [startSelection, setStartSelection] = useState(null);
     const [endSelection, setEndSelection] = useState(null);
@@ -177,6 +101,51 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
     const [openColorPickerDialog, setOpenColorPickerDialog] = useState(false);
     const [selectedClassroomForColor, setSelectedClassroomForColor] = useState(null);
     const [tempColor, setTempColor] = useState('#2196f3');
+
+    useEffect(() => {
+        const updateGridDimensions = () => {
+            if (gridContainerRef.current) {
+                const rect = gridContainerRef.current.getBoundingClientRect();
+                const availableWidthForDataColumns = rect.width - TIME_COLUMN_WIDTH_PX;
+                const cellWidth = availableWidthForDataColumns / DAYS_OF_WEEK.length;
+                setGridDimensions({ width: rect.width, height: rect.height, cellWidth, cellHeight: 40 });
+            }
+        };
+        updateGridDimensions();
+        window.addEventListener('resize', updateGridDimensions);
+        return () => window.removeEventListener('resize', updateGridDimensions);
+    }, [TIME_SLOTS]);
+
+    useEffect(() => {
+        const fetchStudents = async () => {
+            if (!db || !appId) return;
+            try {
+                const studentsCollectionRef = collection(db, `artifacts/${appId}/public/data/students`);
+                const studentSnapshot = await getDocs(studentsCollectionRef);
+                const studentList = studentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setAllStudents(studentList);
+            } catch (error) {
+                console.error("Error fetching students:", error);
+            }
+        };
+        fetchStudents();
+    }, [db, appId]);
+
+    const enrichedClassrooms = useMemo(() => {
+        if (!classrooms || !classrooms.length) return [];
+        if (!allStudents.length) {
+            return classrooms.map(c => ({ ...c, enrolledStudentsCount: (c.enrolledStudents || []).length }));
+        }
+        const studentCountMap = new Map();
+        allStudents.forEach(student => {
+            if (student.enrolledClassrooms && Array.isArray(student.enrolledClassrooms)) {
+                student.enrolledClassrooms.forEach(classroomId => {
+                    studentCountMap.set(classroomId, (studentCountMap.get(classroomId) || 0) + 1);
+                });
+            }
+        });
+        return classrooms.map(classroom => ({ ...classroom, enrolledStudentsCount: studentCountMap.get(classroom.id) || 0 }));
+    }, [classrooms, allStudents]);
 
     const getGridCoordinatesFromPixels = useCallback((pixelX, pixelY) => {
         const { cellWidth, cellHeight } = gridDimensions;
@@ -232,7 +201,7 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
                         endTime: slot.endTime,
                         subject: classroom.subject,
                         grade: classroom.grade,
-                        enrolledStudentsCount: classroom.enrolledStudentsCount, // <-- ΑΛΛΑΓΗ
+                        enrolledStudentsCount: classroom.enrolledStudentsCount,
                         maxStudents: classroom.maxStudents,
                         backgroundColor: classroom.color || '#2196f3',
                         left, top, width, height,
@@ -245,18 +214,18 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
     }, [gridDimensions, TIME_SLOTS]);
 
     useEffect(() => {
-        // <-- ΑΛΛΑΓΗ: Χρησιμοποιούμε το enrichedClassrooms
         if (enrichedClassrooms) {
             setDisplayedEventBlocks(transformClassroomsToEvents(enrichedClassrooms));
         }
     }, [enrichedClassrooms, transformClassroomsToEvents]);
 
-    const checkOverlap = useCallback((targetClassroomId, targetDay, targetStartTimeStr, targetEndTimeStr, allClassroomsData) => {
+    const checkOverlap = useCallback((targetDay, targetStartTimeStr, targetEndTimeStr, ignoreClassroomId) => {
         const targetStart = dayjs(`2000-01-01T${targetStartTimeStr}`);
         const targetEnd = dayjs(`2000-01-01T${targetEndTimeStr}`);
         if (!targetStart.isValid() || !targetEnd.isValid() || targetEnd.isSameOrBefore(targetStart)) return true;
-        for (const classroom of allClassroomsData) {
-            if (!addHoursMode && classroom.id === targetClassroomId) continue;
+        for (const classroom of classrooms) {
+            if (addHoursMode && classroom.id === addHoursMode.id) continue;
+            if (classroom.id === ignoreClassroomId) continue;
             if (classroom.schedule && Array.isArray(classroom.schedule)) {
                 for (const slot of classroom.schedule) {
                     if (slot.day === targetDay) {
@@ -268,7 +237,7 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
             }
         }
         return false;
-    }, [addHoursMode]);
+    }, [addHoursMode, classrooms]);
 
     const handleGridMouseDown = (e, dayIdx, hourIdx) => {
         if (e.button !== 0) return;
@@ -397,35 +366,27 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
 
             if (originalEventBlock && originalDraggedBlockProps) {
                 const gridRect = gridContainerRef.current.getBoundingClientRect();
-                
                 const finalMouseX = e.clientX - gridRect.left;
                 const finalMouseY = e.clientY - gridRect.top;
-                
                 const startOffsetX = dragStartMousePos.x - (gridRect.left + originalDraggedBlockProps.left);
                 const startOffsetY = dragStartMousePos.y - (gridRect.top + originalDraggedBlockProps.top);
-                
                 const finalBlockLeft = finalMouseX - startOffsetX;
                 const finalBlockTop = finalMouseY - startOffsetY;
-
                 const snappedDayIndex = Math.max(0, Math.round((finalBlockLeft - TIME_COLUMN_WIDTH_PX) / cellWidth));
                 const snappedHourIndex = Math.max(0, Math.round((finalBlockTop - HEADER_ROW_HEIGHT_PX) / cellHeight));
-                
                 const durationMinutes = dayjs(`2000-01-01T${originalEventBlock.endTime}`).diff(dayjs(`2000-01-01T${originalEventBlock.startTime}`), 'minute');
                 const newDay = DAYS_OF_WEEK[snappedDayIndex];
                 const newStartTime = TIME_SLOTS[snappedHourIndex];
 
                 if (newDay && newStartTime) {
                     const newEndTime = dayjs(`2000-01-01T${newStartTime}`).add(durationMinutes, 'minute').format('HH:mm');
-                    
                     if (TIME_SLOTS.indexOf(newEndTime) === -1 && newEndTime !== `${String(calendarEndHour).padStart(2, '0')}:00`) {
                          setOpenConflictDialog(true);
                          setConflictMessage("Η μετακίνηση τοποθετεί το τμήμα εκτός των ωρών του προγράμματος.");
                          setDisplayedEventBlocks(prev => prev.map(b => b.id === draggedEventId ? { ...b, ...originalDraggedBlockProps } : b));
                     } else {
                         const classroomToUpdate = originalEventBlock.fullClassroomData;
-                        const otherClassrooms = classrooms.filter(c => c.id !== classroomToUpdate.id);
-                        const isOverlapping = checkOverlap(null, newDay, newStartTime, newEndTime, otherClassrooms);
-                        
+                        const isOverlapping = checkOverlap(newDay, newStartTime, newEndTime, classroomToUpdate.id);
                         if (isOverlapping) {
                             setOpenConflictDialog(true);
                             setConflictMessage("Η μετακίνηση προκαλεί επικάλυψη με άλλο τμήμα.");
@@ -434,7 +395,6 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
                             const scheduleIndex = parseInt(draggedEventId.split('-')[1], 10);
                             const updatedSchedule = [...classroomToUpdate.schedule];
                             updatedSchedule[scheduleIndex] = { ...updatedSchedule[scheduleIndex], day: newDay, startTime: newStartTime, endTime: newEndTime };
-                            
                             const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToUpdate.id);
                             await updateDoc(classroomDocRef, { schedule: updatedSchedule });
                         }
@@ -452,14 +412,13 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
             if (originalEventBlock) {
                 const gridRect = gridContainerRef.current.getBoundingClientRect();
                 const finalMouseY = e.clientY - gridRect.top;
-
                 let newStartTime, newEndTime;
 
                 if (resizeHandle === 'top') {
                     const snappedTopIndex = Math.max(0, Math.round((finalMouseY - HEADER_ROW_HEIGHT_PX) / cellHeight));
                     newStartTime = TIME_SLOTS[snappedTopIndex];
                     newEndTime = originalEventBlock.endTime;
-                } else { // bottom
+                } else {
                     const snappedBottomIndex = Math.max(0, Math.round((finalMouseY - HEADER_ROW_HEIGHT_PX) / cellHeight));
                     newStartTime = originalEventBlock.startTime;
                     newEndTime = TIME_SLOTS[snappedBottomIndex];
@@ -467,9 +426,7 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
 
                 if (newStartTime && newEndTime && dayjs(`2000-01-01T${newEndTime}`).isAfter(dayjs(`2000-01-01T${newStartTime}`))) {
                     const classroomToUpdate = originalEventBlock.fullClassroomData;
-                    const otherClassrooms = classrooms.filter(c => c.id !== classroomToUpdate.id);
-                    const isOverlapping = checkOverlap(null, originalEventBlock.day, newStartTime, newEndTime, otherClassrooms);
-
+                    const isOverlapping = checkOverlap(originalEventBlock.day, newStartTime, newEndTime, classroomToUpdate.id);
                     if (isOverlapping) {
                         setOpenConflictDialog(true);
                         setConflictMessage("Η αλλαγή μεγέθους προκαλεί επικάλυψη.");
@@ -478,7 +435,6 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
                         const scheduleIndex = parseInt(resizedEventId.split('-')[1], 10);
                         const updatedSchedule = [...classroomToUpdate.schedule];
                         updatedSchedule[scheduleIndex] = { ...updatedSchedule[scheduleIndex], startTime: newStartTime, endTime: newEndTime };
-
                         const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToUpdate.id);
                         await updateDoc(classroomDocRef, { schedule: updatedSchedule });
                     }
@@ -498,45 +454,33 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
         if (wasDraggingNewSelection && currentStartSelection && currentEndSelection) {
             const normalizedStartDay = Math.min(currentStartSelection.dayIndex, currentEndSelection.dayIndex);
             const normalizedEndDay = Math.max(currentStartSelection.dayIndex, currentEndSelection.dayIndex);
-            
             if (normalizedStartDay !== normalizedEndDay) {
                  setOpenConflictDialog(true);
                  setConflictMessage("Η πολλαπλή επιλογή ωρών επιτρέπεται μόνο στην ίδια ημέρα.");
                  return;
             }
-
             const normalizedStartHour = Math.min(currentStartSelection.hourIndex, currentEndSelection.hourIndex);
             const normalizedEndHour = Math.max(currentStartSelection.hourIndex, currentEndSelection.hourIndex);
-            
             if (normalizedStartHour === normalizedEndHour) return;
-
             const newStartTime = TIME_SLOTS[normalizedStartHour];
             const newEndTime = TIME_SLOTS[normalizedEndHour + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`;
-
-            const newEntry = {
-                id: dayjs().valueOf(),
-                day: DAYS_OF_WEEK[normalizedStartDay],
-                startTime: newStartTime,
-                endTime: newEndTime,
-            };
-
-            const isOverlapping = checkOverlap(null, newEntry.day, newEntry.startTime, newEntry.endTime, classrooms);
+            const newEntry = { id: dayjs().valueOf(), day: DAYS_OF_WEEK[normalizedStartDay], startTime: newStartTime, endTime: newEndTime };
+            const isOverlapping = checkOverlap(newEntry.day, newEntry.startTime, newEndTime, null);
             if (isOverlapping) {
                 setOpenConflictDialog(true);
                 setConflictMessage(`Η επιλεγμένη ώρα (${newEntry.day} ${newEntry.startTime}-${newEntry.endTime}) επικαλύπτεται με υπάρχον τμήμα.`);
                 return;
             }
-            
             if (addHoursMode) {
                 setAccumulatedSelections(prev => [...prev, newEntry]);
             } else if (e.ctrlKey || e.metaKey) {
                 setAccumulatedSelections(prev => [...prev, newEntry]);
             } else {
                 setAccumulatedSelections([]);
-                navigateTo('newClassroom', { initialSchedule: [newEntry] });
+                navigate('/classroom/new', { state: { initialSchedule: [newEntry] } });
             }
         }
-    }, [isDraggingNewSelection, startSelection, endSelection, TIME_SLOTS, calendarEndHour, isDraggingEvent, isResizingEvent, classrooms, checkOverlap, addHoursMode, navigateTo, db, appId, gridDimensions, displayedEventBlocks, originalDraggedBlockProps, originalResizedBlockProps, draggedEventId, resizedEventId, dragStartMousePos]);
+    }, [isDraggingNewSelection, startSelection, endSelection, TIME_SLOTS, calendarEndHour, isDraggingEvent, isResizingEvent, classrooms, checkOverlap, addHoursMode, navigate, db, appId, gridDimensions, displayedEventBlocks, originalDraggedBlockProps, originalResizedBlockProps, draggedEventId, resizedEventId, dragStartMousePos]);
 
     useEffect(() => {
         window.addEventListener('mousemove', handleGlobalMouseMove);
@@ -548,7 +492,7 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
     }, [handleGlobalMouseMove, handleGlobalMouseUp]);
 
     const handleEditEntry = (fullClassroomData) => {
-        navigateTo('newClassroom', { classroomToEdit: fullClassroomData });
+        navigate(`/classroom/edit/${fullClassroomData.id}`);
     };
 
     const handleDeleteEntry = (eventId) => {
@@ -559,13 +503,10 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
 
     const handleConfirmSlotDelete = async () => {
         if (!deleteInfo) return;
-
         const { classroomId, slotIndex } = deleteInfo;
         const classroomToUpdate = classrooms.find(c => c.id === classroomId);
-
         if (classroomToUpdate) {
             const updatedSchedule = classroomToUpdate.schedule.filter((_, index) => index !== slotIndex);
-            
             try {
                 const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
                 await updateDoc(classroomDocRef, { schedule: updatedSchedule });
@@ -592,10 +533,7 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
         setDeleteInfo(null);
     };
     
-    const handleCancelDelete = () => {
-        setDeleteInfo(null);
-    };
-
+    const handleCancelDelete = () => setDeleteInfo(null);
     const handleClearSchedule = () => setOpenClearConfirmDialog(true);
 
     const handleConfirmClearSchedule = async () => {
@@ -659,11 +597,9 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
             setConflictMessage("Δεν έχετε επιλέξει νέες ώρες για αποθήκευση.");
             return;
         }
-        
         const classroomToUpdate = addHoursMode;
         const existingSchedule = classroomToUpdate.schedule || [];
         const combinedSchedule = [...existingSchedule, ...accumulatedSelections];
-
         try {
             const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToUpdate.id);
             await updateDoc(classroomDocRef, { schedule: combinedSchedule });
@@ -680,9 +616,8 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
         return classrooms.find(c => c.id === deleteInfo.classroomId);
     }, [deleteInfo, classrooms]);
 
-
     return (
-        <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        <Container maxWidth={false} sx={{ mt: 4, mb: 4 }}>
             <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', minHeight: '600px' }}>
                 <Typography variant="h5" component="h3" sx={{ mb: 3, color: '#3f51b5', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <i className="fas fa-calendar-alt"></i> Εβδομαδιαίο Πρόγραμμα
@@ -757,19 +692,13 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
                             color="primary"
                             startIcon={<CheckCircleOutline />}
                             onClick={() => {
-                                navigateTo('newClassroom', { initialSchedule: accumulatedSelections });
+                                navigate('/classroom/new', { state: { initialSchedule: accumulatedSelections } });
                                 setAccumulatedSelections([]);
                             }}
                         >
                             Δημιουργία Τμήματος
                         </Button>
-                        <Button
-                            variant="outlined"
-                            color="secondary"
-                            onClick={() => setAccumulatedSelections([])}
-                        >
-                            Εκκαθάριση
-                        </Button>
+                        <Button variant="outlined" color="secondary" onClick={() => setAccumulatedSelections([])}>Εκκαθάριση</Button>
                     </Box>
                 </Paper>
             )}
@@ -779,23 +708,8 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
                     <Typography variant="h6" sx={{ mb: 1 }}>Προσθήκη στο τμήμα: {addHoursMode.subject}</Typography>
                     <Typography variant="body2" sx={{ mb: 2 }}>Νέες ώρες: {accumulatedSelections.length}</Typography>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<Save />}
-                            onClick={handleSaveAddedHours}
-                            disabled={accumulatedSelections.length === 0}
-                        >
-                            Αποθήκευση Αλλαγών
-                        </Button>
-                        <Button
-                            variant="outlined"
-                            color="secondary"
-                            startIcon={<Cancel />}
-                            onClick={handleCancelAddHours}
-                        >
-                            Ακύρωση
-                        </Button>
+                        <Button variant="contained" color="primary" startIcon={<Save />} onClick={handleSaveAddedHours} disabled={accumulatedSelections.length === 0}>Αποθήκευση Αλλαγών</Button>
+                        <Button variant="outlined" color="secondary" startIcon={<Cancel />} onClick={handleCancelAddHours}>Ακύρωση</Button>
                     </Box>
                 </Paper>
             )}
@@ -803,28 +717,20 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
             <Dialog open={!!deleteInfo} onClose={handleCancelDelete}>
                 <DialogTitle>Επιβεβαίωση Διαγραφής</DialogTitle>
                 <DialogContent>
-                    <Typography>
-                        {classroomForDeleteDialog?.schedule?.length > 1
-                            ? "Τι θέλετε να διαγράψετε;"
-                            : "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το τμήμα; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί."}
-                    </Typography>
+                    <DialogContentText>
+                        {classroomForDeleteDialog?.schedule?.length > 1 ? "Τι θέλετε να διαγράψετε;" : "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το τμήμα; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί."}
+                    </DialogContentText>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCancelDelete}>Ακύρωση</Button>
-                    {classroomForDeleteDialog?.schedule?.length > 1 && (
-                         <Button onClick={handleConfirmSlotDelete} color="primary">
-                            Μόνο αυτή την ώρα
-                        </Button>
-                    )}
-                    <Button onClick={handleConfirmClassroomDelete} color="error" variant="contained">
-                        {classroomForDeleteDialog?.schedule?.length > 1 ? "Όλο το Τμήμα" : "Διαγραφή"}
-                    </Button>
+                    {classroomForDeleteDialog?.schedule?.length > 1 && (<Button onClick={handleConfirmSlotDelete} color="primary">Μόνο αυτή την ώρα</Button>)}
+                    <Button onClick={handleConfirmClassroomDelete} color="error" variant="contained">{classroomForDeleteDialog?.schedule?.length > 1 ? "Όλο το Τμήμα" : "Διαγραφή"}</Button>
                 </DialogActions>
             </Dialog>
 
             <Dialog open={openClearConfirmDialog} onClose={handleCancelClearSchedule}>
                 <DialogTitle>Επιβεβαίωση Εκκαθάρισης Προγράμματος</DialogTitle>
-                <DialogContent><Typography>Είστε σίγουροι ότι θέτετε να διαγράψετε ΟΛΑ τα τμήματα; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</Typography></DialogContent>
+                <DialogContent><DialogContentText>Είστε σίγουροι ότι θέτετε να διαγράψετε ΟΛΑ τα τμήματα; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</DialogContentText></DialogContent>
                 <DialogActions>
                     <Button onClick={handleCancelClearSchedule}>Ακύρωση</Button>
                     <Button onClick={handleConfirmClearSchedule} color="error" variant="contained">Εκκαθάριση</Button>
@@ -832,7 +738,7 @@ function WeeklyScheduleCalendar({ classrooms, loading, navigateTo, db, userId, a
             </Dialog>
             <Dialog open={openConflictDialog} onClose={() => setOpenConflictDialog(false)}>
                 <DialogTitle>Ειδοποίηση</DialogTitle>
-                <DialogContent><Typography>{conflictMessage}</Typography></DialogContent>
+                <DialogContent><DialogContentText>{conflictMessage}</DialogContentText></DialogContent>
                 <DialogActions><Button onClick={() => setOpenConflictDialog(false)} color="primary" variant="contained">Εντάξει</Button></DialogActions>
             </Dialog>
             <Dialog open={openColorPickerDialog} onClose={() => setOpenColorPickerDialog(false)}>
