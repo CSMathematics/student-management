@@ -108,11 +108,10 @@ function App() {
         setModalData(null);
     };
 
-    // <-- ΑΛΛΑΓΗ: Η navigateTo χειρίζεται πλέον και το studentToEdit -->
     const navigateTo = (page, params = {}) => {
         setCurrentPage(page);
         setClassroomToEdit(params.classroomToEdit || null);
-        setStudentToEdit(params.studentToEdit || null); 
+        setStudentToEdit(params.studentToEdit || null);
         setInitialScheduleForNewClassroom(params.initialSchedule || []);
     };
     
@@ -185,7 +184,7 @@ function App() {
                         db={db}
                         appId={appId}
                         navigateTo={navigateTo}
-                        // setStudentToEdit is no longer needed here
+                        setStudentToEdit={setStudentToEdit} 
                     />
                 )}
 
@@ -218,6 +217,7 @@ function App() {
                         navigateTo={navigateTo}
                         setClassroomToEdit={setClassroomToEdit}
                         classrooms={classrooms}
+                        allStudents={allStudents} // <-- ΠΡΟΣΘΗΚΗ
                         loading={loading}
                         db={db}
                         appId={appId}

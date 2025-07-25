@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box, Button, Container, Grid, Paper, Typography, TextField,
     FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle,
-    DialogContent, DialogActions, DialogContentText, IconButton
+    DialogContent, DialogActions, DialogContentText, IconButton, Divider
 } from '@mui/material';
 import { Add, Delete } from '@mui/icons-material';
 import dayjs from 'dayjs';
@@ -125,11 +125,20 @@ function NewClassroomForm({ navigateTo, classroomToEdit, initialSchedule, onSave
             maxStudents: 5, schedule: [], color: '#2196f3', enrolledStudents: []
         };
 
+        const processSchedule = (schedule) => {
+            return (schedule || []).map(s => ({
+                ...s,
+                id: s.id || Date.now() + Math.random(), // Ensure ID exists
+                duration: calculateDuration(s.startTime, s.endTime)
+            }));
+        };
+
         if (classroomToEdit && classroomToEdit.id) {
-            setFormData({ ...initialFormState, ...classroomToEdit });
+            const updatedSchedule = processSchedule(classroomToEdit.schedule);
+            setFormData({ ...initialFormState, ...classroomToEdit, schedule: updatedSchedule });
             
-            if (classroomToEdit.schedule && classroomToEdit.schedule.length > 0) {
-                const firstSlot = classroomToEdit.schedule[0];
+            if (updatedSchedule.length > 0) {
+                const firstSlot = updatedSchedule[0];
                 setSelectedDay(firstSlot.day);
                 setSelectedStartTime(firstSlot.startTime);
                 setSelectedEndTime(firstSlot.endTime);
@@ -140,7 +149,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, initialSchedule, onSave
             }
         } 
         else if (initialSchedule || classroomToEdit) {
-            const schedule = (initialSchedule || []).map(s => ({...s, id: s.id || Date.now(), duration: calculateDuration(s.startTime, s.endTime)}));
+            const schedule = processSchedule(initialSchedule);
             setFormData(prev => ({ ...initialFormState, ...prev, ...classroomToEdit, schedule }));
             
             if (schedule.length > 0 && schedule[0].day) {
@@ -161,6 +170,22 @@ function NewClassroomForm({ navigateTo, classroomToEdit, initialSchedule, onSave
             setSelectedEndTime('');
         }
     }, [classroomToEdit, initialSchedule, calculateDuration]);
+
+    const totalScheduleDuration = useMemo(() => {
+        if (!formData.schedule || formData.schedule.length === 0) {
+            return '0 ώρες';
+        }
+        const totalMinutes = formData.schedule.reduce((acc, curr) => {
+            const start = dayjs(`2000-01-01T${curr.startTime}`);
+            const end = dayjs(`2000-01-01T${curr.endTime}`);
+            if (end.isAfter(start)) {
+                return acc + end.diff(start, 'minute');
+            }
+            return acc;
+        }, 0);
+
+        return calculateDuration('00:00', dayjs('2000-01-01T00:00').add(totalMinutes, 'minute').format('HH:mm'));
+    }, [formData.schedule, calculateDuration]);
 
 
     const handleAddScheduleEntry = () => {
@@ -202,15 +227,9 @@ function NewClassroomForm({ navigateTo, classroomToEdit, initialSchedule, onSave
             return;
         }
 
-        const totalMinutes = formData.schedule.reduce((acc, curr) => {
-            const start = dayjs(`2000-01-01T${curr.startTime}`);
-            const end = dayjs(`2000-01-01T${curr.endTime}`);
-            return acc + end.diff(start, 'minute');
-        }, 0);
-
         const dataToSave = { 
             ...formData,
-            totalDuration: calculateDuration('00:00', dayjs('2000-01-01T00:00').add(totalMinutes, 'minute').format('HH:mm'))
+            totalDuration: totalScheduleDuration
         };
         
         try {
@@ -231,6 +250,7 @@ function NewClassroomForm({ navigateTo, classroomToEdit, initialSchedule, onSave
 
     const availableSpecializations = getSpecializations(formData.grade);
     const currentSubjects = getSubjects(formData.grade, formData.specialization);
+    
     const availableStartTimes = useMemo(() => {
         if (!selectedDay) return [];
         const slots = getAvailableTimeSlotsForDay(selectedDay, allClassrooms, formData.schedule);
@@ -275,7 +295,6 @@ function NewClassroomForm({ navigateTo, classroomToEdit, initialSchedule, onSave
                     <Typography variant="h5" component="h3" sx={{ mb: 3 }}>
                         {classroomToEdit && classroomToEdit.id ? 'Επεξεργασία Τμήματος' : 'Δημιουργία Νέου Τμήματος'}
                     </Typography>
-                    {/* <-- ΑΛΛΑΓΗ: Νέα διάταξη Grid --> */}
                     <Grid container spacing={2} alignItems="center">
                         <Grid item xs={12} sm={5}>
                             <TextField fullWidth label="Κωδικός Τμήματος" name="classroomName" value={formData.classroomName} onChange={(e) => setFormData({...formData, classroomName: e.target.value})} required size="small" />
@@ -346,15 +365,15 @@ function NewClassroomForm({ navigateTo, classroomToEdit, initialSchedule, onSave
                              <FormControl fullWidth size="small">
                                 <InputLabel>Ώρα Έναρξης</InputLabel>
                                 <Select value={selectedStartTime} onChange={(e) => setSelectedStartTime(e.target.value)} label="Ώρα Έναρξης">
-                                    {TIME_SLOTS.slice(0, -1).map(time => <MenuItem key={time} value={time}>{time}</MenuItem>)}
+                                    {availableStartTimes.map(time => <MenuItem key={time} value={time}>{time}</MenuItem>)}
                                 </Select>
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} sm={3}>
                              <FormControl fullWidth size="small">
                                 <InputLabel>Ώρα Λήξης</InputLabel>
-                                <Select value={selectedEndTime} onChange={(e) => setSelectedEndTime(e.target.value)} label="Ώρα Λήξης">
-                                    {TIME_SLOTS.slice(1).map(time => <MenuItem key={time} value={time}>{time}</MenuItem>)}
+                                <Select value={selectedEndTime} onChange={(e) => setSelectedEndTime(e.target.value)} label="Ώρα Λήξης" disabled={!selectedStartTime}>
+                                    {availableEndTimes.map(time => <MenuItem key={time} value={time}>{time}</MenuItem>)}
                                 </Select>
                             </FormControl>
                         </Grid>
@@ -370,6 +389,10 @@ function NewClassroomForm({ navigateTo, classroomToEdit, initialSchedule, onSave
                                     <IconButton color="error" size="small" onClick={() => handleRemoveScheduleEntry(slot.id)}><Delete /></IconButton>
                                 </Box>
                             ))}
+                            <Divider sx={{ my: 2 }} />
+                            <Typography variant="h6" align="right">
+                                Συνολική Διάρκεια: <strong>{totalScheduleDuration}</strong>
+                            </Typography>
                         </Box>
                     )}
                 </Paper>
