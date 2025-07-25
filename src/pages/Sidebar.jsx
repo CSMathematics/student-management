@@ -1,10 +1,12 @@
-// src/components/Sidebar.jsx
+// src/pages/Sidebar.jsx
 import React, { useState } from 'react';
-import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Typography, Collapse } from '@mui/material';
+import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Typography, Collapse, Drawer, Toolbar } from '@mui/material';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 
-function Sidebar({ navigateTo, currentPage }) {
+const drawerWidth = 280; // Define the width of the sidebar
+
+function Sidebar({ navigateTo, currentPage, mobileOpen, handleDrawerToggle }) {
     const [openClassesSubmenu, setOpenClassesSubmenu] = useState(false);
     const [openStudentsSubmenu, setOpenStudentsSubmenu] = useState(false);
 
@@ -18,7 +20,7 @@ function Sidebar({ navigateTo, currentPage }) {
 
     const navItems = [
         { text: "Αρχική", icon: "fas fa-chart-line", page: "dashboard" },
-        { text: "Πρόγραμμα", icon: "fas fa-calendar-alt", href: "calendar" },
+        { text: "Πρόγραμμα", icon: "fas fa-calendar-alt", page: "calendar" },
     ];
 
     const managementItems = [
@@ -36,31 +38,31 @@ function Sidebar({ navigateTo, currentPage }) {
             icon: "fas fa-chalkboard",
             isParent: true,
             subItems: [
-                { text: "Τάξεις", icon: "fas fa-layer-group", href: "#" },
+                { text: "Τάξεις", icon: "fas fa-layer-group", page: "#" },
                 { text: "Τμήματα", icon: "fas fa-door-open", page: "classroomsList" },
-                { text: "Νέο Τμήμα", icon: "fas fa-plus", page: "newClassroom" }, // New sub-item for NewClassroomForm
+                { text: "Νέο Τμήμα", icon: "fas fa-plus", page: "newClassroom" },
             ]
         },
-        { text: "Μαθήματα", icon: "fas fa-book", href: "#" },
-        { text: "Καθηγητές", icon: "fas fa-user-graduate", href: "#" },
-        { text: "Διαγωνίσματα", icon: "fas fa-file-alt", href: "#" },
-        { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", href: "#" },
-        { text: "Πληρωμές", icon: "fas fa-money-bill", href: "#" },
-        { text: "Βαθμολογίες", icon: "fas fa-chart-bar", href: "#" },
-        { text: "Απουσίες", icon: "fas fa-times", href: "#" },
-        { text: "Εργασίες υποχρεώσεις", icon: "fas fa-tasks", href: "#" },
-        { text: "Έγγραφα", icon: "fas fa-file", href: "#" },
-        { text: "Apprenticeships & Thesis", icon: "fas fa-briefcase", href: "#" },
-        { text: "Transportation", icon: "fas fa-bus", href: "#" },
+        { text: "Μαθήματα", icon: "fas fa-book", page: "#" },
+        { text: "Καθηγητές", icon: "fas fa-user-graduate", page: "#" },
+        { text: "Διαγωνίσματα", icon: "fas fa-file-alt", page: "#" },
+        { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", page: "#" },
+        { text: "Πληρωμές", icon: "fas fa-money-bill", page: "#" },
+        { text: "Βαθμολογίες", icon: "fas fa-chart-bar", page: "#" },
+        { text: "Απουσίες", icon: "fas fa-times", page: "#" },
+        { text: "Εργασίες υποχρεώσεις", icon: "fas fa-tasks", page: "#" },
+        { text: "Έγγραφα", icon: "fas fa-file", page: "#" },
+        { text: "Apprenticeships & Thesis", icon: "fas fa-briefcase", page: "#" },
+        { text: "Transportation", icon: "fas fa-bus", page: "#" },
     ];
 
     const settingsItems = [
-        { text: "Βασικές Ρυθμίσεις", icon: "fas fa-cog", href: "#" },
-        { text: "Ρυθμίσεις μαθητών", icon: "fas fa-cogs", href: "#" },
-        { text: "Εμφάνιση", icon: "fas fa-sliders-h", href: "#" },
-        { text: "Πληρωμές", icon: "fas fa-wallet", href: "#" },
-        { text: "Library Settings", icon: "fas fa-university", href: "#" },
-        { text: "Apprenticeships / Thesis", icon: "fas fa-briefcase", href: "#" },
+        { text: "Βασικές Ρυθμίσεις", icon: "fas fa-cog", page: "#" },
+        { text: "Ρυθμίσεις μαθητών", icon: "fas fa-cogs", page: "#" },
+        { text: "Εμφάνιση", icon: "fas fa-sliders-h", page: "#" },
+        { text: "Πληρωμές", icon: "fas fa-wallet", page: "#" },
+        { text: "Library Settings", icon: "fas fa-university", page: "#" },
+        { text: "Apprenticeships / Thesis", icon: "fas fa-briefcase", page: "#" },
     ];
 
     const isItemSelected = (itemPage) => {
@@ -71,7 +73,7 @@ function Sidebar({ navigateTo, currentPage }) {
         const commonProps = {
             onClick: item.isParent
                 ? (item.text === "Μαθητές" ? handleClickStudentsSubmenu : handleClickClassesSubmenu)
-                : () => navigateTo(item.page || item.href),
+                : () => navigateTo(item.page || '#'),
             selected: isItemSelected(item.page),
             sx: {
                 padding: `10px ${isSubItem ? '32px' : '16px'} !important`,
@@ -98,36 +100,29 @@ function Sidebar({ navigateTo, currentPage }) {
             }
         };
 
-        if (item.page || item.isParent) {
-            return (
-                <ListItemButton component="a" href={item.isParent ? "#" : item.href || "#"} {...commonProps}>
-                    <ListItemIcon>
-                        <i className={item.icon}></i>
-                    </ListItemIcon>
-                    <ListItemText primary={item.text} />
-                    {item.isParent && (
-                        item.text === "Μαθητές" ? (openStudentsSubmenu ? <ExpandLess /> : <ExpandMore />) :
-                        (openClassesSubmenu ? <ExpandLess /> : <ExpandMore />)
-                    )}
-                </ListItemButton>
-            );
-        } else {
-            return (
-                <ListItemButton {...commonProps}>
-                    <ListItemIcon>
-                        <i className={item.icon}></i>
-                    </ListItemIcon>
-                    <ListItemText primary={item.text} />
-                </ListItemButton>
-            );
-        }
+        return (
+            <ListItemButton {...commonProps}>
+                <ListItemIcon>
+                    <i className={item.icon}></i>
+                </ListItemIcon>
+                <ListItemText primary={item.text} />
+                {item.isParent && (
+                    item.text === "Μαθητές" ? (openStudentsSubmenu ? <ExpandLess /> : <ExpandMore />) :
+                    (openClassesSubmenu ? <ExpandLess /> : <ExpandMore />)
+                )}
+            </ListItemButton>
+        );
     };
 
-    return (
-        <Box className="fixed-sidebar">
-            <Box className="sidebar-header" sx={{ backgroundColor: '#1e86cc' }}>
-                <h2><i className="fas fa-graduation-cap"></i> Φροντιστήριο Φιλομάθεια</h2>
-            </Box>
+    const drawerContent = (
+        <div>
+            <Toolbar sx={{ backgroundColor: '#1e86cc', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Typography variant="h6" noWrap component="div">
+                    <i className="fas fa-graduation-cap" style={{ marginRight: '12px' }}></i>
+                    Φιλομάθεια
+                </Typography>
+            </Toolbar>
+            <Divider />
             <List>
                 {navItems.map((item, index) => (
                     <ListItem key={index} disablePadding>
@@ -140,25 +135,19 @@ function Sidebar({ navigateTo, currentPage }) {
             <List>
                 {managementItems.map((item, index) => (
                     <React.Fragment key={index}>
-                        {item.isParent ? (
-                            <>
-                                <ListItem disablePadding>
-                                    {renderListItemButton(item)}
-                                </ListItem>
-                                <Collapse in={item.text === "Μαθητές" ? openStudentsSubmenu : openClassesSubmenu} timeout="auto" unmountOnExit>
-                                    <List component="div" disablePadding>
-                                        {item.subItems.map((subItem, subIndex) => (
-                                            <ListItem key={subIndex} disablePadding>
-                                                {renderListItemButton(subItem, true)}
-                                            </ListItem>
-                                        ))}
-                                    </List>
-                                </Collapse>
-                            </>
-                        ) : (
-                            <ListItem disablePadding>
-                                {renderListItemButton(item)}
-                            </ListItem>
+                        <ListItem disablePadding>
+                            {renderListItemButton(item)}
+                        </ListItem>
+                        {item.isParent && (
+                             <Collapse in={item.text === "Μαθητές" ? openStudentsSubmenu : openClassesSubmenu} timeout="auto" unmountOnExit>
+                                <List component="div" disablePadding>
+                                    {item.subItems.map((subItem, subIndex) => (
+                                        <ListItem key={subIndex} disablePadding>
+                                            {renderListItemButton(subItem, true)}
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            </Collapse>
                         )}
                     </React.Fragment>
                 ))}
@@ -172,6 +161,36 @@ function Sidebar({ navigateTo, currentPage }) {
                     </ListItem>
                 ))}
             </List>
+        </div>
+    );
+
+    return (
+        <Box
+            component="nav"
+            sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+        >
+            <Drawer
+                variant="temporary"
+                open={mobileOpen}
+                onClose={handleDrawerToggle}
+                ModalProps={{ keepMounted: true }}
+                sx={{
+                    display: { xs: 'block', md: 'none' },
+                    '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                }}
+            >
+                {drawerContent}
+            </Drawer>
+            <Drawer
+                variant="permanent"
+                sx={{
+                    display: { xs: 'none', md: 'block' },
+                    '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                }}
+                open
+            >
+                {drawerContent}
+            </Drawer>
         </Box>
     );
 }
