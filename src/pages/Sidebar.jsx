@@ -11,7 +11,6 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
     const location = useLocation();
     const [openSubmenus, setOpenSubmenus] = useState({});
 
-    // Effect to open the correct submenu if a child route is active
     useEffect(() => {
         const parentOfPath = (path) => {
             if (path.startsWith('/student')) return 'Μαθητές';
@@ -52,7 +51,8 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
         { text: "Καθηγητές", icon: "fas fa-user-graduate", path: "#" },
         { text: "Διαγωνίσματα", icon: "fas fa-file-alt", path: "#" },
         { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", path: "#" },
-        { text: "Πληρωμές", icon: "fas fa-money-bill", path: "#" },
+        // --- ΑΛΛΑΓΗ: Προσθήκη path για τις Πληρωμές ---
+        { text: "Πληρωμές", icon: "fas fa-money-bill", path: "/payments" },
         { text: "Βαθμολογίες", icon: "fas fa-chart-bar", path: "#" },
         { text: "Απουσίες", icon: "fas fa-times", path: "#" },
         { text: "Εργασίες υποχρεώσεις", icon: "fas fa-tasks", path: "#" },
@@ -78,7 +78,7 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
             to: item.path,
             onClick: (e) => {
                 if (item.isParent) {
-                    e.preventDefault(); // Prevent navigation for parent items
+                    e.preventDefault();
                     handleSubmenuClick(item.text);
                 } else if (mobileOpen) {
                     handleDrawerToggle();
@@ -91,15 +91,11 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
                 justifyContent: 'flex-start',
                 gap: '8px',
                 borderLeft: '5px solid transparent',
-                
-                // --- ΑΛΛΑΓΗ: Προεπιλεγμένο χρώμα σε μαύρο ---
                 color: 'black',
                 '& .MuiListItemIcon-root': {
                     color: 'black',
                     transition: 'color 0.3s ease',
                 },
-
-                // --- ΑΛΛΑΓΗ: Χρώμα σε μπλε για hover και selected ---
                 '&:hover, &.Mui-selected': {
                     color: '#1e86cc',
                     backgroundColor: '#eef6fb !important',

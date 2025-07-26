@@ -16,6 +16,7 @@ import Classrooms from './pages/Classrooms.jsx';
 import NewClassroomForm from './pages/NewClassroomForm.jsx';
 import WeeklyScheduleCalendar from './pages/WeeklyScheduleCalendar.jsx';
 import StudentForm from './pages/StudentForm.jsx'; 
+import Payments from './pages/Payments.jsx'; // <-- ΝΕΟ IMPORT
 
 const drawerWidth = 280;
 
@@ -35,7 +36,8 @@ function App() {
     const [classrooms, setClassrooms] = useState([]);
     const [allStudents, setAllStudents] = useState([]);
     const [allGrades, setAllGrades] = useState([]);
-    const [allAbsences, setAllAbsences] = useState([]); // <-- ΝΕΟ STATE ΓΙΑ ΑΠΟΥΣΙΕΣ
+    const [allAbsences, setAllAbsences] = useState([]);
+    const [allPayments, setAllPayments] = useState([]); // <-- ΝΕΟ STATE ΓΙΑ ΠΛΗΡΩΜΕΣ
     const [loading, setLoading] = useState(true);
     const [db, setDb] = useState(null);
     const [auth, setAuth] = useState(null);
@@ -51,7 +53,8 @@ function App() {
         let unsubscribeClassrooms = () => {};
         let unsubscribeStudents = () => {};
         let unsubscribeGrades = () => {};
-        let unsubscribeAbsences = () => {}; // <-- ΝΕΟ Unsubscribe
+        let unsubscribeAbsences = () => {};
+        let unsubscribePayments = () => {}; // <-- ΝΕΟ Unsubscribe
         let isMounted = true;
 
         try {
@@ -83,26 +86,21 @@ function App() {
                     }
                     if (isMounted) setUserId(firebaseAuth.currentUser?.uid || crypto.randomUUID());
                     
-                    const classroomsCollectionRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/classrooms`);
-                    unsubscribeClassrooms = onSnapshot(query(classroomsCollectionRef), (snapshot) => {
-                        if (isMounted) setClassrooms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                    });
+                    const classroomsRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/classrooms`);
+                    unsubscribeClassrooms = onSnapshot(query(classroomsRef), s => isMounted && setClassrooms(s.docs.map(d => ({ id: d.id, ...d.data() }))));
 
-                    const studentsCollectionRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/students`);
-                    unsubscribeStudents = onSnapshot(query(studentsCollectionRef), (snapshot) => {
-                        if (isMounted) setAllStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                    });
+                    const studentsRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/students`);
+                    unsubscribeStudents = onSnapshot(query(studentsRef), s => isMounted && setAllStudents(s.docs.map(d => ({ id: d.id, ...d.data() }))));
 
-                    const gradesCollectionRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/grades`);
-                    unsubscribeGrades = onSnapshot(query(gradesCollectionRef), (snapshot) => {
-                         if (isMounted) setAllGrades(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                    });
+                    const gradesRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/grades`);
+                    unsubscribeGrades = onSnapshot(query(gradesRef), s => isMounted && setAllGrades(s.docs.map(d => ({ id: d.id, ...d.data() }))));
 
-                    // --- ΝΕΟ LISTENER ΓΙΑ ΤΙΣ ΑΠΟΥΣΙΕΣ ---
-                    const absencesCollectionRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/absences`);
-                    unsubscribeAbsences = onSnapshot(query(absencesCollectionRef), (snapshot) => {
-                         if (isMounted) setAllAbsences(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                    });
+                    const absencesRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/absences`);
+                    unsubscribeAbsences = onSnapshot(query(absencesRef), s => isMounted && setAllAbsences(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+
+                    // --- ΝΕΟ LISTENER ΓΙΑ ΤΙΣ ΠΛΗΡΩΜΕΣ ---
+                    const paymentsRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/payments`);
+                    unsubscribePayments = onSnapshot(query(paymentsRef), s => isMounted && setAllPayments(s.docs.map(d => ({ id: d.id, ...d.data() }))));
 
                     if(isMounted) setLoading(false);
 
@@ -121,7 +119,8 @@ function App() {
             unsubscribeClassrooms();
             unsubscribeStudents();
             unsubscribeGrades();
-            unsubscribeAbsences(); // <-- Καθαρισμός του νέου listener
+            unsubscribeAbsences();
+            unsubscribePayments(); // <-- Καθαρισμός του νέου listener
             isMounted = false;
         };
     }, []);
@@ -136,8 +135,7 @@ function App() {
         setModalData(null);
     };
     
-    // --- Προσθήκη του allAbsences στα κοινά props ---
-    const commonProps = { db, appId, classrooms, allStudents, allGrades, allAbsences, openModalWithData, loading, userId };
+    const commonProps = { db, appId, classrooms, allStudents, allGrades, allAbsences, allPayments, loading, userId };
 
     return (
         <BrowserRouter>
@@ -146,9 +144,7 @@ function App() {
                 <Box component="main" sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - ${drawerWidth}px)` } }}>
                     <AppBar position="fixed" sx={{ width: { md: `calc(100% - ${drawerWidth}px)` }, ml: { md: `${drawerWidth}px` }, backgroundColor: 'white', boxShadow: 'none', borderBottom: '1px solid #e0e0e0' }}>
                         <Toolbar>
-                            <IconButton color="inherit" aria-label="open drawer" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { md: 'none' }, color: 'text.primary' }}>
-                                <MenuIcon />
-                            </IconButton>
+                            <IconButton color="inherit" aria-label="open drawer" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { md: 'none' }, color: 'text.primary' }}><MenuIcon /></IconButton>
                             <DashboardHeader />
                         </Toolbar>
                     </AppBar>
@@ -162,6 +158,7 @@ function App() {
                         <Route path="/classroom/new" element={<NewClassroomForm {...commonProps} />} />
                         <Route path="/classroom/edit/:classroomId" element={<ClassroomFormWrapper {...commonProps} />} />
                         <Route path="/calendar" element={<WeeklyScheduleCalendar {...commonProps} />} />
+                        <Route path="/payments" element={<Payments {...commonProps} />} /> {/* <-- ΝΕΑ ΔΙΑΔΡΟΜΗ */}
                     </Routes>
                 </Box>
                 <Dialog open={isModalOpen} onClose={closeModal} maxWidth="md" fullWidth>
