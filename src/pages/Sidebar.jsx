@@ -43,20 +43,20 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
         {
             text: "Τάξεις - Τμήματα", icon: "fas fa-chalkboard", isParent: true,
             subItems: [
-                { text: "Τμήματα", icon: "fas fa-door-open", path: "/classrooms" },
                 { text: "Νέο Τμήμα", icon: "fas fa-plus", path: "/classroom/new" },
+                { text: "Τμήματα", icon: "fas fa-door-open", path: "/classrooms" },
             ]
         },
         { text: "Μαθήματα", icon: "fas fa-book", path: "#" },
         { text: "Καθηγητές", icon: "fas fa-user-graduate", path: "#" },
-        { text: "Διαγωνίσματα", icon: "fas fa-file-alt", path: "#" },
+        { text: "Διαγωνίσματα - Εργασίες", icon: "fas fa-file-alt", path: "#" },
         { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", path: "#" },
         // --- ΑΛΛΑΓΗ: Προσθήκη path για τις Πληρωμές ---
         { text: "Πληρωμές", icon: "fas fa-money-bill", path: "/payments" },
         { text: "Βαθμολογίες", icon: "fas fa-chart-bar", path: "#" },
         { text: "Απουσίες", icon: "fas fa-times", path: "#" },
         { text: "Εργασίες υποχρεώσεις", icon: "fas fa-tasks", path: "#" },
-        { text: "Έγγραφα", icon: "fas fa-file", path: "#" },
+        { text: "Βιβλιοθήκη", icon: "fas fa-file", path: "#" },
         { text: "Apprenticeships & Thesis", icon: "fas fa-briefcase", path: "#" },
         { text: "Transportation", icon: "fas fa-bus", path: "#" },
     ];

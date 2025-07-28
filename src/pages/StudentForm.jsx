@@ -250,7 +250,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                     <Grid container spacing={3}>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Όνομα" name="firstName" value={formData.firstName} onChange={handleInputChange} required size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Επώνυμο" name="lastName" value={formData.lastName} onChange={handleInputChange} required size="small" /></Grid>
-                        <Grid item xs={12} sm={6}><TextField fullWidth label="Ημερομηνία Γέννησης" name="dob" type="date" value={formData.dob} onChange={handleInputChange} InputLabelProps={{ shrink: true }} size="small" /></Grid>
+                        <Grid item xs={12} sm={6}><TextField fullWidth label="Ημερομηνία Εγγραφής" name="dob" type="date" value={formData.dob} onChange={handleInputChange} InputLabelProps={{ shrink: true }} size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Τηλέφωνο Μαθητή" name="studentPhone" value={formData.studentPhone} onChange={handleInputChange} size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Διεύθυνση" name="address" value={formData.address} onChange={handleInputChange} size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} size="small" /></Grid>
@@ -329,7 +329,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                                                                                 label={
                                                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                                                         <Box sx={{ width: 16, height: 16, borderRadius: '50%', backgroundColor: c.color || '#ccc', flexShrink: 0 }} />
-                                                                                        <ListItemText primary={<Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Typography component="span" variant="body1">{c.classroomName || 'N/A'} -</Typography><Typography component="span" variant="body2" sx={{ color: isFull ? 'error.main' : 'text.secondary', fontWeight: 'bold' }}>Θέσεις: {enrolledCount}/{c.maxStudents}</Typography></Box>} secondary={formatSchedule(c.schedule)} sx={{ m: 0 }} />
+                                                                                        <ListItemText primary={<Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Typography component="span" variant="body1">{c.classroomName || 'N/A'} -</Typography><Typography component="span" variant="body2" sx={{ color: isFull ? 'error.main' : 'text.secondary', fontWeight: 'bold' }}>Θέσεις: {enrolledCount}/{c.maxStudents} ({(c.maxStudents-enrolledCount)} θέσεις κενές)</Typography></Box>} secondary={formatSchedule(c.schedule)} sx={{ m: 0 }} />
                                                                                     </Box>
                                                                                 }
                                                                             />
