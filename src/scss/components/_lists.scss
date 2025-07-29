@@ -1,0 +1,11 @@
+@use '../base/variables' as v;
+
+.MuiListItemButton-root {
+    padding: 5px 16px !important;
+    transition: color 0.3s ease;
+    justify-content: center;
+}
+
+.MuiListItemText-root {
+    margin-left: 30px;
+}

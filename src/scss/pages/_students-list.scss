@@ -1,0 +1,15 @@
+// Ειδικό στυλ για τους πίνακες ΜΕΣΑ στην καρτέλα του μαθητή (TabPanel)
+@use '../base/variables' as v;
+
+.student-details-panel {
+  // Στοχεύουμε την επικεφαλίδα του πίνακα ΜΟΝΟ μέσα σε αυτό το container
+  .MuiTableHead-root {
+    background-color: v.$primary-color; // Χρησιμοποιούμε τη μεταβλητή μας!
+
+    // Στοχεύουμε τα κελιά της επικεφαλίδας
+    .MuiTableCell-head {
+      color: v.$text-color-light;
+      font-weight: bold;
+    }
+  }
+}

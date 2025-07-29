@@ -1,0 +1,12 @@
+// 1. Μεταβλητές και βασικά στυλ
+@use 'base/variables';
+// @import 'base/base';
+
+// 2. Γενικά στυλ για components
+@use 'components/tables';
+@use 'components/lists';
+@use 'components/sidebar';
+
+// 3. Ειδικά στυλ για κάθε σελίδα
+@use 'pages/students-list';
+

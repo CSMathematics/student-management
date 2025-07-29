@@ -1,0 +1,80 @@
+@use '../base/variables' as v;
+
+// Στυλ για το Sidebar
+.sidebar-header {
+    padding: 10px;
+    text-align: center;
+    margin: 0 16px 16px 16px;
+
+    h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+}
+
+.sidebar-section-title {
+    padding: 16px 16px 8px 16px;
+    color: '#000';
+    font-weight: bold;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+// Νέο, βελτιωμένο στυλ για τα κουμπιά του Sidebar
+.MuiListItemButton-root {
+    // Βασικό στυλ για όλα τα κουμπιά
+    padding: 10px 16px;
+    transition: all 0.3s ease;
+    justify-content: flex-start;
+    gap: 8px; // Λίγο μεγαλύτερο gap για καλύτερη εμφάνιση
+    border-left: 5px solid transparent;
+    color: #555;
+
+    .MuiListItemIcon-root {
+        color: #555;
+        transition: all 0.3s ease;
+        // min-width: 40px; // Διατηρούμε τη μείωση της απόστασης
+    }
+
+    .MuiListItemText-root {
+        margin-left: -30px; // Μηδενίζουμε την παλιά αρνητική απόσταση
+    }
+
+    // Hover και Selected states για όλα τα κουμπιά
+    &:hover,
+    &.Mui-selected {
+        color: v.$primary-color;
+        background-color: #eef6fb;
+        border-left: 5px solid v.$primary-color;
+        padding-left: 24px !important; // Μετακίνηση προς τα δεξιά
+
+        .MuiListItemIcon-root {
+            color: v.$primary-color;
+        }
+    }
+
+    // Ειδικό στυλ για τα υπο-στοιχεία (sub-items)
+    &.sub-item {
+        padding-left: 32px !important; // Μεγαλύτερη εσοχή για τα sub-items
+
+        &:hover,
+        &.Mui-selected {
+            padding-left: 40px !important; // Ακόμα μεγαλύτερη μετακίνηση για τα sub-items
+        }
+    }
+}
+
+
+// Απόκρυψη της scrollbar για το συρτάρι του sidebar
+.MuiDrawer-paper {
+    &::-webkit-scrollbar {
+        display: none; // Για Chrome, Safari, Opera
+    }
+
+    -ms-overflow-style: none; // Για IE and Edge
+    scrollbar-width: none; // Για Firefox
+}

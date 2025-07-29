@@ -425,7 +425,9 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                             <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Email</TableCell>
                             <TableCell sx={{ color: '#fff', fontWeight: 'bold', width: '10%' }}>Ενέργειες</TableCell>
                         </TableRow>
-                        <TableRow sx={{ backgroundColor: 'white' }}>
+                    </TableHead>
+                    <TableBody>
+                                                <TableRow id="filter-row">
                             <TableCell />
                             <TableCell><FilterTextField name="lastName" placeholder="Επώνυμο..." filters={filters} handleFilterChange={handleFilterChange} handleClearFilter={handleClearFilter} /></TableCell>
                             <TableCell><FilterTextField name="firstName" placeholder="Όνομα..." filters={filters} handleFilterChange={handleFilterChange} handleClearFilter={handleClearFilter} /></TableCell>
@@ -444,7 +446,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                     fullWidth
                                     InputLabelProps={{ shrink: true }}
                                     InputProps={{
-                                        style: { fontSize: '0.875rem' }, // Removed color: 'inherit'
+                                        style: { fontSize: '0.875rem' },
                                         endAdornment: filters.createdAt ? (
                                             <InputAdornment position="end">
                                                 <IconButton
@@ -461,7 +463,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                         '& .MuiInput-underline:before': { borderBottomColor: 'rgba(0, 0, 0, 0.2)' },
                                         '& .MuiInput-underline:hover:not(.Mui-disabled):before': { borderBottomColor: 'rgba(0, 0, 0, 0.42)' },
                                         '& .MuiInputBase-input': {
-                                            color: 'rgba(0, 0, 0, 0.54)', // Explicitly set text color
+                                            colorScheme: 'light', 
                                         },
                                     }}
                                 />
@@ -469,8 +471,6 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                             <TableCell><FilterTextField name="email" placeholder="Email..." filters={filters} handleFilterChange={handleFilterChange} handleClearFilter={handleClearFilter} /></TableCell>
                             <TableCell />
                         </TableRow>
-                    </TableHead>
-                    <TableBody>
                         {paginatedStudents.map((student) => {
                             const isSelected = selectedStudent?.id === student.id;
                             return (
@@ -554,7 +554,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                                 {subjectAverage && <Typography variant="subtitle1" sx={{mb: 2}}>Μέσος όρος στο μάθημα <strong>{selectedSubject}</strong>: <strong>{subjectAverage}</strong></Typography>}
                                                                 {studentGrades.length > 0 ? (
                                                                     <>
-                                                                        <TableContainer><Table size="small"><TableHead><TableRow><TableCell>Ημ/νία</TableCell><TableCell>Μάθημα</TableCell><TableCell>Τύπος</TableCell><TableCell align="right">Βαθμός</TableCell><TableCell align="right">Μ.Ο. Τάξης</TableCell></TableRow></TableHead><TableBody>{studentGrades.map((grade) => {
+                                                                        <TableContainer><Table size="small"><TableHead><TableRow sx={{ backgroundColor: '#1e86cc' }}><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Ημ/νία</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Μάθημα</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Τύπος</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }} align="right">Βαθμός</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }} align="right">Μ.Ο. Τάξης</TableCell></TableRow></TableHead><TableBody>{studentGrades.map((grade) => {
                                                                             const key = `${dayjs(getDateFromFirestoreTimestamp(grade.date)).format('YYYY-MM-DD')}-${grade.subject}-${grade.type}`;
                                                                             const classAvg = classAveragesMap.get(key);
                                                                             return (<TableRow key={grade.id}><TableCell>{dayjs(getDateFromFirestoreTimestamp(grade.date)).format('DD/MM/YYYY')}</TableCell><TableCell>{grade.subject}</TableCell><TableCell>{grade.type}</TableCell><TableCell align="right">{grade.grade}</TableCell><TableCell align="right">{classAvg || '-'}</TableCell></TableRow>);
@@ -571,15 +571,15 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}><Typography variant="h6">Οικονομική Εικόνα</Typography><Button variant="contained" size="small" startIcon={<PaymentIcon />} onClick={() => navigate('/payments', { state: { selectedStudentId: selectedStudent.id } })}>Διαχείριση Πληρωμών</Button></Box>
                                                                         <Grid container spacing={2} sx={{ mb: 3 }}><Grid item xs={12} sm={4}><DetailItem label="Σύνολο Διδάκτρων" value={`${studentFinancials.finalFees.toFixed(2)} €`} /></Grid><Grid item xs={12} sm={4}><DetailItem label="Πληρωμένα" value={`${studentFinancials.totalPaid.toFixed(2)} €`} /></Grid><Grid item xs={12} sm={4}><DetailItem label="Υπόλοιπο" value={`${studentFinancials.balance.toFixed(2)} €`} /></Grid></Grid>
                                                                         <Typography variant="h6" sx={{ mb: 2 }}>Μηνιαία Ανάλυση</Typography>
-                                                                        <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}><Table size="small"><TableHead><TableRow><TableCell>Μήνας</TableCell><TableCell>Δίδακτρα</TableCell><TableCell>Πληρωμένα</TableCell><TableCell>Υπόλοιπο</TableCell><TableCell>Κατάσταση</TableCell></TableRow></TableHead><TableBody>{monthlyBreakdown.map(row => (<TableRow key={row.month}><TableCell>{row.month}</TableCell><TableCell>{row.due.toFixed(2)} €</TableCell><TableCell>{row.paid.toFixed(2)} €</TableCell><TableCell>{row.balance.toFixed(2)} €</TableCell><TableCell><Chip label={row.status} color={row.status === 'Εξοφλημένο' ? 'success' : 'warning'} size="small" /></TableCell></TableRow>))}</TableBody></Table></TableContainer>
+                                                                        <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}><Table size="small"><TableHead><TableRow sx={{ backgroundColor: '#1e86cc' }}><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Μήνας</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Δίδακτρα</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Πληρωμένα</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Υπόλοιπο</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Κατάσταση</TableCell></TableRow></TableHead><TableBody>{monthlyBreakdown.map(row => (<TableRow key={row.month}><TableCell>{row.month}</TableCell><TableCell>{row.due.toFixed(2)} €</TableCell><TableCell>{row.paid.toFixed(2)} €</TableCell><TableCell>{row.balance.toFixed(2)} €</TableCell><TableCell><Chip label={row.status} color={row.status === 'Εξοφλημένο' ? 'success' : 'warning'} size="small" /></TableCell></TableRow>))}</TableBody></Table></TableContainer>
                                                                         <Typography variant="h6" sx={{ mb: 2 }}>Ιστορικό Πληρωμών</Typography>
-                                                                        <TableContainer component={Paper} variant="outlined"><Table size="small"><TableHead><TableRow><TableCell>Ημερομηνία</TableCell><TableCell>Ποσό</TableCell><TableCell>Σημειώσεις</TableCell></TableRow></TableHead><TableBody>{selectedStudentPayments.map((p) => (<TableRow key={p.id}><TableCell>{dayjs(getDateFromFirestoreTimestamp(p.date)).format('DD/MM/YYYY')}</TableCell><TableCell>{p.amount.toFixed(2)} €</TableCell><TableCell>{p.notes}</TableCell></TableRow>))}</TableBody></Table></TableContainer>
+                                                                        <TableContainer component={Paper} variant="outlined"><Table size="small"><TableHead><TableRow sx={{ backgroundColor: '#1e86cc' }}><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Ημερομηνία</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Ποσό</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Σημειώσεις</TableCell></TableRow></TableHead><TableBody>{selectedStudentPayments.map((p) => (<TableRow key={p.id}><TableCell>{dayjs(getDateFromFirestoreTimestamp(p.date)).format('DD/MM/YYYY')}</TableCell><TableCell>{p.amount.toFixed(2)} €</TableCell><TableCell>{p.notes}</TableCell></TableRow>))}</TableBody></Table></TableContainer>
                                                                     </>
                                                                 ) : (<Typography>Δεν υπάρχουν οικονομικά στοιχεία για αυτόν τον μαθητή.</Typography>)}
                                                             </TabPanel>
                                                             <TabPanel value={activeTab} index={4}>
                                                                 <Box><Typography variant="h6">Σύνολο Απουσιών: {studentAbsences.total}</Typography><Typography color="text.secondary">Δικαιολογημένες: {studentAbsences.justified}</Typography><Typography color="text.secondary">Αδικαιολόγητες: {studentAbsences.unjustified}</Typography></Box>
-                                                                {studentAbsences.list.length > 0 ? (<TableContainer sx={{mt: 2}}><Table size="small"><TableHead><TableRow><TableCell>Ημ/νία</TableCell><TableCell>Μάθημα</TableCell><TableCell>Κατάσταση</TableCell></TableRow></TableHead><TableBody>{studentAbsences.list.map((absence) => (<TableRow key={absence.id}><TableCell>{dayjs(getDateFromFirestoreTimestamp(absence.date)).format('DD/MM/YYYY')}</TableCell><TableCell>{absence.subject}</TableCell><TableCell>{absence.status === 'justified' ? 'Δικαιολογημένη' : 'Αδικαιολόγητη'}</TableCell></TableRow>))}</TableBody></Table></TableContainer>) : (<Typography sx={{mt: 2}}>Δεν υπάρχουν καταχωρημένες απουσίες.</Typography>)}
+                                                                {studentAbsences.list.length > 0 ? (<TableContainer sx={{mt: 2}}><Table size="small"><TableHead><TableRow sx={{ backgroundColor: '#1e86cc' }}><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Ημ/νία</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Μάθημα</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Κατάσταση</TableCell></TableRow></TableHead><TableBody>{studentAbsences.list.map((absence) => (<TableRow key={absence.id}><TableCell>{dayjs(getDateFromFirestoreTimestamp(absence.date)).format('DD/MM/YYYY')}</TableCell><TableCell>{absence.subject}</TableCell><TableCell>{absence.status === 'justified' ? 'Δικαιολογημένη' : 'Αδικαιολόγητη'}</TableCell></TableRow>))}</TableBody></Table></TableContainer>) : (<Typography sx={{mt: 2}}>Δεν υπάρχουν καταχωρημένες απουσίες.</Typography>)}
                                                             </TabPanel>
                                                             <TabPanel value={activeTab} index={5}>
                                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}><Typography variant="h6">Ιστορικό Επικοινωνίας</Typography><Button variant="contained" startIcon={<AddIcon />} size="small" onClick={() => setOpenCommunicationDialog(true)}>Νέα Καταχώρηση</Button></Box>

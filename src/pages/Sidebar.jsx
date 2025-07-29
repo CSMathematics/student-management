@@ -85,27 +85,28 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
                 }
             },
             selected: isSelected,
-            sx: {
-                padding: `10px ${isSubItem ? '32px' : '16px'} !important`,
-                transition: 'all 0.3s ease',
-                justifyContent: 'flex-start',
-                gap: '8px',
-                borderLeft: '5px solid transparent',
-                color: 'black',
-                '& .MuiListItemIcon-root': {
-                    color: 'black',
-                    transition: 'color 0.3s ease',
-                },
-                '&:hover, &.Mui-selected': {
-                    color: '#1e86cc',
-                    backgroundColor: '#eef6fb !important',
-                    borderLeft: '5px solid #1e86cc',
-                    paddingLeft: `${isSubItem ? '38px' : '24px'} !important`,
-                    '& .MuiListItemIcon-root': {
-                        color: '#1e86cc',
-                    },
-                },
-            }
+            className: isSubItem ? 'sub-item' : '',
+            // sx: {
+            //     padding: `10px ${isSubItem ? '40px' : '24px'} !important`,
+            //     transition: 'all 0.3s ease',
+            //     justifyContent: 'flex-start',
+            //     gap: '2px',
+            //     borderLeft: '5px solid transparent',
+            //     color: 'black',
+            //     '& .MuiListItemIcon-root': {
+            //         color: 'black',
+            //         transition: 'color 0.3s ease',
+            //     },
+            //     '&:hover, &.Mui-selected': {
+            //         color: '#1e86cc',
+            //         backgroundColor: '#eef6fb !important',
+            //         borderLeft: '5px solid #1e86cc',
+            //         paddingLeft: `${isSubItem ? '28px' : '24px'} !important`,
+            //         '& .MuiListItemIcon-root': {
+            //             color: '#1e86cc',
+            //         },
+            //     },
+            // }
         };
 
         return (

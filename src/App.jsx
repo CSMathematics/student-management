@@ -8,6 +8,7 @@ import { getAuth, signInAnonymously, signInWithCustomToken } from 'firebase/auth
 import { getFirestore, collection, query, onSnapshot } from 'firebase/firestore';
 import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 
+import './scss/main.scss';
 import Sidebar from './pages/Sidebar.jsx';
 import DashboardHeader from './pages/DashboardHeader.jsx';
 import DashboardContent from './pages/DashboardContent.jsx';
