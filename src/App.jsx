@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { Box, Dialog, DialogContent, DialogTitle, IconButton, Toolbar, AppBar } from '@mui/material';
+import { Box, Dialog, DialogContent, DialogTitle, IconButton, Toolbar, AppBar, CircularProgress, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
 import { initializeApp } from 'firebase/app';
@@ -16,21 +16,35 @@ import StudentsList from './pages/StudentsList.jsx';
 import Classrooms from './pages/Classrooms.jsx';
 import NewClassroomForm from './pages/NewClassroomForm.jsx';
 import WeeklyScheduleCalendar from './pages/WeeklyScheduleCalendar.jsx';
-import StudentForm from './pages/StudentForm.jsx'; 
-import Payments from './pages/Payments.jsx'; // <-- ΝΕΟ IMPORT
+import StudentForm from './pages/StudentForm.jsx';
+import Payments from './pages/Payments.jsx';
+import Courses from './pages/Courses.jsx';
+import CourseForm from './pages/CourseForm.jsx';
+import TeachersList from './pages/TeachersList.jsx';
+import TeacherForm from './pages/TeacherForm.jsx';
+// --- ΝΕΟ IMPORT ---
+import Announcements from './pages/Announcements.jsx';
 
 const drawerWidth = 280;
 
+// Wrappers
 const StudentFormWrapper = (props) => {
     const { studentId } = useParams();
     const studentToEdit = props.allStudents.find(s => s.id === studentId);
     return <StudentForm {...props} initialData={studentToEdit} key={studentId} />;
 };
-
 const ClassroomFormWrapper = (props) => {
     const { classroomId } = useParams();
     const classroomToEdit = props.classrooms.find(c => c.id === classroomId);
     return <NewClassroomForm {...props} classroomToEdit={classroomToEdit} key={classroomId} />;
+};
+const CourseFormWrapper = (props) => {
+    const { courseId } = useParams();
+    return <CourseForm {...props} key={courseId} />;
+};
+const TeacherFormWrapper = (props) => {
+    const { teacherId } = useParams();
+    return <TeacherForm {...props} key={teacherId} />;
 };
 
 function App() {
@@ -38,7 +52,10 @@ function App() {
     const [allStudents, setAllStudents] = useState([]);
     const [allGrades, setAllGrades] = useState([]);
     const [allAbsences, setAllAbsences] = useState([]);
-    const [allPayments, setAllPayments] = useState([]); // <-- ΝΕΟ STATE ΓΙΑ ΠΛΗΡΩΜΕΣ
+    const [allPayments, setAllPayments] = useState([]);
+    const [allCourses, setAllCourses] = useState([]);
+    const [allTeachers, setAllTeachers] = useState([]);
+    const [allAnnouncements, setAllAnnouncements] = useState([]); // <-- ΝΕΑ ΚΑΤΑΣΤΑΣΗ
     const [loading, setLoading] = useState(true);
     const [db, setDb] = useState(null);
     const [auth, setAuth] = useState(null);
@@ -47,82 +64,87 @@ function App() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalData, setModalData] = useState(null);
     const [mobileOpen, setMobileOpen] = useState(false);
-    
+    const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+
     const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
     useEffect(() => {
-        let unsubscribeClassrooms = () => {};
-        let unsubscribeStudents = () => {};
-        let unsubscribeGrades = () => {};
-        let unsubscribeAbsences = () => {};
-        let unsubscribePayments = () => {}; // <-- ΝΕΟ Unsubscribe
         let isMounted = true;
+        const unsubscribes = [];
 
-        try {
-            const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : import.meta.env.VITE_FIREBASE_CONFIG;
-            const currentAppId = typeof __app_id !== 'undefined' ? __app_id : import.meta.env.VITE_APP_ID || 'default-local-app-id';
-            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : import.meta.env.VITE_INITIAL_AUTH_TOKEN;
-            const parsedFirebaseConfig = firebaseConfigString ? JSON.parse(firebaseConfigString) : {};
+        const setupFirebase = async () => {
+            try {
+                const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : import.meta.env.VITE_FIREBASE_CONFIG;
+                const currentAppId = typeof __app_id !== 'undefined' ? __app_id : import.meta.env.VITE_APP_ID || 'default-local-app-id';
+                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : import.meta.env.VITE_INITIAL_AUTH_TOKEN;
+                const parsedFirebaseConfig = firebaseConfigString ? JSON.parse(firebaseConfigString) : {};
 
-            if (Object.keys(parsedFirebaseConfig).length === 0 || !parsedFirebaseConfig.apiKey) {
-                if (isMounted) setLoading(false); return;
-            }
-
-            const app = initializeApp(parsedFirebaseConfig);
-            const firestoreDb = getFirestore(app);
-            const firebaseAuth = getAuth(app);
-
-            if (isMounted) {
-                setDb(firestoreDb);
-                setAuth(firebaseAuth);
-                setAppId(currentAppId);
-            }
-
-            const authenticateAndListen = async () => {
-                try {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(firebaseAuth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(firebaseAuth);
+                if (!parsedFirebaseConfig.apiKey) {
+                    if (isMounted) {
+                        setLoading(false);
+                        setIsFirebaseReady(true);
                     }
-                    if (isMounted) setUserId(firebaseAuth.currentUser?.uid || crypto.randomUUID());
-                    
-                    const classroomsRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/classrooms`);
-                    unsubscribeClassrooms = onSnapshot(query(classroomsRef), s => isMounted && setClassrooms(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-
-                    const studentsRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/students`);
-                    unsubscribeStudents = onSnapshot(query(studentsRef), s => isMounted && setAllStudents(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-
-                    const gradesRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/grades`);
-                    unsubscribeGrades = onSnapshot(query(gradesRef), s => isMounted && setAllGrades(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-
-                    const absencesRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/absences`);
-                    unsubscribeAbsences = onSnapshot(query(absencesRef), s => isMounted && setAllAbsences(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-
-                    // --- ΝΕΟ LISTENER ΓΙΑ ΤΙΣ ΠΛΗΡΩΜΕΣ ---
-                    const paymentsRef = collection(firestoreDb, `artifacts/${currentAppId}/public/data/payments`);
-                    unsubscribePayments = onSnapshot(query(paymentsRef), s => isMounted && setAllPayments(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-
-                    if(isMounted) setLoading(false);
-
-                } catch (authError) {
-                    console.error("Error during Firebase authentication:", authError);
-                    if (isMounted) setLoading(false);
+                    return;
                 }
-            };
-            authenticateAndListen();
-        } catch (initError) {
-            console.error("Error during Firebase initialization:", initError);
-            if (isMounted) setLoading(false);
-        }
+
+                const app = initializeApp(parsedFirebaseConfig);
+                const firestoreDb = getFirestore(app);
+                const firebaseAuth = getAuth(app);
+
+                if (isMounted) {
+                    setDb(firestoreDb);
+                    setAuth(firebaseAuth);
+                    setAppId(currentAppId);
+                }
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(firebaseAuth, initialAuthToken);
+                } else {
+                    await signInAnonymously(firebaseAuth);
+                }
+
+                if (isMounted) {
+                    setUserId(firebaseAuth.currentUser?.uid || crypto.randomUUID());
+                    
+                    const collections = {
+                        classrooms: setClassrooms,
+                        students: setAllStudents,
+                        grades: setAllGrades,
+                        absences: setAllAbsences,
+                        payments: setAllPayments,
+                        courses: setAllCourses,
+                        teachers: setAllTeachers,
+                        announcements: setAllAnnouncements, // <-- ΝΕΑ ΣΥΛΛΟΓΗ
+                    };
+
+                    for (const [name, setter] of Object.entries(collections)) {
+                        const ref = collection(firestoreDb, `artifacts/${currentAppId}/public/data/${name}`);
+                        const unsubscribe = onSnapshot(query(ref), snapshot => {
+                            if (isMounted) {
+                                setter(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+                            }
+                        });
+                        unsubscribes.push(unsubscribe);
+                    }
+
+                    setLoading(false);
+                    setIsFirebaseReady(true);
+                }
+
+            } catch (error) {
+                console.error("Firebase Initialization/Auth Error:", error);
+                if (isMounted) {
+                    setLoading(false);
+                    setIsFirebaseReady(true);
+                }
+            }
+        };
+
+        setupFirebase();
 
         return () => {
-            unsubscribeClassrooms();
-            unsubscribeStudents();
-            unsubscribeGrades();
-            unsubscribeAbsences();
-            unsubscribePayments(); // <-- Καθαρισμός του νέου listener
             isMounted = false;
+            unsubscribes.forEach(unsub => unsub());
         };
     }, []);
 
@@ -136,7 +158,16 @@ function App() {
         setModalData(null);
     };
     
-    const commonProps = { db, appId, classrooms, allStudents, allGrades, allAbsences, allPayments, loading, userId };
+    const commonProps = { db, appId, classrooms, allStudents, allGrades, allAbsences, allPayments, allCourses, allTeachers, allAnnouncements, loading, userId };
+
+    if (!isFirebaseReady) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <CircularProgress />
+                <Typography sx={{ ml: 2 }}>Σύνδεση στις υπηρεσίες...</Typography>
+            </Box>
+        );
+    }
 
     return (
         <BrowserRouter>
@@ -159,7 +190,15 @@ function App() {
                         <Route path="/classroom/new" element={<NewClassroomForm {...commonProps} />} />
                         <Route path="/classroom/edit/:classroomId" element={<ClassroomFormWrapper {...commonProps} />} />
                         <Route path="/calendar" element={<WeeklyScheduleCalendar {...commonProps} />} />
-                        <Route path="/payments" element={<Payments {...commonProps} />} /> {/* <-- ΝΕΑ ΔΙΑΔΡΟΜΗ */}
+                        <Route path="/payments" element={<Payments {...commonProps} />} />
+                        <Route path="/courses" element={<Courses {...commonProps} />} />
+                        <Route path="/course/new" element={<CourseForm {...commonProps} />} />
+                        <Route path="/course/edit/:courseId" element={<CourseFormWrapper {...commonProps} />} />
+                        <Route path="/teachers" element={<TeachersList {...commonProps} />} />
+                        <Route path="/teacher/new" element={<TeacherForm {...commonProps} />} />
+                        <Route path="/teacher/edit/:teacherId" element={<TeacherFormWrapper {...commonProps} />} />
+                        {/* --- ΝΕΑ ΔΙΑΔΡΟΜΗ --- */}
+                        <Route path="/announcements" element={<Announcements {...commonProps} />} />
                     </Routes>
                 </Box>
                 <Dialog open={isModalOpen} onClose={closeModal} maxWidth="md" fullWidth>

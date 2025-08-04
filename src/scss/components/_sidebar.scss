@@ -28,7 +28,7 @@
 .MuiListItemButton-root {
     // Βασικό στυλ για όλα τα κουμπιά
     padding: 10px 16px;
-    transition: all 0.3s ease;
+    transition: all 0.3s ease !important;
     justify-content: flex-start;
     gap: 8px; // Λίγο μεγαλύτερο gap για καλύτερη εμφάνιση
     border-left: 5px solid transparent;

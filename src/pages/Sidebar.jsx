@@ -15,6 +15,7 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
         const parentOfPath = (path) => {
             if (path.startsWith('/student')) return 'Μαθητές';
             if (path.startsWith('/classroom')) return 'Τάξεις - Τμήματα';
+            if (path.startsWith('/teacher')) return 'Καθηγητές'; // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
             return null;
         };
         const parent = parentOfPath(location.pathname);
@@ -47,12 +48,20 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
                 { text: "Τμήματα", icon: "fas fa-door-open", path: "/classrooms" },
             ]
         },
-        { text: "Μαθήματα", icon: "fas fa-book", path: "#" },
-        { text: "Καθηγητές", icon: "fas fa-user-graduate", path: "#" },
+        { text: "Μαθήματα", icon: "fas fa-book", path: "/courses" }, // <-- ΕΝΗΜΕΡΩΣΗ ΤΟΥ PATH
+        // --- ΝΕΑ ΕΝΟΤΗΤΑ ΓΙΑ ΚΑΘΗΓΗΤΕΣ ---
+        {
+            text: "Καθηγητές", icon: "fas fa-user-graduate", isParent: true,
+            subItems: [
+                { text: "Νέος καθηγητής", icon: "fas fa-plus", path: "/teacher/new" },
+                { text: "Λίστα καθηγητών", icon: "fas fa-chalkboard-user", path: "/teachers" },
+            ]
+        },
         { text: "Διαγωνίσματα - Εργασίες", icon: "fas fa-file-alt", path: "#" },
         { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", path: "#" },
-        // --- ΑΛΛΑΓΗ: Προσθήκη path για τις Πληρωμές ---
         { text: "Πληρωμές", icon: "fas fa-money-bill", path: "/payments" },
+        // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
+        { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
         { text: "Βαθμολογίες", icon: "fas fa-chart-bar", path: "#" },
         { text: "Απουσίες", icon: "fas fa-times", path: "#" },
         { text: "Εργασίες υποχρεώσεις", icon: "fas fa-tasks", path: "#" },
@@ -86,27 +95,6 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
             },
             selected: isSelected,
             className: isSubItem ? 'sub-item' : '',
-            // sx: {
-            //     padding: `10px ${isSubItem ? '40px' : '24px'} !important`,
-            //     transition: 'all 0.3s ease',
-            //     justifyContent: 'flex-start',
-            //     gap: '2px',
-            //     borderLeft: '5px solid transparent',
-            //     color: 'black',
-            //     '& .MuiListItemIcon-root': {
-            //         color: 'black',
-            //         transition: 'color 0.3s ease',
-            //     },
-            //     '&:hover, &.Mui-selected': {
-            //         color: '#1e86cc',
-            //         backgroundColor: '#eef6fb !important',
-            //         borderLeft: '5px solid #1e86cc',
-            //         paddingLeft: `${isSubItem ? '28px' : '24px'} !important`,
-            //         '& .MuiListItemIcon-root': {
-            //             color: '#1e86cc',
-            //         },
-            //     },
-            // }
         };
 
         return (

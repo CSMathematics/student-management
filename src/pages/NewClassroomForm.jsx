@@ -29,13 +29,14 @@ const generateTimeSlots = (startHour, endHour) => {
 const DAYS_OF_WEEK = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο'];
 const TIME_SLOTS = generateTimeSlots(8, 22);
 
-function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms }) {
+function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allTeachers }) {
     const location = useLocation();
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
         classroomName: '', grade: '', specialization: '', subject: '',
         maxStudents: 5, schedule: [], color: '#2196f3', enrolledStudents: [],
+        teacherId: '', teacherName: ''
     });
     
     const [selectedDay, setSelectedDay] = useState('');
@@ -62,7 +63,7 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms }) {
         return durationString || '0 λεπτά';
     }, []);
 
-    // --- ΔΙΟΡΘΩΣΗ: Απλοποιημένη συνάρτηση. Παίρνει το 'classrooms' από το scope. ---
+    // --- ΑΝΑΒΑΘΜΙΣΜΕΝΗ ΣΥΝΑΡΤΗΣΗ ΕΛΕΓΧΟΥ ΕΠΙΚΑΛΥΨΗΣ ---
     const checkOverlap = useCallback((targetDay, targetStartTimeStr, targetEndTimeStr, currentFormSchedule = [], ignoreFormScheduleIds = []) => {
         const targetStart = dayjs(`2000-01-01T${targetStartTimeStr}`);
         const targetEnd = dayjs(`2000-01-01T${targetEndTimeStr}`);
@@ -71,22 +72,34 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms }) {
             return true;
         }
 
-        // Βεβαιωνόμαστε ότι το 'classrooms' είναι πίνακας πριν το χρησιμοποιήσουμε
+        const targetTeacherId = formData.teacherId;
+
+        // Αν δεν έχει επιλεγεί καθηγητής, δεν υπάρχει λόγος για έλεγχο επικάλυψης.
+        if (!targetTeacherId) {
+            return false;
+        }
+
+        // Έλεγχος σε σχέση με τα ήδη υπάρχοντα τμήματα στη βάση δεδομένων
         if (Array.isArray(classrooms)) {
             for (const classroom of classrooms) {
                 if (classroomToEdit && classroom.id === classroomToEdit.id) continue;
-                if (classroom.schedule && Array.isArray(classroom.schedule)) {
-                    for (const slot of classroom.schedule) {
-                        if (slot.day === targetDay) {
-                            const existingStart = dayjs(`2000-01-01T${slot.startTime}`);
-                            const existingEnd = dayjs(`2000-01-01T${slot.endTime}`);
-                            if (targetStart.isBefore(existingEnd) && targetEnd.isAfter(existingStart)) return true;
+                
+                // Έλεγχος μόνο στα τμήματα του ΙΔΙΟΥ καθηγητή
+                if (classroom.teacherId === targetTeacherId) {
+                    if (classroom.schedule && Array.isArray(classroom.schedule)) {
+                        for (const slot of classroom.schedule) {
+                            if (slot.day === targetDay) {
+                                const existingStart = dayjs(`2000-01-01T${slot.startTime}`);
+                                const existingEnd = dayjs(`2000-01-01T${slot.endTime}`);
+                                if (targetStart.isBefore(existingEnd) && targetEnd.isAfter(existingStart)) return true;
+                            }
                         }
                     }
                 }
             }
         }
 
+        // Έλεγχος σε σχέση με τις άλλες ώρες που προστίθενται σε αυτή τη φόρμα
         for (const slot of currentFormSchedule) {
             if (ignoreFormScheduleIds.includes(slot.id)) continue;
             if (slot.day === targetDay) {
@@ -96,7 +109,7 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms }) {
             }
         }
         return false;
-    }, [classroomToEdit, classrooms]);
+    }, [classroomToEdit, classrooms, formData.teacherId]); // <-- Προσθήκη formData.teacherId
 
     const getAvailableTimeSlotsForDay = useCallback((day, currentFormSchedule) => {
         if (!day) return [];
@@ -116,7 +129,8 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms }) {
     useEffect(() => {
         const initialFormState = {
             classroomName: '', grade: '', specialization: '', subject: '',
-            maxStudents: 5, schedule: [], color: '#2196f3', enrolledStudents: []
+            maxStudents: 5, schedule: [], color: '#2196f3', enrolledStudents: [],
+            teacherId: '', teacherName: ''
         };
         const processSchedule = (schedule) => (schedule || []).map(s => ({ ...s, id: s.id || Date.now() + Math.random(), duration: calculateDuration(s.startTime, s.endTime) }));
 
@@ -128,7 +142,7 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms }) {
             setFormData(prev => ({ ...initialFormState, ...prev, schedule: scheduleFromLocation }));
         }
     }, [classroomToEdit, location.state, calculateDuration]);
-
+    
     const totalScheduleDuration = useMemo(() => {
         if (!formData.schedule || formData.schedule.length === 0) return '0 ώρες';
         const totalMinutes = formData.schedule.reduce((acc, curr) => {
@@ -154,6 +168,16 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms }) {
 
     const handleRemoveScheduleEntry = (idToRemove) => {
         setFormData(prev => ({ ...prev, schedule: prev.schedule.filter(entry => entry.id !== idToRemove) }));
+    };
+    
+    const handleTeacherChange = (e) => {
+        const teacherId = e.target.value;
+        const selectedTeacher = allTeachers.find(t => t.id === teacherId);
+        setFormData(prev => ({
+            ...prev,
+            teacherId: teacherId,
+            teacherName: selectedTeacher ? `${selectedTeacher.firstName} ${selectedTeacher.lastName}` : ''
+        }));
     };
 
     const handleSubmit = async (e) => {
@@ -231,12 +255,28 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms }) {
                         {classroomToEdit ? 'Επεξεργασία Τμήματος' : 'Δημιουργία Νέου Τμήματος'}
                     </Typography>
                     <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} sm={5}><TextField fullWidth label="Κωδικός Τμήματος" name="classroomName" value={formData.classroomName} onChange={(e) => setFormData({...formData, classroomName: e.target.value})} required size="small" /></Grid>
-                        <Grid item xs={12} sm={5}><FormControl fullWidth size="small"><InputLabel>Τάξη</InputLabel><Select name="grade" value={formData.grade} label="Τάξη" onChange={(e) => setFormData({...formData, grade: e.target.value, specialization: '', subject: ''})} required>{Object.keys(SUBJECTS_BY_GRADE_AND_CLASS).map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}</Select></FormControl></Grid>
-                        <Grid item xs={12} sm={2}><FormControl fullWidth><InputLabel shrink sx={{position: 'absolute', top: -18, left: -12, fontSize: '0.9rem'}}>Χρώμα</InputLabel><input type="color" value={formData.color} onChange={(e) => setFormData({...formData, color: e.target.value})} style={{width: '100%', height: '40px', border: '1px solid #ccc', borderRadius: '4px', padding: '2px', boxSizing: 'border-box', cursor: 'pointer'}}/></FormControl></Grid>
+                        <Grid item xs={12} sm={6}><TextField fullWidth label="Κωδικός Τμήματος" name="classroomName" value={formData.classroomName} onChange={(e) => setFormData({...formData, classroomName: e.target.value})} required size="small" /></Grid>
+                        <Grid item xs={12} sm={6}><FormControl fullWidth size="small"><InputLabel>Τάξη</InputLabel><Select name="grade" value={formData.grade} label="Τάξη" onChange={(e) => setFormData({...formData, grade: e.target.value, specialization: '', subject: ''})} required>{Object.keys(SUBJECTS_BY_GRADE_AND_CLASS).map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}</Select></FormControl></Grid>
+                        
                         {availableSpecializations.length > 0 && (<Grid item xs={12} sm={6}><FormControl fullWidth size="small"><InputLabel>Κατεύθυνση</InputLabel><Select name="specialization" value={formData.specialization} label="Κατεύθυνση" onChange={(e) => setFormData({...formData, specialization: e.target.value, subject: ''})} required>{availableSpecializations.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}</Select></FormControl></Grid>)}
                         <Grid item xs={12} sm={6}><FormControl fullWidth size="small"><InputLabel>Μάθημα</InputLabel><Select name="subject" value={formData.subject} label="Μάθημα" onChange={(e) => setFormData({...formData, subject: e.target.value})} required>{currentSubjects.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}</Select></FormControl></Grid>
-                        <Grid item xs={12} sm={6}><TextField fullWidth label="Μέγ. Μαθητές" name="maxStudents" type="number" value={formData.maxStudents} onChange={(e) => setFormData({...formData, maxStudents: e.target.value})} required size="small" /></Grid>
+                        
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>Καθηγητής</InputLabel>
+                                <Select name="teacherId" value={formData.teacherId} label="Καθηγητής" onChange={handleTeacherChange}>
+                                    <MenuItem value=""><em>Κανένας</em></MenuItem>
+                                    {allTeachers && allTeachers.map(teacher => (
+                                        <MenuItem key={teacher.id} value={teacher.id}>
+                                            {teacher.firstName} {teacher.lastName}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+
+                        <Grid item xs={12} sm={4}><TextField fullWidth label="Μέγ. Μαθητές" name="maxStudents" type="number" value={formData.maxStudents} onChange={(e) => setFormData({...formData, maxStudents: e.target.value})} required size="small" /></Grid>
+                        <Grid item xs={12} sm={2}><FormControl fullWidth><InputLabel shrink sx={{position: 'absolute', top: -18, left: -12, fontSize: '0.9rem'}}>Χρώμα</InputLabel><input type="color" value={formData.color} onChange={(e) => setFormData({...formData, color: e.target.value})} style={{width: '100%', height: '40px', border: '1px solid #ccc', borderRadius: '4px', padding: '2px', boxSizing: 'border-box', cursor: 'pointer'}}/></FormControl></Grid>
                     </Grid>
                 </Paper>
                 <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', mb: 4 }}>
