@@ -22,7 +22,6 @@ import Courses from './pages/Courses.jsx';
 import CourseForm from './pages/CourseForm.jsx';
 import TeachersList from './pages/TeachersList.jsx';
 import TeacherForm from './pages/TeacherForm.jsx';
-// --- ΝΕΟ IMPORT ---
 import Announcements from './pages/Announcements.jsx';
 
 const drawerWidth = 280;
@@ -55,7 +54,8 @@ function App() {
     const [allPayments, setAllPayments] = useState([]);
     const [allCourses, setAllCourses] = useState([]);
     const [allTeachers, setAllTeachers] = useState([]);
-    const [allAnnouncements, setAllAnnouncements] = useState([]); // <-- ΝΕΑ ΚΑΤΑΣΤΑΣΗ
+    const [allAnnouncements, setAllAnnouncements] = useState([]);
+    const [allAssignments, setAllAssignments] = useState([]); // <-- ΝΕΑ ΚΑΤΑΣΤΑΣΗ
     const [loading, setLoading] = useState(true);
     const [db, setDb] = useState(null);
     const [auth, setAuth] = useState(null);
@@ -114,7 +114,8 @@ function App() {
                         payments: setAllPayments,
                         courses: setAllCourses,
                         teachers: setAllTeachers,
-                        announcements: setAllAnnouncements, // <-- ΝΕΑ ΣΥΛΛΟΓΗ
+                        announcements: setAllAnnouncements,
+                        assignments: setAllAssignments, // <-- ΝΕΑ ΣΥΛΛΟΓΗ
                     };
 
                     for (const [name, setter] of Object.entries(collections)) {
@@ -158,7 +159,7 @@ function App() {
         setModalData(null);
     };
     
-    const commonProps = { db, appId, classrooms, allStudents, allGrades, allAbsences, allPayments, allCourses, allTeachers, allAnnouncements, loading, userId };
+    const commonProps = { db, appId, classrooms, allStudents, allGrades, allAbsences, allPayments, allCourses, allTeachers, allAnnouncements, allAssignments, loading, userId };
 
     if (!isFirebaseReady) {
         return (
@@ -197,7 +198,6 @@ function App() {
                         <Route path="/teachers" element={<TeachersList {...commonProps} />} />
                         <Route path="/teacher/new" element={<TeacherForm {...commonProps} />} />
                         <Route path="/teacher/edit/:teacherId" element={<TeacherFormWrapper {...commonProps} />} />
-                        {/* --- ΝΕΑ ΔΙΑΔΡΟΜΗ --- */}
                         <Route path="/announcements" element={<Announcements {...commonProps} />} />
                     </Routes>
                 </Box>

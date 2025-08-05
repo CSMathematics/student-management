@@ -5,7 +5,7 @@ import {
     FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle,
     DialogContent, DialogActions, TextField, DialogContentText, Tooltip, Checkbox, ListItemText
 } from '@mui/material';
-import { ClearAll, Save, Edit, Delete, CheckCircleOutline, Cancel, Add as AddIcon, Brush as BrushIcon } from '@mui/icons-material';
+import { ClearAll, Save, Edit, Delete, Print as PrintIcon, Add as AddIcon, Brush as BrushIcon, InfoOutlined as InfoOutlinedIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -37,42 +37,69 @@ const generateTimeSlots = (startHour, endHour) => {
     return slots;
 };
 
-const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherName, enrolledStudentsCount, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker, onAddMoreHours }) => (
-    <Box
-        id={`event-block-${id}`}
-        sx={{
-            position: 'absolute', left, top, width, height, backgroundColor: backgroundColor || '#2196f3',
-            color: '#fff', borderRadius: '4px', padding: '5px',
-            overflow: 'hidden', zIndex: 5, boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-            cursor: 'grab', touchAction: 'none', display: 'flex', flexDirection: 'column',
-            justifyContent: 'space-between', fontSize: '0.75rem', boxSizing: 'border-box',
-            transition: 'background-color 0.3s ease, left 0.2s, top 0.2s',
-        }}
-        onMouseDown={(e) => onDragStart(e, id)}
-    >
-        <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', cursor: 'ns-resize', zIndex: 6 }} onMouseDown={(e) => onResizeStart(e, id, 'top')} />
-        <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-            <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', fontSize: '1rem', lineHeight: '1.25rem', textWrap: 'wrap' }}>{subject}</Typography>
-            <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>{grade}</Typography>
-            {teacherName && <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic' }}>{teacherName}</Typography>}
-            <Typography variant="caption" sx={{ display: 'block' }}>Μαθητές: {enrolledStudentsCount || 0}/{maxStudents}</Typography>
-            <Typography variant="caption" sx={{ display: 'block' }}>{startTime} - {endTime}</Typography>
+const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherName, enrolledStudentsCount, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker, onAddMoreHours }) => {
+    // Show info icon for lessons of 1 hour (2 cells * 40px/cell) or less
+    const isSmall = height <= 80;
+
+    const tooltipContent = (
+        <React.Fragment>
+            <Typography color="inherit" sx={{ fontWeight: 'bold' }}>{subject} ({grade})</Typography>
+            <Typography color="inherit">{teacherName}</Typography>
+            <Typography color="inherit">{startTime} - {endTime}</Typography>
+            <Typography color="inherit">Μαθητές: {enrolledStudentsCount || 0}/{maxStudents}</Typography>
+        </React.Fragment>
+    );
+
+    return (
+        <Box
+            id={`event-block-${id}`}
+            sx={{
+                position: 'absolute', left, top, width, height, backgroundColor: backgroundColor || '#2196f3',
+                color: '#fff', borderRadius: '4px', padding: '5px',
+                overflow: 'hidden', zIndex: 5, boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                cursor: 'grab', touchAction: 'none', display: 'flex', flexDirection: 'column',
+                justifyContent: 'space-between', fontSize: '0.75rem', boxSizing: 'border-box',
+                transition: 'background-color 0.3s ease',
+            }}
+            onMouseDown={(e) => onDragStart(e, id)}
+        >
+            <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', cursor: 'ns-resize', zIndex: 6 }} onMouseDown={(e) => onResizeStart(e, id, 'top')} />
+            
+            {isSmall && (
+                <Tooltip title={tooltipContent} placement="top" arrow>
+                    <IconButton
+                        size="small"
+                        sx={{ position: 'absolute', top: 2, right: 2, color: '#fff', padding: '2px', zIndex: 8 }}
+                        onMouseDown={(e) => e.stopPropagation()} // Prevent drag from starting when clicking icon
+                    >
+                        <InfoOutlinedIcon sx={{ fontSize: '1rem' }} />
+                    </IconButton>
+                </Tooltip>
+            )}
+
+            <Box sx={{ flexGrow: 1, overflow: 'hidden', pr: isSmall ? '24px' : '5px' }}>
+                <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', fontSize: isSmall ? '0.8rem' : '1rem', lineHeight: 1.2 }}>{subject}</Typography>
+                <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', fontSize: isSmall ? '0.7rem' : 'inherit' }}>{grade}</Typography>
+                {!isSmall && teacherName && <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic' }}>{teacherName}</Typography>}
+                {!isSmall && <Typography variant="caption" sx={{ display: 'block' }}>Μαθητές: {enrolledStudentsCount || 0}/{maxStudents}</Typography>}
+                <Typography variant="caption" sx={{ display: 'block', fontSize: isSmall ? '0.7rem' : 'inherit' }}>{startTime} - {endTime}</Typography>
+            </Box>
+            <Box className="no-print" sx={{ position: 'absolute', bottom: '2px', right: '2px', display: 'flex', gap: '2px', zIndex: 7 }}>
+                <Tooltip title="Προσθήκη Ώρας"><IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onAddMoreHours(fullClassroomData); }}><AddIcon sx={{ fontSize: '0.8rem' }} /></IconButton></Tooltip>
+                <Tooltip title="Επεξεργασία"><IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onEdit(fullClassroomData); }}><Edit sx={{ fontSize: '0.8rem' }} /></IconButton></Tooltip>
+                <Tooltip title="Αλλαγή Χρώματος"><IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onOpenColorPicker(fullClassroomData); }}><BrushIcon sx={{ fontSize: '0.8rem' }} /></IconButton></Tooltip>
+                <Tooltip title="Διαγραφή"><IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onDelete(id); }}><Delete sx={{ fontSize: '0.8rem' }} /></IconButton></Tooltip>
+            </Box>
+            <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '8px', cursor: 'ns-resize', zIndex: 6 }} onMouseDown={(e) => onResizeStart(e, id, 'bottom')} />
         </Box>
-        <Box sx={{ position: 'absolute', bottom: '2px', right: '2px', display: 'flex', gap: '2px', zIndex: 7 }}>
-            <Tooltip title="Προσθήκη Ώρας"><IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onAddMoreHours(fullClassroomData); }}><AddIcon sx={{ fontSize: '0.8rem' }} /></IconButton></Tooltip>
-            <Tooltip title="Επεξεργασία"><IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onEdit(fullClassroomData); }}><Edit sx={{ fontSize: '0.8rem' }} /></IconButton></Tooltip>
-            <Tooltip title="Αλλαγή Χρώματος"><IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onOpenColorPicker(fullClassroomData); }}><BrushIcon sx={{ fontSize: '0.8rem' }} /></IconButton></Tooltip>
-            <Tooltip title="Διαγραφή"><IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onDelete(id); }}><Delete sx={{ fontSize: '0.8rem' }} /></IconButton></Tooltip>
-        </Box>
-        <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '8px', cursor: 'ns-resize', zIndex: 6 }} onMouseDown={(e) => onResizeStart(e, id, 'bottom')} />
-    </Box>
-);
+    );
+};
 
 function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, appId }) {
     const navigate = useNavigate();
     const [calendarStartHour, setCalendarStartHour] = useState(8);
     const [calendarEndHour, setCalendarEndHour] = useState(22);
-    const [selectedTeacherId, setSelectedTeacherId] = useState('all');
+    const [selectedTeacherIds, setSelectedTeacherIds] = useState([]);
     const [visibleDays, setVisibleDays] = useState(ALL_DAYS_OF_WEEK);
     const TIME_SLOTS = useMemo(() => generateTimeSlots(calendarStartHour, calendarEndHour), [calendarStartHour, calendarEndHour]);
     
@@ -101,14 +128,18 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     const [selectedClassroomForColor, setSelectedClassroomForColor] = useState(null);
     const [tempColor, setTempColor] = useState('#2196f3');
 
+    useEffect(() => {
+        if (allTeachers && allTeachers.length > 0) {
+            setSelectedTeacherIds(allTeachers.map(t => t.id));
+        }
+    }, [allTeachers]);
+
     const teacherColumns = useMemo(() => {
         if (!allTeachers) return [];
-        if (selectedTeacherId === 'all') {
-            return [...allTeachers].sort((a, b) => a.lastName.localeCompare(b.lastName));
-        }
-        const selected = allTeachers.find(t => t.id === selectedTeacherId);
-        return selected ? [selected] : [];
-    }, [allTeachers, selectedTeacherId]);
+        return allTeachers
+            .filter(teacher => selectedTeacherIds.includes(teacher.id))
+            .sort((a, b) => a.lastName.localeCompare(b.lastName));
+    }, [allTeachers, selectedTeacherIds]);
 
     useEffect(() => {
         const updateGridDimensions = () => {
@@ -484,14 +515,12 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
         await Promise.all(deletePromises);
     };
 
-    // --- ΝΕΑ ΣΥΝΑΡΤΗΣΗ ΓΙΑ ΤΗΝ ΑΛΛΑΓΗ ΤΩΝ ΟΡΑΤΩΝ ΗΜΕΡΩΝ ---
     const handleVisibleDaysChange = (event) => {
         const {
           target: { value },
         } = event;
         const selectedDays = typeof value === 'string' ? value.split(',') : value;
     
-        // Ταξινόμηση των επιλεγμένων ημερών με βάση τη σειρά τους στον αρχικό πίνακα
         const sortedSelectedDays = selectedDays.sort((a, b) => {
             return ALL_DAYS_OF_WEEK.indexOf(a) - ALL_DAYS_OF_WEEK.indexOf(b);
         });
@@ -499,11 +528,44 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
         setVisibleDays(sortedSelectedDays);
     };
 
+    const handleVisibleTeachersChange = (event) => {
+        const {
+          target: { value },
+        } = event;
+        setSelectedTeacherIds(typeof value === 'string' ? value.split(',') : value);
+    };
+
+    const handlePrint = () => {
+        window.print();
+    };
+
     return (
         <Container maxWidth={false} sx={{ mt: 4, mb: 4 }}>
-            <Paper elevation={3} sx={{ p: 3, borderRadius: '12px' }}>
-                <Typography variant="h5" sx={{ mb: 3 }}>Εβδομαδιαίο Πρόγραμμα</Typography>
-                <Box sx={{ mb: 3, display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+            <style>
+                {`
+                    @media print {
+                        body * {
+                            visibility: hidden;
+                        }
+                        #printable-schedule, #printable-schedule * {
+                            visibility: visible;
+                        }
+                        #printable-schedule {
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            width: 100%;
+                            height: 100%;
+                            overflow: visible;
+                        }
+                        .no-print {
+                            display: none !important;
+                        }
+                    }
+                `}
+            </style>
+            <Paper id="printable-schedule" elevation={3} sx={{ p: 3, borderRadius: '12px' }}>
+                <Box className="no-print" sx={{ mb: 3, display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
                     <FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>
                         <InputLabel>Ώρα Έναρξης</InputLabel>
                         <Select value={calendarStartHour} onChange={(e) => setCalendarStartHour(parseInt(e.target.value))} label="Ώρα Έναρξης">
@@ -521,7 +583,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                         <Select
                             multiple
                             value={visibleDays}
-                            onChange={handleVisibleDaysChange} // <-- ΧΡΗΣΗ ΤΗΣ ΝΕΑΣ ΣΥΝΑΡΤΗΣΗΣ
+                            onChange={handleVisibleDaysChange}
                             label="Εμφάνιση Ημερών"
                             renderValue={(selected) => selected.join(', ')}
                         >
@@ -534,59 +596,68 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                         </Select>
                     </FormControl>
                     <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
-                        <InputLabel>Προβολή Προγράμματος</InputLabel>
-                        <Select value={selectedTeacherId} onChange={(e) => setSelectedTeacherId(e.target.value)} label="Προβολή Προγράμματος">
-                           <MenuItem value="all"><em>Όλοι οι Καθηγητές</em></MenuItem>
+                        <InputLabel>Εμφάνιση Καθηγητών</InputLabel>
+                        <Select
+                            multiple
+                            value={selectedTeacherIds}
+                            onChange={handleVisibleTeachersChange}
+                            label="Εμφάνιση Καθηγητών"
+                            renderValue={(selected) => {
+                                if (selected.length === allTeachers.length) return 'Όλοι οι Καθηγητές';
+                                return `${selected.length} επιλεγμένοι`;
+                            }}
+                        >
                            {allTeachers && allTeachers.map(teacher => (
                                <MenuItem key={teacher.id} value={teacher.id}>
-                                   {teacher.firstName} {teacher.lastName}
+                                   <Checkbox checked={selectedTeacherIds.indexOf(teacher.id) > -1} />
+                                   <ListItemText primary={`${teacher.firstName} ${teacher.lastName}`} />
                                </MenuItem>
                            ))}
                         </Select>
                     </FormControl>
                     <Box sx={{ flexGrow: 1 }} />
+                    <Button variant="contained" startIcon={<PrintIcon />} onClick={handlePrint}>Εκτύπωση</Button>
                     <Button variant="outlined" color="error" startIcon={<ClearAll />} onClick={handleClearSchedule}>Εκκαθάριση</Button>
                 </Box>
+                <Typography variant="h5" sx={{ mb: 3 }} className="no-print">Εβδομαδιαίο Πρόγραμμα</Typography>
                 
-                <Box sx={{ position: 'relative', overflowX: 'auto' }}>
-                    <Box sx={{ minWidth: `${TIME_COLUMN_WIDTH_PX + (teacherColumns.length * visibleDays.length * 150)}px` }}>
+                <Box sx={{ maxHeight: '75vh', overflow: 'auto' }}>
+                    <Box sx={{ position: 'relative', minWidth: `${TIME_COLUMN_WIDTH_PX + (teacherColumns.length * visibleDays.length * 150)}px` }}>
                         <Box sx={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white' }}>
                             <Box sx={{ display: 'flex', height: `${HEADER_ROW_HEIGHT_PX}px` }}>
                                 <Box sx={{ width: `${TIME_COLUMN_WIDTH_PX}px`, flexShrink: 0, borderBottom: '1px solid #e0e0e0' }} />
                                 {visibleDays.map(day => (
                                     <Box key={day} sx={{ width: `${gridDimensions.dayWidth}px`, flexShrink: 0, textAlign: 'center', border: '1px solid #e0e0e0', borderTop: 'none', borderLeft: 'none', backgroundColor: '#1e86cc', color: '#fff' }}>
                                         <Typography variant="h6" sx={{p:1, height: '50%', boxSizing: 'border-box'}}>{day}</Typography>
-                                        {selectedTeacherId === 'all' && (
-                                            <Box sx={{ display: 'flex', borderTop: '1px solid rgba(255,255,255,0.2)', height: '50%'}}>
-                                                {teacherColumns.map((teacher, index) => (
-                                                    <Typography
-                                                        key={teacher.id}
-                                                        variant="caption"
-                                                        sx={{
-                                                            width: `${gridDimensions.teacherColumnWidth}px`,
-                                                            borderLeft: '1px solid rgba(0,0,0,0.1)',
-                                                            p: 0.5,
-                                                            boxSizing: 'border-box',
-                                                            backgroundColor: colorPalette[index % colorPalette.length],
-                                                            color: '#000',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            fontWeight: 500
-                                                        }}
-                                                    >
-                                                        {teacher.firstName} {teacher.lastName}
-                                                    </Typography>
-                                                ))}
-                                            </Box>
-                                        )}
+                                        <Box sx={{ display: 'flex', borderTop: '1px solid rgba(255,255,255,0.2)', height: '50%'}}>
+                                            {teacherColumns.map((teacher, index) => (
+                                                <Typography
+                                                    key={teacher.id}
+                                                    variant="caption"
+                                                    sx={{
+                                                        width: `${gridDimensions.teacherColumnWidth}px`,
+                                                        borderLeft: '1px solid rgba(0,0,0,0.1)',
+                                                        p: 0.5,
+                                                        boxSizing: 'border-box',
+                                                        backgroundColor: colorPalette[index % colorPalette.length],
+                                                        color: '#000',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontWeight: 500
+                                                    }}
+                                                >
+                                                    {teacher.firstName} {teacher.lastName}
+                                                </Typography>
+                                            ))}
+                                        </Box>
                                     </Box>
                                 ))}
                             </Box>
                         </Box>
                         
                         <Box sx={{ display: 'flex' }}>
-                            <Box sx={{ width: `${TIME_COLUMN_WIDTH_PX}px`, flexShrink: 0, position: 'relative', borderTop: '1px solid #e0e0e0' }}>
+                            <Box sx={{ width: `${TIME_COLUMN_WIDTH_PX}px`, flexShrink: 0, position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 9, borderTop: '1px solid #e0e0e0' }}>
                                 {TIME_SLOTS.map((time, index) => (
                                     <Box key={time} sx={{ height: `${gridDimensions.cellHeight-1}px`, position: 'relative', borderBottom: index < TIME_SLOTS.length -1 ? '1px solid #e0e0e0' : 'none', boxSizing: 'content-box' }}>
                                         <Typography variant="caption" sx={{ position: 'absolute', top: 0, right: '5px', transform: 'translateY(-50%)', backgroundColor: 'white', px: 0.5, zIndex: 1 }}>
@@ -657,20 +728,22 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
             </Paper>
 
             {/* Floating Action Panels */}
-            {!addHoursMode && accumulatedSelections.length > 0 && (
-                <Paper elevation={6} sx={{ position: 'fixed', bottom: 20, right: 20, p: 2, zIndex: 1300 }}>
-                    <Typography>Επιλεγμένες Ώρες: {accumulatedSelections.length}</Typography>
-                    <Button onClick={() => navigate('/classroom/new', { state: { initialSchedule: accumulatedSelections } })}>Δημιουργία Τμήματος</Button>
-                    <Button onClick={() => setAccumulatedSelections([])}>Εκκαθάριση</Button>
-                </Paper>
-            )}
-            {addHoursMode && (
-                 <Paper elevation={6} sx={{ position: 'fixed', bottom: 20, right: 20, p: 2, zIndex: 1300 }}>
-                    <Typography>Προσθήκη στο τμήμα: {addHoursMode.subject}</Typography>
-                    <Button onClick={handleSaveAddedHours} disabled={accumulatedSelections.length === 0}>Αποθήκευση</Button>
-                    <Button onClick={handleCancelAddHours}>Ακύρωση</Button>
-                </Paper>
-            )}
+            <Box className="no-print">
+                {!addHoursMode && accumulatedSelections.length > 0 && (
+                    <Paper elevation={6} sx={{ position: 'fixed', bottom: 20, right: 20, p: 2, zIndex: 1300 }}>
+                        <Typography>Επιλεγμένες Ώρες: {accumulatedSelections.length}</Typography>
+                        <Button onClick={() => navigate('/classroom/new', { state: { initialSchedule: accumulatedSelections } })}>Δημιουργία Τμήματος</Button>
+                        <Button onClick={() => setAccumulatedSelections([])}>Εκκαθάριση</Button>
+                    </Paper>
+                )}
+                {addHoursMode && (
+                    <Paper elevation={6} sx={{ position: 'fixed', bottom: 20, right: 20, p: 2, zIndex: 1300 }}>
+                        <Typography>Προσθήκη στο τμήμα: {addHoursMode.subject}</Typography>
+                        <Button onClick={handleSaveAddedHours} disabled={accumulatedSelections.length === 0}>Αποθήκευση</Button>
+                        <Button onClick={handleCancelAddHours}>Ακύρωση</Button>
+                    </Paper>
+                )}
+            </Box>
 
             {/* Dialogs */}
             <Dialog open={!!deleteInfo} onClose={() => setDeleteInfo(null)}>
