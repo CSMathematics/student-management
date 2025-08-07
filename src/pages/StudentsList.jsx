@@ -7,13 +7,16 @@ import {
     IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, CircularProgress,
     Tabs, Tab, Divider, FormControl, InputLabel, Select, MenuItem, Chip, List, ListItem, ListItemText, Alert, Collapse, InputAdornment
 } from '@mui/material';
-import { Edit, Delete, Payment as PaymentIcon, Save as SaveIcon, Add as AddIcon, UploadFile, Download, DeleteForever, KeyboardArrowDown, KeyboardArrowUp, PeopleAlt, Clear } from '@mui/icons-material';
+import { 
+    Edit, Delete, Payment as PaymentIcon, Save as SaveIcon, Add as AddIcon, UploadFile, 
+    Download, DeleteForever, KeyboardArrowDown, KeyboardArrowUp, PeopleAlt, Clear, Assessment as ReportIcon 
+} from '@mui/icons-material';
 import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import dayjs from 'dayjs';
 import StudentProgressChart from './StudentProgressChart.jsx';
 
-// Helper component for displaying details in a structured way
+// Helper component για την εμφάνιση λεπτομερειών
 const DetailItem = ({ label, value }) => (
     <Box sx={{ mb: 2 }}>
         <Typography variant="body2" color="text.secondary" display="block" sx={{ fontWeight: 500 }}>
@@ -34,13 +37,13 @@ function TabPanel(props) {
     );
 }
 
-// More robust date handling function
+// Πιο ανθεκτική συνάρτηση για ημερομηνίες από το Firestore
 const getDateFromFirestoreTimestamp = (timestamp) => {
-    if (!timestamp) return new Date(0); // Return epoch for null/undefined values
-    if (timestamp && typeof timestamp.toDate === 'function') return timestamp.toDate(); // Firestore Timestamp
-    if (timestamp instanceof Date) return timestamp; // JavaScript Date
+    if (!timestamp) return new Date(0);
+    if (timestamp && typeof timestamp.toDate === 'function') return timestamp.toDate();
+    if (timestamp instanceof Date) return timestamp;
     const d = dayjs(timestamp);
-    return d.isValid() ? d.toDate() : new Date(0); // String or anything else
+    return d.isValid() ? d.toDate() : new Date(0);
 };
 
 const schoolYearMonths = [
@@ -57,7 +60,7 @@ const formatSchedule = (schedule) => {
     return schedule.map(slot => `${dayMapping[slot.day] || slot.day.substring(0, 2)} ${slot.startTime}-${slot.endTime}`).join(' | ');
 };
 
-// Define the FilterTextField component outside the main component to prevent re-renders losing focus
+// Component για το πεδίο φίλτρου
 const FilterTextField = ({ name, filters, handleFilterChange, handleClearFilter, ...props }) => (
     <TextField
         name={name}
@@ -140,7 +143,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));
-        setPage(0); // Reset to first page on filter change
+        setPage(0);
     };
 
     const handleClearFilter = (filterName) => {
@@ -263,16 +266,15 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     const filteredAndSortedStudents = useMemo(() => {
         let filtered = (allStudents || []).filter(student => student && student.id && student.lastName);
 
-        // Apply all active filters
         filtered = filtered.filter(student => {
             return Object.keys(filters).every(key => {
-                const filterValue = filters[key]; // Keep it as is, not lowercased for date
-                if (!filterValue) return true; // If filter is empty, skip it
+                const filterValue = filters[key];
+                if (!filterValue) return true;
 
                 if (key === 'createdAt') {
                     if (!student.createdAt) return false;
                     const studentDate = dayjs(getDateFromFirestoreTimestamp(student.createdAt));
-                    const filterDate = dayjs(filterValue); // filterValue is 'YYYY-MM-DD' from date picker
+                    const filterDate = dayjs(filterValue);
                     return studentDate.isSame(filterDate, 'day');
                 }
 
@@ -281,7 +283,6 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
             });
         });
 
-        // Apply sorting
         if (sortColumn) {
             filtered.sort((a, b) => {
                 const aValue = a[sortColumn] || '';
@@ -314,6 +315,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     };
 
     const handleEditClick = (student) => navigate(`/student/edit/${student.id}`);
+    const handleReportClick = (student) => navigate(`/student/report/${student.id}`);
     const handleDeleteClick = (student) => { setStudentToDelete(student); setOpenDeleteConfirm(true); };
     const handleCloseDeleteConfirm = () => { setOpenDeleteConfirm(false); setStudentToDelete(null); };
     const handleConfirmDelete = async () => {
@@ -332,7 +334,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
         try {
             const studentRef = doc(db, `artifacts/${appId}/public/data/students`, selectedStudent.id);
             await updateDoc(studentRef, { notes: studentNotes });
-            setSelectedStudent(prev => ({...prev, notes: studentNotes})); // Immediately update local state
+            setSelectedStudent(prev => ({...prev, notes: studentNotes}));
             setNotesFeedback({ type: 'success', message: 'Οι σημειώσεις αποθηκεύτηκαν!' });
         } catch (error) {
             console.error("Error saving notes:", error);
@@ -413,21 +415,21 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
             <TableContainer component={Paper} elevation={3} sx={{ borderRadius: '5px' }}>
                 <Table>
                     <TableHead>
-                        <TableRow sx={{ backgroundColor: '#1e86cc' }}>
-                            <TableCell sx={{ color: '#fff', fontWeight: 'bold', width: '5%' }} />
-                            <TableCell sx={{ color: '#fff', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => handleSort('lastName')}>Επώνυμο</TableCell>
-                            <TableCell sx={{ color: '#fff', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => handleSort('firstName')}>Όνομα</TableCell>
-                            <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Τηλέφωνο</TableCell>
-                            <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Τάξη</TableCell>
-                            <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Κατεύθυνση</TableCell>
-                            <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Διεύθυνση</TableCell>
-                            <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Ημ/νία Εγγραφής</TableCell>
-                            <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Email</TableCell>
-                            <TableCell sx={{ color: '#fff', fontWeight: 'bold', width: '10%' }}>Ενέργειες</TableCell>
+                        <TableRow>
+                            <TableCell sx={{ width: '5%' }} />
+                            <TableCell sx={{ cursor: 'pointer' }} onClick={() => handleSort('lastName')}>Επώνυμο</TableCell>
+                            <TableCell sx={{ cursor: 'pointer' }} onClick={() => handleSort('firstName')}>Όνομα</TableCell>
+                            <TableCell>Τηλέφωνο</TableCell>
+                            <TableCell>Τάξη</TableCell>
+                            <TableCell>Κατεύθυνση</TableCell>
+                            <TableCell>Διεύθυνση</TableCell>
+                            <TableCell>Ημ/νία Εγγραφής</TableCell>
+                            <TableCell>Email</TableCell>
+                            <TableCell sx={{ width: '10%' }}>Ενέργειες</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                                                <TableRow id="filter-row">
+                        <TableRow id="filter-row">
                             <TableCell />
                             <TableCell><FilterTextField name="lastName" placeholder="Επώνυμο..." filters={filters} handleFilterChange={handleFilterChange} handleClearFilter={handleClearFilter} /></TableCell>
                             <TableCell><FilterTextField name="firstName" placeholder="Όνομα..." filters={filters} handleFilterChange={handleFilterChange} handleClearFilter={handleClearFilter} /></TableCell>
@@ -446,7 +448,6 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                     fullWidth
                                     InputLabelProps={{ shrink: true }}
                                     InputProps={{
-                                        style: { fontSize: '0.875rem' },
                                         endAdornment: filters.createdAt ? (
                                             <InputAdornment position="end">
                                                 <IconButton
@@ -454,17 +455,10 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                     onClick={() => handleClearFilter('createdAt')}
                                                     size="small"
                                                 >
-                                                    <Clear sx={{ fontSize: '1rem', color: 'rgba(0, 0, 0, 0.54)' }} />
+                                                    <Clear sx={{ fontSize: '1rem' }} />
                                                 </IconButton>
                                             </InputAdornment>
                                         ) : null,
-                                    }}
-                                    sx={{
-                                        '& .MuiInput-underline:before': { borderBottomColor: 'rgba(0, 0, 0, 0.2)' },
-                                        '& .MuiInput-underline:hover:not(.Mui-disabled):before': { borderBottomColor: 'rgba(0, 0, 0, 0.42)' },
-                                        '& .MuiInputBase-input': {
-                                            colorScheme: 'light', 
-                                        },
                                     }}
                                 />
                             </TableCell>
@@ -500,10 +494,10 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                         <TableCell>{student.email}</TableCell>
                                         <TableCell>
                                             <IconButton size="small" color="primary" onClick={(e) => { e.stopPropagation(); handleEditClick(student); }}><Edit /></IconButton>
+                                            <IconButton size="small" color="secondary" onClick={(e) => { e.stopPropagation(); handleReportClick(student); }}><ReportIcon /></IconButton>
                                             <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); handleDeleteClick(student); }}><Delete /></IconButton>
                                         </TableCell>
                                     </TableRow>
-                                    {/* Conditionally render the entire collapsible row */}
                                     {isSelected && (
                                         <TableRow>
                                             <TableCell sx={{ padding: 0, border: 'none' }} colSpan={10}>
@@ -554,7 +548,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                                 {subjectAverage && <Typography variant="subtitle1" sx={{mb: 2}}>Μέσος όρος στο μάθημα <strong>{selectedSubject}</strong>: <strong>{subjectAverage}</strong></Typography>}
                                                                 {studentGrades.length > 0 ? (
                                                                     <>
-                                                                        <TableContainer><Table size="small"><TableHead><TableRow sx={{ backgroundColor: '#1e86cc' }}><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Ημ/νία</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Μάθημα</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Τύπος</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }} align="right">Βαθμός</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }} align="right">Μ.Ο. Τάξης</TableCell></TableRow></TableHead><TableBody>{studentGrades.map((grade) => {
+                                                                        <TableContainer><Table size="small"><TableHead><TableRow><TableCell>Ημ/νία</TableCell><TableCell>Μάθημα</TableCell><TableCell>Τύπος</TableCell><TableCell align="right">Βαθμός</TableCell><TableCell align="right">Μ.Ο. Τάξης</TableCell></TableRow></TableHead><TableBody>{studentGrades.map((grade) => {
                                                                             const key = `${dayjs(getDateFromFirestoreTimestamp(grade.date)).format('YYYY-MM-DD')}-${grade.subject}-${grade.type}`;
                                                                             const classAvg = classAveragesMap.get(key);
                                                                             return (<TableRow key={grade.id}><TableCell>{dayjs(getDateFromFirestoreTimestamp(grade.date)).format('DD/MM/YYYY')}</TableCell><TableCell>{grade.subject}</TableCell><TableCell>{grade.type}</TableCell><TableCell align="right">{grade.grade}</TableCell><TableCell align="right">{classAvg || '-'}</TableCell></TableRow>);
@@ -571,15 +565,15 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}><Typography variant="h6">Οικονομική Εικόνα</Typography><Button variant="contained" size="small" startIcon={<PaymentIcon />} onClick={() => navigate('/payments', { state: { selectedStudentId: selectedStudent.id } })}>Διαχείριση Πληρωμών</Button></Box>
                                                                         <Grid container spacing={2} sx={{ mb: 3 }}><Grid item xs={12} sm={4}><DetailItem label="Σύνολο Διδάκτρων" value={`${studentFinancials.finalFees.toFixed(2)} €`} /></Grid><Grid item xs={12} sm={4}><DetailItem label="Πληρωμένα" value={`${studentFinancials.totalPaid.toFixed(2)} €`} /></Grid><Grid item xs={12} sm={4}><DetailItem label="Υπόλοιπο" value={`${studentFinancials.balance.toFixed(2)} €`} /></Grid></Grid>
                                                                         <Typography variant="h6" sx={{ mb: 2 }}>Μηνιαία Ανάλυση</Typography>
-                                                                        <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}><Table size="small"><TableHead><TableRow sx={{ backgroundColor: '#1e86cc' }}><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Μήνας</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Δίδακτρα</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Πληρωμένα</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Υπόλοιπο</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Κατάσταση</TableCell></TableRow></TableHead><TableBody>{monthlyBreakdown.map(row => (<TableRow key={row.month}><TableCell>{row.month}</TableCell><TableCell>{row.due.toFixed(2)} €</TableCell><TableCell>{row.paid.toFixed(2)} €</TableCell><TableCell>{row.balance.toFixed(2)} €</TableCell><TableCell><Chip label={row.status} color={row.status === 'Εξοφλημένο' ? 'success' : 'warning'} size="small" /></TableCell></TableRow>))}</TableBody></Table></TableContainer>
+                                                                        <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}><Table size="small"><TableHead><TableRow><TableCell>Μήνας</TableCell><TableCell>Δίδακτρα</TableCell><TableCell>Πληρωμένα</TableCell><TableCell>Υπόλοιπο</TableCell><TableCell>Κατάσταση</TableCell></TableRow></TableHead><TableBody>{monthlyBreakdown.map(row => (<TableRow key={row.month}><TableCell>{row.month}</TableCell><TableCell>{row.due.toFixed(2)} €</TableCell><TableCell>{row.paid.toFixed(2)} €</TableCell><TableCell>{row.balance.toFixed(2)} €</TableCell><TableCell><Chip label={row.status} color={row.status === 'Εξοφλημένο' ? 'success' : 'warning'} size="small" /></TableCell></TableRow>))}</TableBody></Table></TableContainer>
                                                                         <Typography variant="h6" sx={{ mb: 2 }}>Ιστορικό Πληρωμών</Typography>
-                                                                        <TableContainer component={Paper} variant="outlined"><Table size="small"><TableHead><TableRow sx={{ backgroundColor: '#1e86cc' }}><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Ημερομηνία</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Ποσό</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Σημειώσεις</TableCell></TableRow></TableHead><TableBody>{selectedStudentPayments.map((p) => (<TableRow key={p.id}><TableCell>{dayjs(getDateFromFirestoreTimestamp(p.date)).format('DD/MM/YYYY')}</TableCell><TableCell>{p.amount.toFixed(2)} €</TableCell><TableCell>{p.notes}</TableCell></TableRow>))}</TableBody></Table></TableContainer>
+                                                                        <TableContainer component={Paper} variant="outlined"><Table size="small"><TableHead><TableRow><TableCell>Ημερομηνία</TableCell><TableCell>Ποσό</TableCell><TableCell>Σημειώσεις</TableCell></TableRow></TableHead><TableBody>{selectedStudentPayments.map((p) => (<TableRow key={p.id}><TableCell>{dayjs(getDateFromFirestoreTimestamp(p.date)).format('DD/MM/YYYY')}</TableCell><TableCell>{p.amount.toFixed(2)} €</TableCell><TableCell>{p.notes}</TableCell></TableRow>))}</TableBody></Table></TableContainer>
                                                                     </>
                                                                 ) : (<Typography>Δεν υπάρχουν οικονομικά στοιχεία για αυτόν τον μαθητή.</Typography>)}
                                                             </TabPanel>
                                                             <TabPanel value={activeTab} index={4}>
                                                                 <Box><Typography variant="h6">Σύνολο Απουσιών: {studentAbsences.total}</Typography><Typography color="text.secondary">Δικαιολογημένες: {studentAbsences.justified}</Typography><Typography color="text.secondary">Αδικαιολόγητες: {studentAbsences.unjustified}</Typography></Box>
-                                                                {studentAbsences.list.length > 0 ? (<TableContainer sx={{mt: 2}}><Table size="small"><TableHead><TableRow sx={{ backgroundColor: '#1e86cc' }}><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Ημ/νία</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Μάθημα</TableCell><TableCell sx={{ color: 'white', borderBottom: 'none' }}>Κατάσταση</TableCell></TableRow></TableHead><TableBody>{studentAbsences.list.map((absence) => (<TableRow key={absence.id}><TableCell>{dayjs(getDateFromFirestoreTimestamp(absence.date)).format('DD/MM/YYYY')}</TableCell><TableCell>{absence.subject}</TableCell><TableCell>{absence.status === 'justified' ? 'Δικαιολογημένη' : 'Αδικαιολόγητη'}</TableCell></TableRow>))}</TableBody></Table></TableContainer>) : (<Typography sx={{mt: 2}}>Δεν υπάρχουν καταχωρημένες απουσίες.</Typography>)}
+                                                                {studentAbsences.list.length > 0 ? (<TableContainer sx={{mt: 2}}><Table size="small"><TableHead><TableRow><TableCell>Ημ/νία</TableCell><TableCell>Μάθημα</TableCell><TableCell>Κατάσταση</TableCell></TableRow></TableHead><TableBody>{studentAbsences.list.map((absence) => (<TableRow key={absence.id}><TableCell>{dayjs(getDateFromFirestoreTimestamp(absence.date)).format('DD/MM/YYYY')}</TableCell><TableCell>{absence.subject}</TableCell><TableCell>{absence.status === 'justified' ? 'Δικαιολογημένη' : 'Αδικαιολόγητη'}</TableCell></TableRow>))}</TableBody></Table></TableContainer>) : (<Typography sx={{mt: 2}}>Δεν υπάρχουν καταχωρημένες απουσίες.</Typography>)}
                                                             </TabPanel>
                                                             <TabPanel value={activeTab} index={5}>
                                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}><Typography variant="h6">Ιστορικό Επικοινωνίας</Typography><Button variant="contained" startIcon={<AddIcon />} size="small" onClick={() => setOpenCommunicationDialog(true)}>Νέα Καταχώρηση</Button></Box>
@@ -611,7 +605,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                 
             <Dialog open={openDeleteConfirm} onClose={handleCloseDeleteConfirm}><DialogTitle>Επιβεβαίωση Διαγραφής</DialogTitle><DialogContent><DialogContentText>Είστε σίγουροι ότι θέλετε να διαγράψετε τον μαθητή {studentToDelete?.firstName} {studentToDelete?.lastName};</DialogContentText></DialogContent><DialogActions><Button onClick={handleCloseDeleteConfirm}>Ακύρωση</Button><Button onClick={handleConfirmDelete} color="error">Διαγραφή</Button></DialogActions></Dialog>
             <Dialog open={openCommunicationDialog} onClose={() => setOpenCommunicationDialog(false)} fullWidth maxWidth="sm"><DialogTitle>Νέα Καταχώρηση Επικοινωνίας</DialogTitle><DialogContent><Grid container spacing={2} sx={{pt: 1}}><Grid item xs={12} sm={6}><TextField label="Ημερομηνία" type="date" value={newCommunicationEntry.date} onChange={(e) => setNewCommunicationEntry(prev => ({ ...prev, date: e.target.value }))} fullWidth InputLabelProps={{ shrink: true }}/></Grid><Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>Τύπος</InputLabel><Select value={newCommunicationEntry.type} label="Τύπος" onChange={(e) => setNewCommunicationEntry(prev => ({ ...prev, type: e.target.value }))}><MenuItem value="Τηλεφώνημα">Τηλεφώνημα</MenuItem><MenuItem value="Email">Email</MenuItem><MenuItem value="Συνάντηση">Συνάντηση</MenuItem></Select></FormControl></Grid><Grid item xs={12}><TextField label="Περίληψη" multiline rows={4} fullWidth value={newCommunicationEntry.summary} onChange={(e) => setNewCommunicationEntry(prev => ({ ...prev, summary: e.target.value }))}/></Grid></Grid></DialogContent><DialogActions><Button onClick={() => setOpenCommunicationDialog(false)}>Ακύρωση</Button><Button onClick={handleSaveCommunication} variant="contained" disabled={isSavingCommunication}>{isSavingCommunication ? <CircularProgress size={24} /> : 'Αποθήκευση'}</Button></DialogActions></Dialog>
-            <Dialog open={openDocDeleteConfirm} onClose={() => setOpenDocDeleteConfirm(false)}><DialogTitle>Επιβεβαίωση Διαγραφής Εγγράφου</DialogTitle><DialogContent><DialogContentText>Είστε σίγουροι ότι θέλετε να διαγράψετε το έγγραφο "{documentToDelete?.name}"; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</DialogContentText></DialogContent><DialogActions><Button onClick={() => setOpenDocDeleteConfirm(false)}>Ακύρωση</Button><Button onClick={handleConfirmDelete} color="error">Διαγραφή</Button></DialogActions></Dialog>
+            <Dialog open={openDocDeleteConfirm} onClose={() => setOpenDocDeleteConfirm(false)}><DialogTitle>Επιβεβαίωση Διαγραφής Εγγράφου</DialogTitle><DialogContent><DialogContentText>Είστε σίγουροι ότι θέλετε να διαγράψετε το έγγραφο "{documentToDelete?.name}"; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</DialogContentText></DialogContent><DialogActions><Button onClick={() => setOpenDocDeleteConfirm(false)}>Ακύρωση</Button><Button onClick={handleConfirmDocDelete} color="error">Διαγραφή</Button></DialogActions></Dialog>
         </Container>
     );
 }

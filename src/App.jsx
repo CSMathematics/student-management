@@ -13,6 +13,7 @@ import Sidebar from './pages/Sidebar.jsx';
 import DashboardHeader from './pages/DashboardHeader.jsx';
 import DashboardContent from './pages/DashboardContent.jsx';
 import StudentsList from './pages/StudentsList.jsx';
+import StudentReport from './pages/StudentReport.jsx';
 import Classrooms from './pages/Classrooms.jsx';
 import NewClassroomForm from './pages/NewClassroomForm.jsx';
 import WeeklyScheduleCalendar from './pages/WeeklyScheduleCalendar.jsx';
@@ -23,6 +24,8 @@ import CourseForm from './pages/CourseForm.jsx';
 import TeachersList from './pages/TeachersList.jsx';
 import TeacherForm from './pages/TeacherForm.jsx';
 import Announcements from './pages/Announcements.jsx';
+// --- ΑΛΛΑΓΗ: Εισάγουμε τον δικό μας ThemeProvider και useTheme ---
+import { ThemeProvider, useTheme } from './context/ThemeContext.jsx';
 
 const drawerWidth = 280;
 
@@ -46,7 +49,9 @@ const TeacherFormWrapper = (props) => {
     return <TeacherForm {...props} key={teacherId} />;
 };
 
-function App() {
+function AppContent() {
+    // --- ΑΛΛΑΓΗ: Παίρνουμε τη συνάρτηση toggleTheme από το context ---
+    const { toggleTheme } = useTheme(); 
     const [classrooms, setClassrooms] = useState([]);
     const [allStudents, setAllStudents] = useState([]);
     const [allGrades, setAllGrades] = useState([]);
@@ -55,7 +60,7 @@ function App() {
     const [allCourses, setAllCourses] = useState([]);
     const [allTeachers, setAllTeachers] = useState([]);
     const [allAnnouncements, setAllAnnouncements] = useState([]);
-    const [allAssignments, setAllAssignments] = useState([]); // <-- ΝΕΑ ΚΑΤΑΣΤΑΣΗ
+    const [allAssignments, setAllAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [db, setDb] = useState(null);
     const [auth, setAuth] = useState(null);
@@ -115,7 +120,7 @@ function App() {
                         courses: setAllCourses,
                         teachers: setAllTeachers,
                         announcements: setAllAnnouncements,
-                        assignments: setAllAssignments, // <-- ΝΕΑ ΣΥΛΛΟΓΗ
+                        assignments: setAllAssignments,
                     };
 
                     for (const [name, setter] of Object.entries(collections)) {
@@ -175,10 +180,11 @@ function App() {
             <Box sx={{ display: 'flex' }}>
                 <Sidebar handleDrawerToggle={handleDrawerToggle} mobileOpen={mobileOpen} />
                 <Box component="main" sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - ${drawerWidth}px)` } }}>
-                    <AppBar position="fixed" sx={{ width: { md: `calc(100% - ${drawerWidth}px)` }, ml: { md: `${drawerWidth}px` }, backgroundColor: 'white', boxShadow: 'none', borderBottom: '1px solid #e0e0e0' }}>
+                    <AppBar position="fixed" sx={{ width: { md: `calc(100% - ${drawerWidth}px)` }, ml: { md: `${drawerWidth}px` }, backgroundColor: 'transparent', boxShadow: 'none', borderBottom: '1px solid', borderColor: 'divider' }}>
                         <Toolbar>
-                            <IconButton color="inherit" aria-label="open drawer" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { md: 'none' }, color: 'text.primary' }}><MenuIcon /></IconButton>
-                            <DashboardHeader />
+                            <IconButton color="inherit" aria-label="open drawer" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { md: 'none' } }}><MenuIcon /></IconButton>
+                            {/* --- ΑΛΛΑΓΗ: Περνάμε τη συνάρτηση toggleTheme στο Header --- */}
+                            <DashboardHeader toggleTheme={toggleTheme} />
                         </Toolbar>
                     </AppBar>
                     <Toolbar />
@@ -187,6 +193,7 @@ function App() {
                         <Route path="/students" element={<StudentsList {...commonProps} />} />
                         <Route path="/student/new" element={<StudentForm {...commonProps} />} />
                         <Route path="/student/edit/:studentId" element={<StudentFormWrapper {...commonProps} />} />
+                        <Route path="/student/report/:studentId" element={<StudentReport {...commonProps} />} />
                         <Route path="/classrooms" element={<Classrooms {...commonProps} />} />
                         <Route path="/classroom/new" element={<NewClassroomForm {...commonProps} />} />
                         <Route path="/classroom/edit/:classroomId" element={<ClassroomFormWrapper {...commonProps} />} />
@@ -212,6 +219,15 @@ function App() {
                 </Dialog>
             </Box>
         </BrowserRouter>
+    );
+}
+
+function App() {
+    return (
+        // --- ΑΛΛΑΓΗ: Χρησιμοποιούμε τον δικό μας ThemeProvider ---
+        <ThemeProvider>
+            <AppContent />
+        </ThemeProvider>
     );
 }
 

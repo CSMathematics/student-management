@@ -1,56 +1,41 @@
-// Γενικό στυλ για όλους τους πίνακες της εφαρμογής
+/* src/scss/components/_tables.scss */
 @use '../base/variables' as v;
 
-
-.MuiTableHead-root {
-    
-    .MuiTableCell-head {
-      background-color: v.$primary-color;
-    color: v.$text-color-light;
-    font-weight: bold;
-    padding: 10px;
-  }
-}
-
-.MuiTableRow-root {
-  height: 50px;
-  text-align: center;
-}
-
-.MuiTableBody-root {
-  .MuiTableRow-root {
-    &:nth-of-type(odd) {
-      background-color: v.$background-light;
-    }
-    &:nth-of-type(even) {
-      background-color: v.$background-white;
-    }
-
-    &:hover {
-      background-color: #eef6fb;
-      transition: 0.2s;
-    }
-  }
-}
-
-.MuiTableCell-body {
+// Γενικό στυλ για την κεφαλίδα του πίνακα
+.MuiTableHead-root .MuiTableCell-head {
+  background-color: v.$primary-color;
+  color: #ffffff; // Το λευκό είναι συνήθως σταθερό εδώ
+  font-weight: bold;
   padding: 10px;
-  vertical-align: middle;
+  transition: background-color 0.3s ease;
 }
 
-#filter-row {
-  background-color: v.$background-white !important;
-  color: v.$text-color-light;
-
-  .MuiTableCell-root {
-    padding: 5px;
-    font-size: 0.9rem;
-    color: #000;
+// Γενικό στυλ για το σώμα του πίνακα
+.MuiTableBody-root .MuiTableRow-root {
+  transition: background-color 0.3s ease;
+  
+  &:nth-of-type(odd) {
+    background-color: v.$paper-color;
+  }
+  &:nth-of-type(even) {
+    // Χρησιμοποιούμε μια ελαφριά απόχρωση του background για τις ζυγές σειρές
+    background-color: color-mix(in srgb, v.$background-color 95%, #000 5%);
   }
 
-  .MuiInputBase-root {
-    width: 100%;
-    height: 36px;
-    font-size: 0.9rem;
+  &:hover {
+    background-color: color-mix(in srgb, v.$primary-color 10%, transparent);
+  }
+}
+
+// Στυλ για τη γραμμή φίλτρων
+#filter-row {
+  background-color: v.$paper-color !important;
+  
+  .MuiTableCell-root {
+    color: v.$text-primary;
+  }
+  
+  .MuiInputBase-input {
+      color: v.$text-primary;
   }
 }

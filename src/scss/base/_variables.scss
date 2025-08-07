@@ -1,8 +1,26 @@
-// Μεταβλητές Χρωμάτων
-$primary-color: #1e86cc;
-$text-color-light: #ffffff;
-$background-light: #f9f9f9;
-$background-white: #ffffff;
+/* src/scss/base/_variables.scss */
+
+/* Οι μεταβλητές χρώματος μεταφέρθηκαν στο ThemeContext.jsx για δυναμική αλλαγή.
+  Χρησιμοποιούμε πλέον μεταβλητές CSS (π.χ. var(--color-primary)) 
+  για να παίρνουμε τα χρώματα από το React.
+*/
+
+// Ορίζουμε τις μεταβλητές CSS ως μεταβλητές SCSS για ευκολία
+$primary-color: var(--color-primary);
+$secondary-color: var(--color-secondary);
+
+$background-color: var(--color-background);
+$paper-color: var(--color-paper);
+
+$text-primary: var(--color-textPrimary);
+$text-secondary: var(--color-textSecondary);
+
+// Μεταβλητές για το Sidebar (για να είναι πιο καθαρό)
+$drawer-bg: var(--color-drawerBg);
+$drawer-text: var(--color-drawerText);
+$drawer-hover-bg: var(--color-drawerHoverBg);
+$drawer-hover-text: var(--color-drawerHoverText);
+
 
 // Breakpoints για responsive design (παράδειγμα)
 $breakpoint-tablet: 768px;
