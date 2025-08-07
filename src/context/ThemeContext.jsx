@@ -19,7 +19,7 @@ const lightPalette = {
   textSecondary: grey[700],
   drawerBg: '#20303f',
   drawerText: '#eef6fb',
-  drawerHoverBg: '#eef6fb',
+  drawerHoverBg: '#2f465cff',
   drawerHoverText: '#1e88e5',
 };
 

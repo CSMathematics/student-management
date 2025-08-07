@@ -10,9 +10,9 @@ function DashboardHeader({ pageTitle, onBackClick, showBackButton, toggleTheme }
 
     return (
         // --- ΑΛΛΑΓΗ: Το AppBar δεν χρειάζεται πλέον inline styling, θα το πάρει από το θέμα ---
-        <AppBar position="static" color="transparent" elevation={0} sx={{ marginBottom: '20px' }}>
+        <AppBar position="static" color="transparent" elevation={0} sx={{ marginBottom: '0px' }}>
             <Toolbar sx={{ justifyContent: 'space-between' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
                     {showBackButton && (
                         <IconButton
                             size="large"

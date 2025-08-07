@@ -24,7 +24,8 @@ import CourseForm from './pages/CourseForm.jsx';
 import TeachersList from './pages/TeachersList.jsx';
 import TeacherForm from './pages/TeacherForm.jsx';
 import Announcements from './pages/Announcements.jsx';
-// --- ΑΛΛΑΓΗ: Εισάγουμε τον δικό μας ThemeProvider και useTheme ---
+import Phonebook from './pages/Phonebook.jsx';
+import Expenses from './pages/Expenses.jsx';
 import { ThemeProvider, useTheme } from './context/ThemeContext.jsx';
 
 const drawerWidth = 280;
@@ -50,7 +51,6 @@ const TeacherFormWrapper = (props) => {
 };
 
 function AppContent() {
-    // --- ΑΛΛΑΓΗ: Παίρνουμε τη συνάρτηση toggleTheme από το context ---
     const { toggleTheme } = useTheme(); 
     const [classrooms, setClassrooms] = useState([]);
     const [allStudents, setAllStudents] = useState([]);
@@ -61,6 +61,7 @@ function AppContent() {
     const [allTeachers, setAllTeachers] = useState([]);
     const [allAnnouncements, setAllAnnouncements] = useState([]);
     const [allAssignments, setAllAssignments] = useState([]);
+    const [allExpenses, setAllExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [db, setDb] = useState(null);
     const [auth, setAuth] = useState(null);
@@ -76,103 +77,58 @@ function AppContent() {
     useEffect(() => {
         let isMounted = true;
         const unsubscribes = [];
-
         const setupFirebase = async () => {
             try {
                 const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : import.meta.env.VITE_FIREBASE_CONFIG;
                 const currentAppId = typeof __app_id !== 'undefined' ? __app_id : import.meta.env.VITE_APP_ID || 'default-local-app-id';
                 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : import.meta.env.VITE_INITIAL_AUTH_TOKEN;
                 const parsedFirebaseConfig = firebaseConfigString ? JSON.parse(firebaseConfigString) : {};
-
-                if (!parsedFirebaseConfig.apiKey) {
-                    if (isMounted) {
-                        setLoading(false);
-                        setIsFirebaseReady(true);
-                    }
-                    return;
-                }
-
+                if (!parsedFirebaseConfig.apiKey) { if (isMounted) { setLoading(false); setIsFirebaseReady(true); } return; }
                 const app = initializeApp(parsedFirebaseConfig);
                 const firestoreDb = getFirestore(app);
                 const firebaseAuth = getAuth(app);
-
-                if (isMounted) {
-                    setDb(firestoreDb);
-                    setAuth(firebaseAuth);
-                    setAppId(currentAppId);
-                }
-
-                if (initialAuthToken) {
-                    await signInWithCustomToken(firebaseAuth, initialAuthToken);
-                } else {
-                    await signInAnonymously(firebaseAuth);
-                }
-
+                if (isMounted) { setDb(firestoreDb); setAuth(firebaseAuth); setAppId(currentAppId); }
+                if (initialAuthToken) { await signInWithCustomToken(firebaseAuth, initialAuthToken); } else { await signInAnonymously(firebaseAuth); }
                 if (isMounted) {
                     setUserId(firebaseAuth.currentUser?.uid || crypto.randomUUID());
-                    
                     const collections = {
-                        classrooms: setClassrooms,
-                        students: setAllStudents,
-                        grades: setAllGrades,
-                        absences: setAllAbsences,
-                        payments: setAllPayments,
-                        courses: setAllCourses,
-                        teachers: setAllTeachers,
-                        announcements: setAllAnnouncements,
-                        assignments: setAllAssignments,
+                        classrooms: setClassrooms, students: setAllStudents, grades: setAllGrades,
+                        absences: setAllAbsences, payments: setAllPayments, courses: setAllCourses,
+                        teachers: setAllTeachers, announcements: setAllAnnouncements, assignments: setAllAssignments,
+                        expenses: setAllExpenses,
                     };
-
                     for (const [name, setter] of Object.entries(collections)) {
                         const ref = collection(firestoreDb, `artifacts/${currentAppId}/public/data/${name}`);
-                        const unsubscribe = onSnapshot(query(ref), snapshot => {
-                            if (isMounted) {
-                                setter(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-                            }
+                        const unsubscribe = onSnapshot(query(ref), snapshot => { 
+                            if (isMounted) { 
+                                const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                                // --- DEBUGGING: Log fetched data ---
+                                if (name === 'expenses') {
+                                    console.log('[App.jsx] Fetched Expenses Data:', data);
+                                }
+                                setter(data);
+                            } 
                         });
                         unsubscribes.push(unsubscribe);
                     }
-
-                    setLoading(false);
-                    setIsFirebaseReady(true);
+                    setLoading(false); setIsFirebaseReady(true);
                 }
-
             } catch (error) {
                 console.error("Firebase Initialization/Auth Error:", error);
-                if (isMounted) {
-                    setLoading(false);
-                    setIsFirebaseReady(true);
-                }
+                if (isMounted) { setLoading(false); setIsFirebaseReady(true); }
             }
         };
-
         setupFirebase();
-
-        return () => {
-            isMounted = false;
-            unsubscribes.forEach(unsub => unsub());
-        };
+        return () => { isMounted = false; unsubscribes.forEach(unsub => unsub()); };
     }, []);
 
-    const openModalWithData = (data) => {
-        setModalData(data);
-        setIsModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setModalData(null);
-    };
+    const openModalWithData = (data) => { setModalData(data); setIsModalOpen(true); };
+    const closeModal = () => { setIsModalOpen(false); setModalData(null); };
     
-    const commonProps = { db, appId, classrooms, allStudents, allGrades, allAbsences, allPayments, allCourses, allTeachers, allAnnouncements, allAssignments, loading, userId };
+    const commonProps = { db, appId, classrooms, allStudents, allGrades, allAbsences, allPayments, allCourses, allTeachers, allAnnouncements, allAssignments, allExpenses, loading, userId };
 
     if (!isFirebaseReady) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <CircularProgress />
-                <Typography sx={{ ml: 2 }}>Σύνδεση στις υπηρεσίες...</Typography>
-            </Box>
-        );
+        return (<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /><Typography sx={{ ml: 2 }}>Σύνδεση στις υπηρεσίες...</Typography></Box>);
     }
 
     return (
@@ -183,7 +139,6 @@ function AppContent() {
                     <AppBar position="fixed" sx={{ width: { md: `calc(100% - ${drawerWidth}px)` }, ml: { md: `${drawerWidth}px` }, backgroundColor: 'transparent', boxShadow: 'none', borderBottom: '1px solid', borderColor: 'divider' }}>
                         <Toolbar>
                             <IconButton color="inherit" aria-label="open drawer" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { md: 'none' } }}><MenuIcon /></IconButton>
-                            {/* --- ΑΛΛΑΓΗ: Περνάμε τη συνάρτηση toggleTheme στο Header --- */}
                             <DashboardHeader toggleTheme={toggleTheme} />
                         </Toolbar>
                     </AppBar>
@@ -199,23 +154,20 @@ function AppContent() {
                         <Route path="/classroom/edit/:classroomId" element={<ClassroomFormWrapper {...commonProps} />} />
                         <Route path="/calendar" element={<WeeklyScheduleCalendar {...commonProps} />} />
                         <Route path="/payments" element={<Payments {...commonProps} />} />
-                        <Route path="/courses" element={<Courses {...commonProps} />} />
+                        <Route path="/courses/list" element={<Courses {...commonProps} />} />
                         <Route path="/course/new" element={<CourseForm {...commonProps} />} />
                         <Route path="/course/edit/:courseId" element={<CourseFormWrapper {...commonProps} />} />
                         <Route path="/teachers" element={<TeachersList {...commonProps} />} />
                         <Route path="/teacher/new" element={<TeacherForm {...commonProps} />} />
                         <Route path="/teacher/edit/:teacherId" element={<TeacherFormWrapper {...commonProps} />} />
                         <Route path="/announcements" element={<Announcements {...commonProps} />} />
+                        <Route path="/phonebook" element={<Phonebook {...commonProps} />} />
+                        <Route path="/expenses" element={<Expenses {...commonProps} />} />
                     </Routes>
                 </Box>
                 <Dialog open={isModalOpen} onClose={closeModal} maxWidth="md" fullWidth>
-                     <DialogTitle>
-                        Δημιουργία Νέου Τμήματος
-                        <IconButton onClick={closeModal} sx={{ position: 'absolute', right: 8, top: 8 }}><CloseIcon /></IconButton>
-                    </DialogTitle>
-                    <DialogContent dividers>
-                        <NewClassroomForm classroomToEdit={modalData} onSaveSuccess={closeModal} onCancel={closeModal} {...commonProps} />
-                    </DialogContent>
+                     <DialogTitle>Δημιουργία Νέου Τμήματος<IconButton onClick={closeModal} sx={{ position: 'absolute', right: 8, top: 8 }}><CloseIcon /></IconButton></DialogTitle>
+                    <DialogContent dividers><NewClassroomForm classroomToEdit={modalData} onSaveSuccess={closeModal} onCancel={closeModal} {...commonProps} /></DialogContent>
                 </Dialog>
             </Box>
         </BrowserRouter>
@@ -223,12 +175,7 @@ function AppContent() {
 }
 
 function App() {
-    return (
-        // --- ΑΛΛΑΓΗ: Χρησιμοποιούμε τον δικό μας ThemeProvider ---
-        <ThemeProvider>
-            <AppContent />
-        </ThemeProvider>
-    );
+    return (<ThemeProvider><AppContent /></ThemeProvider>);
 }
 
 export default App;

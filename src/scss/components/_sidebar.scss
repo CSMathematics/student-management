@@ -4,51 +4,84 @@
 .MuiDrawer-paper {
     background-color: v.$drawer-bg !important;
     color: v.$drawer-text !important;
-    transition: background-color 0.3s ease, color 0.3s ease; // Προσθέτουμε transition
+    // transition: background-color 0.3s ease, color 0.3s ease; // Προσθέτουμε transition
 }
 
+// Στυλ για το Sidebar
+.sidebar-header {
+    padding: 10px;
+    text-align: center;
+    margin: 0 16px 16px 16px;
+
+    h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+}
+
+.sidebar-section-title {
+    padding: 16px 16px 8px 16px;
+    color: '#000';
+    font-weight: bold;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+// Νέο, βελτιωμένο στυλ για τα κουμπιά του Sidebar
 .MuiListItemButton-root {
-    border-left: 5px solid transparent;
-    color: v.$drawer-text;
+    // Βασικό στυλ για όλα τα κουμπιά
+    padding: 10px 16px;
     transition: all 0.3s ease !important;
+    justify-content: flex-start;
+    gap: 8px; // Λίγο μεγαλύτερο gap για καλύτερη εμφάνιση
+    border-left: 5px solid transparent;
+    color: v.$drawer-text !important; // Χρώμα κειμένου
 
     .MuiListItemIcon-root {
-        color: v.$drawer-text;
+        color: v.$drawer-text !important;
         transition: all 0.3s ease;
+        // min-width: 40px; // Διατηρούμε τη μείωση της απόστασης
     }
-
-    &:hover,
-    &.Mui-selected {
-        color: v.$drawer-hover-text;
-        background-color: v.$drawer-hover-bg;
-        border-left: 5px solid v.$primary-color;
-
-        .MuiListItemIcon-root {
-            color: v.$drawer-hover-text;
-        }
-    }
-    
-    // Δεν αλλάζουν τα υπόλοιπα στυλ διάταξης
-    padding: 10px 16px;
-    justify-content: flex-start;
-    gap: 8px;
 
     .MuiListItemText-root {
-        margin-left: -30px;
+        margin-left: -30px; // Μηδενίζουμε την παλιά αρνητική απόσταση
     }
-    
+
+    // Hover και Selected states για όλα τα κουμπιά
+    &:hover,
+    &.Mui-selected {
+        color: v.$primary-color;
+        background-color: v.$drawer-hover-bg !important; // Χρώμα φόντου κατά το hover
+        border-left: 5px solid v.$primary-color;
+        padding-left: 24px !important; // Μετακίνηση προς τα δεξιά
+
+        .MuiListItemIcon-root {
+            color: v.$primary-color;
+        }
+    }
+
+    // Ειδικό στυλ για τα υπο-στοιχεία (sub-items)
     &.sub-item {
-        padding-left: 32px !important;
+        padding-left: 32px !important; // Μεγαλύτερη εσοχή για τα sub-items
+
         &:hover,
         &.Mui-selected {
-            padding-left: 40px !important;
+            padding-left: 40px !important; // Ακόμα μεγαλύτερη μετακίνηση για τα sub-items
         }
     }
 }
 
-// Απόκρυψη της scrollbar (παραμένει το ίδιο)
+
+// Απόκρυψη της scrollbar για το συρτάρι του sidebar
 .MuiDrawer-paper {
-    &::-webkit-scrollbar { display: none; }
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    &::-webkit-scrollbar {
+        display: none; // Για Chrome, Safari, Opera
+    }
+
+    -ms-overflow-style: none; // Για IE and Edge
+    scrollbar-width: none; // Για Firefox
 }

@@ -697,7 +697,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                                 </Box>
                                  <Box sx={{ position: 'absolute', inset: 0 }}>
                                     {TIME_SLOTS.slice(0, -1).map((time, index) => (
-                                        <Box key={time} sx={{ height: `${gridDimensions.cellHeight-1}px`, borderTop: '1px solid #e0e0e0' }} />
+                                        <Box key={time} sx={{ height: `${gridDimensions.cellHeight}px`, borderTop: '1px solid #e0e0e0' }} />
                                     ))}
                                  </Box>
 

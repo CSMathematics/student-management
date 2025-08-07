@@ -182,7 +182,7 @@ function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db
                                             </Box>
                                         </ListItemButton>
                                         <Collapse in={expandedCourseId === course.id} timeout="auto" unmountOnExit>
-                                            <Box sx={{ pl: 4, pr: 2, py: 2, backgroundColor: '#f9f9f9', borderBottom: '1px solid #eee' }}>
+                                            <Box sx={{ pl: 4, pr: 2, py: 2}}>
                                                 {course.syllabus && course.syllabus.length > 0 ? (
                                                     <List disablePadding>
                                                         {course.syllabus.map((chapter, index) => (

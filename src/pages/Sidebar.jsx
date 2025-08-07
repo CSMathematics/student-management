@@ -48,7 +48,12 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
                 { text: "Τμήματα", icon: "fas fa-door-open", path: "/classrooms" },
             ]
         },
-        { text: "Μαθήματα", icon: "fas fa-book", path: "/courses" }, // <-- ΕΝΗΜΕΡΩΣΗ ΤΟΥ PATH
+        { text: "Μαθήματα", icon: "fas fa-book", isParent: true,
+            subItems: [
+                { text: "Νέο μάθημα", icon: "fas fa-plus", path: "/course/new" },
+                { text: "Λίστα μαθημάτων", icon: "fas fa-list", path: "/courses/list" },           
+            ]
+        }, // <-- ΕΝΗΜΕΡΩΣΗ ΤΟΥ PATH
         // --- ΝΕΑ ΕΝΟΤΗΤΑ ΓΙΑ ΚΑΘΗΓΗΤΕΣ ---
         {
             text: "Καθηγητές", icon: "fas fa-user-graduate", isParent: true,
@@ -58,8 +63,11 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
             ]
         },
         { text: "Διαγωνίσματα - Εργασίες", icon: "fas fa-file-alt", path: "#" },
-        { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", path: "#" },
+        // --- ΑΛΛΑΓΗ ΕΔΩ ---
+        { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", path: "/phonebook" },
         { text: "Πληρωμές", icon: "fas fa-money-bill", path: "/payments" },
+        // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
+        { text: "Έξοδα", icon: "fas fa-file-invoice-dollar", path: "/expenses" },
         // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
         { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
         { text: "Βαθμολογίες", icon: "fas fa-chart-bar", path: "#" },

@@ -26,15 +26,7 @@ const StatItem = ({ label, value, color }) => (
     </Box>
 );
 
-const schoolYearMonths = [
-    { name: 'Σεπτέμβριος', number: 9 }, { name: 'Οκτώβριος', number: 10 },
-    { name: 'Νοέμβριος', number: 11 }, { name: 'Δεκέμβριος', number: 12 },
-    { name: 'Ιανουάριος', number: 1 }, { name: 'Φεβρουάριος', number: 2 },
-    { name: 'Μάρτιος', number: 3 }, { name: 'Απρίλιος', number: 4 },
-    { name: 'Μάιος', number: 5 }, { name: 'Ιούνιος', number: 6 }
-];
-
-function StudentReport({ allStudents, allGrades, allAbsences, classrooms, allAssignments, allPayments }) {
+function StudentReport({ allStudents, allGrades, allAbsences, classrooms, allAssignments }) {
     const { studentId } = useParams();
     const [startDate, setStartDate] = useState(dayjs().subtract(3, 'month').format('YYYY-MM-DD'));
     const [endDate, setEndDate] = useState(dayjs().format('YYYY-MM-DD'));
@@ -54,7 +46,6 @@ function StudentReport({ allStudents, allGrades, allAbsences, classrooms, allAss
         const end = dayjs(endDate).endOf('day');
 
         return enrolledClassrooms.map(classroom => {
-            // --- ΔΙΟΡΘΩΣΗ ΕΔΩ: Προστέθηκε ο έλεγχος g.studentId === student.id ---
             const grades = allGrades
                 .filter(g => g.studentId === student.id && g.classroomId === classroom.id && dayjs(g.date.toDate()).isBetween(start, end, null, '[]'))
                 .sort((a, b) => b.date.toDate() - a.date.toDate());
@@ -85,19 +76,6 @@ function StudentReport({ allStudents, allGrades, allAbsences, classrooms, allAss
         });
 
     }, [student, enrolledClassrooms, allGrades, allAbsences, allAssignments, startDate, endDate]);
-
-    const financialSummary = useMemo(() => {
-        if (!student || !allPayments) return null;
-        const monthlyFeeRaw = parseFloat(student.payment) || 0;
-        const discount = parseFloat(student.debt) || 0;
-        const monthlyFee = monthlyFeeRaw - (monthlyFeeRaw * (discount / 100));
-        const finalFees = monthlyFee * schoolYearMonths.length;
-        const totalPaid = allPayments
-            .filter(p => p.studentId === student.id)
-            .reduce((sum, p) => sum + p.amount, 0);
-        const balance = finalFees - totalPaid;
-        return { finalFees: finalFees.toFixed(2), totalPaid: totalPaid.toFixed(2), balance: balance.toFixed(2) };
-    }, [student, allPayments]);
 
     const handlePrint = () => {
         window.print();
@@ -132,7 +110,7 @@ function StudentReport({ allStudents, allGrades, allAbsences, classrooms, allAss
                 </Box>
 
                 <Paper id="printable-report" elevation={0} sx={{ p: 4, border: '1px solid #ddd' }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, pageBreakAfter: 'avoid' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4, pageBreakAfter: 'avoid' }}>
                         <Box>
                             <Typography variant="h4" component="h1" gutterBottom>{student.firstName} {student.lastName}</Typography>
                             <Typography variant="subtitle1" color="text.secondary">Αναφορά Προόδου: {dayjs(startDate).format('DD/MM/YYYY')} - {dayjs(endDate).format('DD/MM/YYYY')}</Typography>
@@ -140,17 +118,6 @@ function StudentReport({ allStudents, allGrades, allAbsences, classrooms, allAss
                         <Typography variant="h6" color="primary.main">Φιλομάθεια</Typography>
                     </Box>
                     
-                    {financialSummary && (
-                        <Paper variant="outlined" sx={{ p: 2, mb: 4 }}>
-                            <Typography variant="h6" gutterBottom>Συνοπτική Οικονομική Εικόνα</Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={4}><StatItem label="Σύνολο Διδάκτρων" value={`${financialSummary.finalFees} €`} /></Grid>
-                                <Grid item xs={4}><StatItem label="Έχουν Πληρωθεί" value={`${financialSummary.totalPaid} €`} /></Grid>
-                                <Grid item xs={4}><StatItem label="Υπόλοιπο" value={`${financialSummary.balance} €`} color={financialSummary.balance > 0 ? '#e53935' : '#43a047'} /></Grid>
-                            </Grid>
-                        </Paper>
-                    )}
-
                     <Divider sx={{ mb: 3 }}><Chip label="Αναλυση Ανα Μαθημα" /></Divider>
 
                     {reportDataByClassroom.map((classData, index) => (
