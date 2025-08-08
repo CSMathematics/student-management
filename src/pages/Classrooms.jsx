@@ -1,12 +1,12 @@
 // src/pages/Classrooms.jsx
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-    Box, Container, Grid, Paper, Typography, TextField,
+    Box, Container, Grid, Paper, Typography,
     IconButton, Button, CircularProgress,
-    List, ListItem, ListItemText, Tabs, Tab, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, InputLabel, Select, MenuItem
+    List, ListItem, ListItemText, Tabs, Tab, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, InputLabel, Select, MenuItem, Menu, Avatar
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
-import { doc, deleteDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch } from 'firebase/firestore';
 import ClassroomTableVisual from './ClassroomTableVisual.jsx';
 import SyllabusTracker from './SyllabusTracker.jsx';
 import ClassroomAnnouncements from './ClassroomAnnouncements.jsx';
@@ -14,7 +14,6 @@ import ClassroomMaterials from './ClassroomMaterials.jsx';
 import ClassroomStats from './ClassroomStats.jsx';
 import DailyLog from './DailyLog.jsx';
 import { useNavigate, useLocation } from 'react-router-dom';
-import dayjs from 'dayjs';
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -25,15 +24,10 @@ function TabPanel(props) {
     );
 }
 
-// Helper component for displaying details
 const DetailItem = ({ label, value }) => (
     <Box mb={2}>
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>
-            {label}
-        </Typography>
-        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-            {value || '-'}
-        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>{label}</Typography>
+        <Typography variant="body1" sx={{ fontWeight: 500 }}>{value || '-'}</Typography>
     </Box>
 );
 
@@ -47,6 +41,12 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
     const [activeTab, setActiveTab] = useState(0);
     const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
     const [classroomToDelete, setClassroomToDelete] = useState(null);
+
+    const [moveStudentData, setMoveStudentData] = useState(null);
+    const [swapStudentData, setSwapStudentData] = useState(null);
+    const [targetClassroomId, setTargetClassroomId] = useState('');
+    const [errorDialog, setErrorDialog] = useState({ open: false, message: '' });
+
 
     const groupedClassrooms = useMemo(() => {
         const groups = {};
@@ -64,13 +64,19 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
     }, [classrooms]);
 
     const availableGrades = useMemo(() => Object.keys(groupedClassrooms).sort(), [groupedClassrooms]);
-    const availableClassroomsInGrade = useMemo(() => {
-        return groupedClassrooms[selectedGrade] || [];
-    }, [selectedGrade, groupedClassrooms]);
+    const availableClassroomsInGrade = useMemo(() => groupedClassrooms[selectedGrade] || [], [selectedGrade, groupedClassrooms]);
 
-    const selectedClassroom = useMemo(() => {
-        return classrooms.find(c => c.id === selectedClassroomId) || null;
-    }, [selectedClassroomId, classrooms]);
+    const selectedClassroom = useMemo(() => classrooms.find(c => c.id === selectedClassroomId) || null, [selectedClassroomId, classrooms]);
+
+    const otherClassroomsOfSameSubject = useMemo(() => {
+        if (!selectedClassroom) return [];
+        return classrooms.filter(c => 
+            c.id !== selectedClassroom.id && 
+            c.subject === selectedClassroom.subject &&
+            c.grade === selectedClassroom.grade
+        );
+    }, [selectedClassroom, classrooms]);
+
 
     useEffect(() => {
         const classroomIdFromState = location.state?.selectedClassroomId;
@@ -86,69 +92,125 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
 
     const handleTabChange = (event, newValue) => setActiveTab(newValue);
 
-    useEffect(() => {
-        setActiveTab(0);
-    }, [selectedClassroomId]);
+    useEffect(() => { setActiveTab(0); }, [selectedClassroomId]);
     
     const handleGradeChange = (event) => {
         const newGrade = event.target.value;
         setSelectedGrade(newGrade);
-        setSelectedClassroomId(''); // Reset classroom selection when grade changes
+        setSelectedClassroomId('');
     };
 
     const classroomDetails = useMemo(() => {
         if (!selectedClassroom) return null;
-
         const enrolledStudents = allStudents.filter(s => s.enrolledClassrooms?.includes(selectedClassroom.id));
-        const enrolledStudentsCount = enrolledStudents.length;
+        return { enrolledStudentsCount: enrolledStudents.length, enrolledStudents };
+    }, [selectedClassroom, allStudents]);
 
-        const course = allCourses.find(c => c.grade === selectedClassroom.grade && c.name === selectedClassroom.subject);
-        let syllabusProgress = 0;
-        if (course && course.syllabus) {
-            const totalSections = course.syllabus.reduce((acc, chapter) => acc + (chapter.sections?.length || 0), 0);
-            const coveredSectionsCount = selectedClassroom.coveredSyllabusSections?.length || 0;
-            if (totalSections > 0) {
-                syllabusProgress = Math.round((coveredSectionsCount / totalSections) * 100);
-            }
-        }
-
-        return {
-            enrolledStudentsCount,
-            enrolledStudents,
-            syllabusProgress,
-        };
-    }, [selectedClassroom, allStudents, allCourses]);
-
-    // --- ΔΙΟΡΘΩΣΗ: Επαναφορά της συνάρτησης ---
     const handleAssignStudent = async (studentId, classroomId) => {
         if (!db || !appId) return;
         try {
-            const studentDocRef = doc(db, `artifacts/${appId}/public/data/students`, studentId);
-            await updateDoc(studentDocRef, { enrolledClassrooms: arrayUnion(classroomId) });
+            const batch = writeBatch(db);
+            const studentRef = doc(db, `artifacts/${appId}/public/data/students`, studentId);
+            batch.update(studentRef, { enrolledClassrooms: arrayUnion(classroomId) });
+            const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
+            batch.update(classroomRef, { enrolledStudents: arrayUnion(studentId) });
+            await batch.commit();
         } catch (error) {
             console.error("Error assigning student to classroom:", error);
         }
     };
 
-    const handleEditClick = (classroom) => {
-        navigate(`/classroom/edit/${classroom.id}`);
+    const handleRemoveStudent = async (student, fromClassroom) => {
+        if (!student || !fromClassroom) return;
+        try {
+            const batch = writeBatch(db);
+            const studentRef = doc(db, `artifacts/${appId}/public/data/students`, student.id);
+            batch.update(studentRef, { enrolledClassrooms: arrayRemove(fromClassroom.id) });
+            const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, fromClassroom.id);
+            batch.update(classroomRef, { enrolledStudents: arrayRemove(student.id) });
+            await batch.commit();
+        } catch (error) {
+            console.error("Error removing student:", error);
+        }
     };
 
-    const handleDeleteClick = (classroom) => {
-        setClassroomToDelete(classroom);
-        setOpenDeleteConfirm(true);
+    const handleMoveStudent = async () => {
+        const { student, fromClassroom } = moveStudentData;
+        const toClassroomId = targetClassroomId;
+        if (!student || !fromClassroom || !toClassroomId) return;
+
+        const targetClassroom = classrooms.find(c => c.id === toClassroomId);
+        const targetEnrolledCount = allStudents.filter(s => s.enrolledClassrooms?.includes(toClassroomId)).length;
+
+        if (targetEnrolledCount >= targetClassroom.maxStudents) {
+            setErrorDialog({ open: true, message: 'Το τμήμα προορισμού είναι γεμάτο. Η μετακίνηση δεν μπορεί να πραγματοποιηθεί.' });
+            setMoveStudentData(null);
+            setTargetClassroomId('');
+            return;
+        }
+
+        try {
+            const batch = writeBatch(db);
+            const studentRef = doc(db, `artifacts/${appId}/public/data/students`, student.id);
+            batch.update(studentRef, { enrolledClassrooms: arrayRemove(fromClassroom.id) });
+            batch.update(studentRef, { enrolledClassrooms: arrayUnion(toClassroomId) });
+
+            const fromClassroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, fromClassroom.id);
+            batch.update(fromClassroomRef, { enrolledStudents: arrayRemove(student.id) });
+
+            const toClassroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, toClassroomId);
+            batch.update(toClassroomRef, { enrolledStudents: arrayUnion(student.id) });
+
+            await batch.commit();
+        } catch (error) {
+            console.error("Error moving student:", error);
+        } finally {
+            setMoveStudentData(null);
+            setTargetClassroomId('');
+        }
     };
 
-    const handleCloseDeleteConfirm = () => {
-        setOpenDeleteConfirm(false);
-        setClassroomToDelete(null);
+    const handleSwapStudents = async () => {
+        const { student1, classroom1, student2 } = swapStudentData;
+        const classroom2Id = targetClassroomId;
+        if (!student1 || !classroom1 || !student2 || !classroom2Id) return;
+
+        try {
+            const batch = writeBatch(db);
+
+            const student1Ref = doc(db, `artifacts/${appId}/public/data/students`, student1.id);
+            batch.update(student1Ref, { enrolledClassrooms: arrayRemove(classroom1.id) });
+            batch.update(student1Ref, { enrolledClassrooms: arrayUnion(classroom2Id) });
+
+            const student2Ref = doc(db, `artifacts/${appId}/public/data/students`, student2.id);
+            batch.update(student2Ref, { enrolledClassrooms: arrayRemove(classroom2Id) });
+            batch.update(student2Ref, { enrolledClassrooms: arrayUnion(classroom1.id) });
+
+            const classroom1Ref = doc(db, `artifacts/${appId}/public/data/classrooms`, classroom1.id);
+            batch.update(classroom1Ref, { enrolledStudents: arrayRemove(student1.id) });
+            batch.update(classroom1Ref, { enrolledStudents: arrayUnion(student2.id) });
+
+            const classroom2Ref = doc(db, `artifacts/${appId}/public/data/classrooms`, classroom2Id);
+            batch.update(classroom2Ref, { enrolledStudents: arrayRemove(student2.id) });
+            batch.update(classroom2Ref, { enrolledStudents: arrayUnion(student1.id) });
+
+            await batch.commit();
+        } catch (error) {
+            console.error("Error swapping students:", error);
+        } finally {
+            setSwapStudentData(null);
+            setTargetClassroomId('');
+        }
     };
 
+
+    const handleEditClick = (classroom) => navigate(`/classroom/edit/${classroom.id}`);
+    const handleDeleteClick = (classroom) => { setClassroomToDelete(classroom); setOpenDeleteConfirm(true); };
+    const handleCloseDeleteConfirm = () => { setOpenDeleteConfirm(false); setClassroomToDelete(null); };
     const handleConfirmDelete = async () => {
         if (!db || !appId || !classroomToDelete) return;
         try {
-            const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToDelete.id);
-            await deleteDoc(classroomDocRef);
+            await deleteDoc(doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToDelete.id));
             setSelectedClassroomId('');
         } catch (error) {
             console.error("Error deleting classroom:", error);
@@ -170,9 +232,7 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                         <FormControl fullWidth>
                             <InputLabel>Τάξη</InputLabel>
                             <Select value={selectedGrade} label="Τάξη" onChange={handleGradeChange}>
-                                {availableGrades.map(grade => (
-                                    <MenuItem key={grade} value={grade}>{grade}</MenuItem>
-                                ))}
+                                {availableGrades.map(grade => (<MenuItem key={grade} value={grade}>{grade}</MenuItem>))}
                             </Select>
                         </FormControl>
                     </Grid>
@@ -180,11 +240,7 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                         <FormControl fullWidth disabled={!selectedGrade}>
                             <InputLabel>Τμήμα</InputLabel>
                             <Select value={selectedClassroomId} label="Τμήμα" onChange={(e) => setSelectedClassroomId(e.target.value)}>
-                                {availableClassroomsInGrade.map(classroom => (
-                                    <MenuItem key={classroom.id} value={classroom.id}>
-                                        {classroom.classroomName} - {classroom.subject}
-                                    </MenuItem>
-                                ))}
+                                {availableClassroomsInGrade.map(classroom => (<MenuItem key={classroom.id} value={classroom.id}>{classroom.classroomName} - {classroom.subject}</MenuItem>))}
                             </Select>
                         </FormControl>
                     </Grid>
@@ -193,119 +249,96 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
 
             {selectedClassroom && (
                 <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', minHeight: '400px' }}>
-                        <>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                <Typography variant="h5" component="h3" color='#3f51b5'>
-                                    {`Λεπτομέρειες: ${selectedClassroom.classroomName}`}
-                                </Typography>
-                                <Box>
-                                    <IconButton color="primary" onClick={() => handleEditClick(selectedClassroom)}><Edit /></IconButton>
-                                    <IconButton color="error" onClick={() => handleDeleteClick(selectedClassroom)}><Delete /></IconButton>
-                                </Box>
-                            </Box>
-                            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                                <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
-                                    <Tab label="Λεπτομέρειες & Διάταξη" />
-                                    <Tab label="Ημερολόγιο Τάξης" />
-                                    <Tab label="Ύλη & Πρόοδος" />
-                                    <Tab label="Ανακοινώσεις" />
-                                    <Tab label="Αρχεία & Υλικό" />
-                                    <Tab label="Στατιστικά" />
-                                </Tabs>
-                            </Box>
-                            <TabPanel value={activeTab} index={0}>
-                                <Paper variant="outlined" sx={{ p: 2, mb: 3, backgroundColor: 'grey.50' }}>
-                                    <Grid container spacing={3}>
-                                        <Grid item xs={12} md={4}>
-                                            <Typography variant="h6" gutterBottom sx={{fontSize: '1rem'}}>Βασικές Πληροφορίες</Typography>
-                                            <DetailItem label="Μάθημα" value={selectedClassroom.subject} />
-                                            <DetailItem label="Τάξη / Κατεύθυνση" value={`${selectedClassroom.grade}${selectedClassroom.specialization ? ` (${selectedClassroom.specialization})` : ''}`} />
-                                            <DetailItem label="Καθηγητής" value={selectedClassroom.teacherName || 'Δεν έχει οριστεί'} />
-                                        </Grid>
-                                        <Grid item xs={12} md={4}>
-                                            <Typography variant="h6" gutterBottom sx={{fontSize: '1rem'}}>Πρόοδος & Πρόγραμμα</Typography>
-                                            <DetailItem label="Κάλυψη Ύλης" value={`${classroomDetails.syllabusProgress}%`} />
-                                            <Box>
-                                                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>Πρόγραμμα</Typography>
-                                                {selectedClassroom.schedule?.length > 0 ? (
-                                                    <List dense disablePadding>
-                                                        {selectedClassroom.schedule.map((slot, index) => (
-                                                            <ListItem key={index} sx={{ p: 0 }}>
-                                                                <ListItemText primary={`${slot.day}: ${slot.startTime} - ${slot.endTime}`} />
-                                                            </ListItem>
-                                                        ))}
-                                                    </List>
-                                                ) : <Typography variant="body1">-</Typography>}
-                                            </Box>
-                                        </Grid>
-                                        <Grid item xs={12} md={4}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                                <Typography variant="h6" sx={{fontSize: '1rem'}}>Εγγεγραμμένοι Μαθητές</Typography>
-                                                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                                                    {`${classroomDetails.enrolledStudentsCount} / ${selectedClassroom.maxStudents}`}
-                                                </Typography>
-                                            </Box>
-                                            {classroomDetails.enrolledStudents?.length > 0 ? (
-                                                <List dense disablePadding sx={{ maxHeight: 150, overflow: 'auto' }}>
-                                                    {classroomDetails.enrolledStudents.map(student => (
-                                                        <ListItem key={student.id} sx={{ p: 0 }}>
-                                                            <ListItemText primary={`${student.lastName} ${student.firstName}`} />
-                                                        </ListItem>
-                                                    ))}
-                                                </List>
-                                            ) : <Typography variant="body1">Κανένας μαθητής.</Typography>}
-                                        </Grid>
-                                    </Grid>
-                                </Paper>
-                                
-                                <ClassroomTableVisual classroom={selectedClassroom} db={db} appId={appId} allStudents={allStudents} onAssignStudent={handleAssignStudent} />
-                                
-                            </TabPanel>
-                            <TabPanel value={activeTab} index={1}>
-                                <DailyLog
-                                    classroom={selectedClassroom}
-                                    allStudents={allStudents}
-                                    allGrades={allGrades}
-                                    allAbsences={allAbsences}
-                                    allAssignments={allAssignments}
-                                    allCourses={allCourses}
-                                    db={db}
-                                    appId={appId}
-                                />
-                            </TabPanel>
-                            <TabPanel value={activeTab} index={2}>
-                                <SyllabusTracker classroom={selectedClassroom} allCourses={allCourses} db={db} appId={appId} />
-                            </TabPanel>
-                            <TabPanel value={activeTab} index={3}>
-                                <ClassroomAnnouncements classroom={selectedClassroom} db={db} appId={appId} />
-                            </TabPanel>
-                            <TabPanel value={activeTab} index={4}>
-                                <ClassroomMaterials classroom={selectedClassroom} db={db} appId={appId} />
-                            </TabPanel>
-                            <TabPanel value={activeTab} index={5}>
-                                <ClassroomStats 
-                                    selectedClassroom={selectedClassroom}
-                                    allStudents={allStudents}
-                                    allGrades={allGrades}
-                                    allAbsences={allAbsences}
-                                    classrooms={classrooms}
-                                />
-                            </TabPanel>
-                        </>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="h5" component="h3" color='#3f51b5'>{`Λεπτομέρειες: ${selectedClassroom.classroomName}`}</Typography>
+                        <Box>
+                            <IconButton color="primary" onClick={() => handleEditClick(selectedClassroom)}><Edit /></IconButton>
+                            <IconButton color="error" onClick={() => handleDeleteClick(selectedClassroom)}><Delete /></IconButton>
+                        </Box>
+                    </Box>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+                            <Tab label="Διάταξη & Διαχείριση" />
+                            <Tab label="Ημερολόγιο Τάξης" />
+                            <Tab label="Ύλη & Πρόοδος" />
+                            <Tab label="Ανακοινώσεις" />
+                            <Tab label="Αρχεία & Υλικό" />
+                            <Tab label="Στατιστικά" />
+                        </Tabs>
+                    </Box>
+                    <TabPanel value={activeTab} index={0}>
+                        <ClassroomTableVisual 
+                            classroom={selectedClassroom} 
+                            db={db} appId={appId} 
+                            allStudents={allStudents} 
+                            // --- ΑΛΛΑΓΗ: Προσθήκη του `classrooms` prop ---
+                            classrooms={classrooms}
+                            onAssignStudent={handleAssignStudent}
+                            onRemoveStudent={handleRemoveStudent}
+                            onMoveStudent={(student, fromClassroom) => setMoveStudentData({ student, fromClassroom })}
+                            onSwapStudent={(student1, classroom1) => setSwapStudentData({ student1, classroom1 })}
+                            otherClassrooms={otherClassroomsOfSameSubject}
+                        />
+                    </TabPanel>
+                    <TabPanel value={activeTab} index={1}><DailyLog classroom={selectedClassroom} allStudents={allStudents} allGrades={allGrades} allAbsences={allAbsences} allAssignments={allAssignments} allCourses={allCourses} db={db} appId={appId} /></TabPanel>
+                    <TabPanel value={activeTab} index={2}><SyllabusTracker classroom={selectedClassroom} allCourses={allCourses} db={db} appId={appId} /></TabPanel>
+                    <TabPanel value={activeTab} index={3}><ClassroomAnnouncements classroom={selectedClassroom} db={db} appId={appId} /></TabPanel>
+                    <TabPanel value={activeTab} index={4}><ClassroomMaterials classroom={selectedClassroom} db={db} appId={appId} /></TabPanel>
+                    <TabPanel value={activeTab} index={5}><ClassroomStats selectedClassroom={selectedClassroom} allStudents={allStudents} allGrades={allGrades} allAbsences={allAbsences} classrooms={classrooms} /></TabPanel>
                 </Paper>
             )}
+            
             <Dialog open={openDeleteConfirm} onClose={handleCloseDeleteConfirm}>
                 <DialogTitle>Επιβεβαίωση Διαγραφής</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Είστε σίγουροι ότι θέλετε να διαγράψετε το τμήμα "{classroomToDelete?.classroomName}"; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDeleteConfirm}>Ακύρωση</Button>
-                    <Button onClick={handleConfirmDelete} color="error">Διαγραφή</Button>
-                </DialogActions>
+                <DialogContent><DialogContentText>Είστε σίγουροι ότι θέλετε να διαγράψετε το τμήμα "{classroomToDelete?.classroomName}";</DialogContentText></DialogContent>
+                <DialogActions><Button onClick={handleCloseDeleteConfirm}>Ακύρωση</Button><Button onClick={handleConfirmDelete} color="error">Διαγραφή</Button></DialogActions>
             </Dialog>
+
+            <Dialog open={!!moveStudentData} onClose={() => setMoveStudentData(null)}>
+                <DialogTitle>Μετακίνηση Μαθητή</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{mb: 2}}>Μετακίνηση του/της {moveStudentData?.student.lastName} από το {moveStudentData?.fromClassroom.classroomName} σε:</DialogContentText>
+                    <FormControl fullWidth>
+                        <InputLabel>Νέο Τμήμα</InputLabel>
+                        <Select value={targetClassroomId} label="Νέο Τμήμα" onChange={(e) => setTargetClassroomId(e.target.value)}>
+                            {otherClassroomsOfSameSubject.map(c => <MenuItem key={c.id} value={c.id}>{c.classroomName}</MenuItem>)}
+                        </Select>
+                    </FormControl>
+                </DialogContent>
+                <DialogActions><Button onClick={() => setMoveStudentData(null)}>Ακύρωση</Button><Button onClick={handleMoveStudent} disabled={!targetClassroomId}>Μετακίνηση</Button></DialogActions>
+            </Dialog>
+
+            <Dialog open={!!swapStudentData} onClose={() => setSwapStudentData(null)}>
+                <DialogTitle>Ανταλλαγή Μαθητών</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{mb: 2}}>Ανταλλαγή του/της {swapStudentData?.student1.lastName} με μαθητή από άλλο τμήμα.</DialogContentText>
+                    <FormControl fullWidth sx={{mb: 2}}>
+                        <InputLabel>Τμήμα Προορισμού</InputLabel>
+                        <Select value={targetClassroomId} label="Τμήμα Προορισμού" onChange={(e) => setTargetClassroomId(e.target.value)}>
+                            {otherClassroomsOfSameSubject.map(c => <MenuItem key={c.id} value={c.id}>{c.classroomName}</MenuItem>)}
+                        </Select>
+                    </FormControl>
+                    {targetClassroomId && (
+                        <List>
+                            {allStudents.filter(s => s.enrolledClassrooms?.includes(targetClassroomId)).map(student2 => (
+                                <ListItem button key={student2.id} onClick={() => setSwapStudentData(prev => ({...prev, student2}))}>
+                                    <Avatar sx={{mr: 2}}>{student2.firstName.charAt(0)}{student2.lastName.charAt(0)}</Avatar>
+                                    <ListItemText primary={`${student2.lastName} ${student2.firstName}`} />
+                                </ListItem>
+                            ))}
+                        </List>
+                    )}
+                    {swapStudentData?.student2 && <Typography sx={{mt: 2}}>Επιλέχθηκε: {swapStudentData.student2.lastName}</Typography>}
+                </DialogContent>
+                <DialogActions><Button onClick={() => setSwapStudentData(null)}>Ακύρωση</Button><Button onClick={handleSwapStudents} disabled={!swapStudentData?.student2}>Ανταλλαγή</Button></DialogActions>
+            </Dialog>
+
+            <Dialog open={errorDialog.open} onClose={() => setErrorDialog({ open: false, message: '' })}>
+                <DialogTitle>Σφάλμα</DialogTitle>
+                <DialogContent><DialogContentText>{errorDialog.message}</DialogContentText></DialogContent>
+                <DialogActions><Button onClick={() => setErrorDialog({ open: false, message: '' })}>Εντάξει</Button></DialogActions>
+            </Dialog>
+
         </Container>
     );
 }

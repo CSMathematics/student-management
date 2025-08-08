@@ -4,32 +4,43 @@ import {
     Container, Paper, Typography, Button, Box, IconButton,
     Dialog, DialogActions, DialogContent, DialogTitle, TextField, CircularProgress, Alert,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Select, MenuItem, FormControl, InputLabel, Grid, Chip,
-    Accordion, AccordionSummary, AccordionDetails, ListItemIcon, ListItemText, Divider
+    Accordion, AccordionSummary, AccordionDetails, ListItemIcon, ListItemText, Divider, Tooltip, TableFooter
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, ReceiptLong as ReceiptIcon, ExpandMore as ExpandMoreIcon, Clear as ClearIcon } from '@mui/icons-material';
+import {
+    Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, ReceiptLong as ReceiptIcon,
+    ExpandMore as ExpandMoreIcon, Clear as ClearIcon, Download as DownloadIcon, TrendingUp as TrendingUpIcon, TrendingDown as TrendingDownIcon, Euro as EuroIcon
+} from '@mui/icons-material';
 import { doc, setDoc, deleteDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import dayjs from 'dayjs';
 import 'dayjs/locale/el';
 import Plot from 'react-plotly.js';
 import isBetween from 'dayjs/plugin/isBetween';
+import { useTheme, lightPalette, darkPalette } from '../context/ThemeContext';
 
 dayjs.locale('el');
 dayjs.extend(isBetween);
 
 const expenseCategories = [
-    { name: 'Ενοίκιο', icon: 'fas fa-house' },
-    { name: 'Ρεύμα', icon: 'fas fa-bolt' },
-    { name: 'Τηλέφωνο & Internet', icon: 'fas fa-phone' },
-    { name: 'Ασφάλιση', icon: 'fas fa-shield-halved' },
-    { name: 'Αναλώσιμα', icon: 'fas fa-cart-shopping' },
-    { name: 'Νερό', icon: 'fas fa-tint' },
-    { name: 'Λογιστής', icon: 'fas fa-calculator' },
-    { name: 'Κοινόχρηστα', icon: 'fas fa-building-columns' },
-    { name: 'Μισθοδοσία', icon: 'fas fa-money-check-dollar' },
-    { name: 'Συντήρηση', icon: 'fas fa-wrench' },
-    { name: 'Marketing', icon: 'fas fa-bullhorn' },
-    { name: 'Άλλο', icon: 'fas fa-ellipsis' }
+    { name: 'Ενοίκιο', icon: 'fas fa-house', color: '#3f51b5' },
+    { name: 'Ρεύμα', icon: 'fas fa-bolt', color: '#fbc02d' },
+    { name: 'Τηλέφωνο & Internet', icon: 'fas fa-phone', color: '#0288d1' },
+    { name: 'Κινητή τηλεφωνία', icon: 'fas fa-mobile-alt', color: '#be1fb1ff' },
+    { name: 'Ασφάλιση', icon: 'fas fa-shield-halved', color: '#d32f2f' },
+    { name: 'Νερό', icon: 'fas fa-tint', color: '#1976d2' },
+    { name: 'Αναλώσιμα', icon: 'fas fa-print', color: '#7b1fa2' },
+    { name: 'Λογιστής', icon: 'fas fa-calculator', color: '#388e3c' },
+    { name: 'Κοινόχρηστα', icon: 'fas fa-building-columns', color: '#5d4037' },
+    { name: 'Σχολείο', icon: 'fas fa-school', color: '#00796b' },
+    { name: 'Βιβλία', icon: 'fas fa-book', color: '#97af0fff' },
+    { name: 'Σουπερμάρκετ', icon: 'fas fa-cart-shopping', color: '#7b1fa2' },
+    { name: 'Βενζίνη', icon: 'fas fa-gas-pump', color: '#616161' },
+    { name: 'Γιατρός', icon: 'fas fa-user-doctor', color: '#b40e6fff' },
+    { name: 'Ταξίδι', icon: 'fas fa-plane', color: '#1abbbbff' },
+    { name: 'Marketing', icon: 'fas fa-bullhorn', color: '#e64a19' },
+    { name: 'Άλλο', icon: 'fas fa-ellipsis', color: '#9e9e9e' }
 ];
+const categoryColorMap = expenseCategories.reduce((acc, cat) => { acc[cat.name] = cat.color; return acc; }, {});
+const categoryIconMap = expenseCategories.reduce((acc, cat) => { acc[cat.name] = cat.icon; return acc; }, {});
 
 const safeGetDate = (dateField) => {
     if (dateField && typeof dateField.toDate === 'function') { return dayjs(dateField.toDate()); }
@@ -38,21 +49,30 @@ const safeGetDate = (dateField) => {
 };
 
 const getInitialFormState = () => ({
-    id: null,
-    date: dayjs().format('YYYY-MM-DD'),
-    category: '',
-    amount: '',
-    description: ''
+    id: null, date: dayjs().format('YYYY-MM-DD'), category: '', amount: '', description: ''
 });
 
+const SummaryCard = ({ title, value, icon, color }) => (
+    <Paper elevation={3} sx={{ p: 2, display: 'flex', alignItems: 'center', borderRadius: '12px', height: '100%' }}>
+        <Box sx={{ bgcolor: color, borderRadius: '50%', p: 1.5, mr: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {icon}
+        </Box>
+        <Box>
+            <Typography color="text.secondary">{title}</Typography>
+            <Typography variant="h5" component="div" sx={{ fontWeight: 'bold' }}>{value.toFixed(2)} €</Typography>
+        </Box>
+    </Paper>
+);
 
-function Expenses({ allExpenses, loading, db, appId }) {
-    // --- ΑΛΛΑΓΗ: Η φόρμα είναι πλέον μέρος του κυρίως component ---
+
+function Expenses({ allExpenses, allPayments, loading, db, appId }) {
+    const { mode } = useTheme();
     const [formData, setFormData] = useState(getInitialFormState());
     const [expenseToDelete, setExpenseToDelete] = useState(null);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
     const [timeFilter, setTimeFilter] = useState('all');
     const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+    const [isSaving, setIsSaving] = useState(false);
 
     const isEditMode = Boolean(formData.id);
 
@@ -78,24 +98,31 @@ function Expenses({ allExpenses, loading, db, appId }) {
         const now = dayjs();
 
         if (timeFilter === 'all') return allExpenses;
-        if (timeFilter === '3-months') {
-            const threeMonthsAgo = now.subtract(3, 'month');
-            return allExpenses.filter(exp => safeGetDate(exp.date)?.isAfter(threeMonthsAgo));
-        }
-        if (timeFilter === '6-months') {
-            const sixMonthsAgo = now.subtract(6, 'month');
-            return allExpenses.filter(exp => safeGetDate(exp.date)?.isAfter(sixMonthsAgo));
-        }
+        if (timeFilter === '3-months') return allExpenses.filter(exp => safeGetDate(exp.date)?.isAfter(now.subtract(3, 'month')));
+        if (timeFilter === '6-months') return allExpenses.filter(exp => safeGetDate(exp.date)?.isAfter(now.subtract(6, 'month')));
         if (timeFilter === 'custom' && customDateRange.start && customDateRange.end) {
             const start = dayjs(customDateRange.start);
             const end = dayjs(customDateRange.end);
-            return allExpenses.filter(exp => {
-                const expenseDate = safeGetDate(exp.date);
-                return expenseDate && expenseDate.isBetween(start, end, 'day', '[]');
-            });
+            return allExpenses.filter(exp => safeGetDate(exp.date)?.isBetween(start, end, 'day', '[]'));
         }
         return allExpenses.filter(exp => safeGetDate(exp.date)?.format('YYYY-MM') === timeFilter);
     }, [allExpenses, timeFilter, customDateRange]);
+
+    const filteredIncome = useMemo(() => {
+        if (!Array.isArray(allPayments)) return [];
+        const now = dayjs();
+
+        if (timeFilter === 'all') return allPayments;
+        if (timeFilter === '3-months') return allPayments.filter(p => safeGetDate(p.date)?.isAfter(now.subtract(3, 'month')));
+        if (timeFilter === '6-months') return allPayments.filter(p => safeGetDate(p.date)?.isAfter(now.subtract(6, 'month')));
+        if (timeFilter === 'custom' && customDateRange.start && customDateRange.end) {
+            const start = dayjs(customDateRange.start);
+            const end = dayjs(customDateRange.end);
+            return allPayments.filter(p => safeGetDate(p.date)?.isBetween(start, end, 'day', '[]'));
+        }
+        return allPayments.filter(p => safeGetDate(p.date)?.format('YYYY-MM') === timeFilter);
+    }, [allPayments, timeFilter, customDateRange]);
+
 
     const handleFormChange = (e) => {
         const { name, value } = e.target;
@@ -107,31 +134,24 @@ function Expenses({ allExpenses, loading, db, appId }) {
         setFormData({
             id: expense.id,
             date: expenseDate ? expenseDate.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
-            category: expense.category || '',
-            amount: expense.amount || '',
-            description: expense.description || ''
+            category: expense.category || '', amount: expense.amount || '', description: expense.description || ''
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleClearForm = () => {
-        setFormData(getInitialFormState());
-    };
+    const handleClearForm = () => setFormData(getInitialFormState());
 
     const handleSave = async () => {
         if (!formData.category || !formData.amount || formData.amount <= 0) {
             setFeedback({ type: 'error', message: 'Παρακαλώ συμπληρώστε την κατηγορία και το ποσό.' });
             return;
         }
+        setIsSaving(true);
         try {
             const dataToSave = {
-                date: dayjs(formData.date).toDate(),
-                category: formData.category,
-                amount: parseFloat(formData.amount),
-                description: formData.description,
-                updatedAt: serverTimestamp()
+                date: dayjs(formData.date).toDate(), category: formData.category, amount: parseFloat(formData.amount),
+                description: formData.description, updatedAt: serverTimestamp()
             };
-
             if (isEditMode) {
                 const docRef = doc(db, `artifacts/${appId}/public/data/expenses`, formData.id);
                 await setDoc(docRef, dataToSave, { merge: true });
@@ -141,10 +161,12 @@ function Expenses({ allExpenses, loading, db, appId }) {
                 await addDoc(collectionRef, dataToSave);
             }
             setFeedback({ type: 'success', message: `Το έξοδο ${isEditMode ? 'ενημερώθηκε' : 'αποθηκεύτηκε'}.` });
-            handleClearForm(); // Καθαρίζουμε τη φόρμα μετά την αποθήκευση
+            handleClearForm();
         } catch (error) {
             console.error("Error saving expense: ", error);
             setFeedback({ type: 'error', message: 'Σφάλμα κατά την αποθήκευση.' });
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -161,6 +183,22 @@ function Expenses({ allExpenses, loading, db, appId }) {
         }
     };
 
+    const handleExportCSV = () => {
+        const headers = ["Ημερομηνία", "Κατηγορία", "Περιγραφή", "Ποσό (€)"];
+        const rows = filteredExpenses.map(exp => [
+            safeGetDate(exp.date).format('DD/MM/YYYY'), `"${exp.category.replace(/"/g, '""')}"`,
+            `"${exp.description.replace(/"/g, '""')}"`, exp.amount.toFixed(2)
+        ]);
+        let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `expenses_${dayjs().format('YYYY-MM-DD')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const expensesGroupedByMonth = useMemo(() => {
         const groups = filteredExpenses.reduce((acc, expense) => {
             const expenseDate = safeGetDate(expense.date);
@@ -175,19 +213,46 @@ function Expenses({ allExpenses, loading, db, appId }) {
         return Object.entries(groups).map(([month, data]) => ({ month, ...data })).sort((a, b) => b.month.localeCompare(a.month));
     }, [filteredExpenses]);
 
-    const expensesByMonthChart = useMemo(() => {
-        const data = {};
+    const incomeExpenseChartData = useMemo(() => {
+        const expensesData = {};
         filteredExpenses.forEach(exp => {
             const expenseDate = safeGetDate(exp.date);
             if (expenseDate) {
                 const month = expenseDate.format('YYYY-MM');
-                if (!data[month]) data[month] = 0;
-                data[month] += exp.amount;
+                if (!expensesData[month]) expensesData[month] = 0;
+                expensesData[month] += exp.amount;
             }
         });
-        const sortedMonths = Object.keys(data).sort();
-        return { x: sortedMonths.map(m => dayjs(m).format('MMM YYYY')), y: sortedMonths.map(m => data[m]), type: 'bar' };
-    }, [filteredExpenses]);
+
+        const incomeData = {};
+        filteredIncome.forEach(p => {
+            const paymentDate = safeGetDate(p.date);
+            if (paymentDate) {
+                const month = paymentDate.format('YYYY-MM');
+                if (!incomeData[month]) incomeData[month] = 0;
+                incomeData[month] += p.amount;
+            }
+        });
+
+        const allMonths = new Set([...Object.keys(expensesData), ...Object.keys(incomeData)]);
+        const sortedMonths = Array.from(allMonths).sort();
+
+        return [
+            { name: 'Έσοδα', x: sortedMonths.map(m => dayjs(m).format('MMM YYYY')), y: sortedMonths.map(m => incomeData[m] || 0), type: 'bar', marker: { color: '#4caf50' } },
+            { name: 'Έξοδα', x: sortedMonths.map(m => dayjs(m).format('MMM YYYY')), y: sortedMonths.map(m => expensesData[m] || 0), type: 'bar', marker: { color: '#f44336' } }
+        ];
+    }, [filteredExpenses, filteredIncome]);
+
+    const barChartLayout = useMemo(() => {
+        const currentPalette = mode === 'light' ? lightPalette : darkPalette;
+        return {
+            autosize: true, margin: { l: 50, r: 20, b: 40, t: 40 },
+            yaxis: { title: 'Ποσό (€)', ticksuffix: '€', gridcolor: currentPalette.chartGridColor, color: currentPalette.chartFontColor },
+            xaxis: { gridcolor: currentPalette.chartGridColor, color: currentPalette.chartFontColor },
+            barmode: 'group', paper_bgcolor: currentPalette.chartPaperBg, plot_bgcolor: currentPalette.chartPlotBg,
+            font: { color: currentPalette.chartFontColor }, legend: { font: { color: currentPalette.chartFontColor } }
+        };
+    }, [mode]);
 
     const expensesByCategoryChart = useMemo(() => {
         const data = filteredExpenses.reduce((acc, exp) => {
@@ -197,35 +262,63 @@ function Expenses({ allExpenses, loading, db, appId }) {
             return acc;
         }, {});
         return {
-            labels: Object.keys(data),
-            values: Object.values(data),
-            type: 'pie',
-            hole: .5,
-            textposition: 'outside',
-            texttemplate: "%{label}<br>%{value:,.2f}€ (%{percent})",
-            automargin: true
+            labels: Object.keys(data), values: Object.values(data),
+            type: 'pie', hole: .5, textposition: 'outside',
+            texttemplate: "%{label}<br>%{value:,.2f}€ (%{percent})", automargin: true
         };
     }, [filteredExpenses]);
 
     const totalFilteredExpenses = useMemo(() => filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0), [filteredExpenses]);
+    const totalFilteredIncome = useMemo(() => filteredIncome.reduce((sum, p) => sum + p.amount, 0), [filteredIncome]);
+    const profitLoss = totalFilteredIncome - totalFilteredExpenses;
+
+    const donutChartLayout = useMemo(() => {
+        const currentPalette = mode === 'light' ? lightPalette : darkPalette;
+        return {
+            autosize: true, showlegend: false, margin: { l: 40, r: 40, b: 40, t: 40 },
+            paper_bgcolor: currentPalette.chartPaperBg, plot_bgcolor: currentPalette.chartPlotBg,
+            font: { color: currentPalette.chartFontColor },
+            annotations: [{
+                font: { size: 20, color: currentPalette.chartFontColor }, showarrow: false,
+                text: `<b>${totalFilteredExpenses.toFixed(2)}€</b>`, x: 0.5, y: 0.5
+            }]
+        };
+    }, [totalFilteredExpenses, mode]);
+
 
     if (loading) {
         return <Container sx={{ mt: 4, textAlign: 'center' }}><CircularProgress /></Container>;
     }
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Container maxWidth={false} sx={{ mt: 4 }}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: '12px', mb: 3 }}>
                 <Typography variant="h4" component="h1" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                     {isEditMode ? 'Επεξεργασία Εξόδου' : 'Καταχώρηση Νέου Εξόδου'}
                 </Typography>
-                <Grid container spacing={2} sx={{ pt: 2 }}>
-                    <Grid item xs={12} sm={6} md={2}><TextField name="date" label="Ημερομηνία" type="date" value={formData.date} onChange={handleFormChange} fullWidth InputLabelProps={{ shrink: true }} size="small" /></Grid>
+                <Grid container spacing={2} sx={{ pt: 2 }} alignItems="center">
+                    <Grid item xs={12} sm={6} md={3}><TextField name="date" label="Ημερομηνία" type="date" value={formData.date} onChange={handleFormChange} fullWidth InputLabelProps={{ shrink: true }} size="small" /></Grid>
                     <Grid item xs={12} sm={6} md={2}><TextField name="amount" label="Ποσό (€)" type="number" value={formData.amount} onChange={handleFormChange} fullWidth size="small" /></Grid>
                     <Grid item xs={12} sm={6} md={3}>
                         <FormControl fullWidth size="small">
                             <InputLabel>Κατηγορία</InputLabel>
-                            <Select name="category" value={formData.category} label="Κατηγορία" onChange={handleFormChange}>
+                            <Select
+                                name="category"
+                                value={formData.category}
+                                label="Κατηγορία"
+                                onChange={handleFormChange}
+                                // --- ΔΙΟΡΘΩΣΗ: Προσθήκη του renderValue ---
+                                renderValue={(selected) => {
+                                    if (!selected) { return <em>Επιλέξτε...</em>; }
+                                    const category = expenseCategories.find(cat => cat.name === selected);
+                                    return (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                            <i className={category.icon} style={{ fontSize: '1.2em', width: '24px', textAlign: 'center' }}></i>
+                                            {selected}
+                                        </Box>
+                                    );
+                                }}
+                            >
                                 {expenseCategories.map(cat => (
                                     <MenuItem key={cat.name} value={cat.name}>
                                         <ListItemIcon><i className={cat.icon} style={{ fontSize: '1.2em', width: '24px', textAlign: 'center' }}></i></ListItemIcon>
@@ -235,11 +328,11 @@ function Expenses({ allExpenses, loading, db, appId }) {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}><TextField name="description" label="Περιγραφή" value={formData.description} onChange={handleFormChange} fullWidth size="small" /></Grid>
-                    <Grid item xs={12} md={2}>
-                        <Box sx={{ display: 'flex', gap: 1, height: '100%' }}>
-                            <Button onClick={handleSave} variant="contained" fullWidth>{isEditMode ? 'Ενημέρωση' : 'Αποθήκευση'}</Button>
-                            {isEditMode && <IconButton onClick={handleClearForm}><ClearIcon /></IconButton>}
+                    <Grid item xs={12} sm={6} md={4}><TextField name="description" label="Περιγραφή" value={formData.description} onChange={handleFormChange} fullWidth size="small" /></Grid>
+                    <Grid item xs={12}>
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                            {isEditMode && <Button onClick={handleClearForm} variant="outlined" color="secondary" startIcon={<ClearIcon />}>Καθαρισμός</Button>}
+                            <Button onClick={handleSave} variant="contained" disabled={isSaving}>{isSaving ? <CircularProgress size={24} /> : (isEditMode ? 'Ενημέρωση' : 'Αποθήκευση')}</Button>
                         </Box>
                     </Grid>
                 </Grid>
@@ -248,7 +341,7 @@ function Expenses({ allExpenses, loading, db, appId }) {
             {feedback.message && <Alert severity={feedback.type} sx={{ mb: 2 }} onClose={() => setFeedback({ type: '', message: '' })}>{feedback.message}</Alert>}
 
             <Paper elevation={3} sx={{ p: 2, borderRadius: '12px', mb: 3 }}>
-                <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
                     <FormControl size="small" sx={{ minWidth: 200 }}>
                         <InputLabel>Χρονική Περίοδος</InputLabel>
                         <Select value={timeFilter} label="Χρονική Περίοδος" onChange={(e) => setTimeFilter(e.target.value)}>
@@ -257,9 +350,7 @@ function Expenses({ allExpenses, loading, db, appId }) {
                             <MenuItem value="6-months">Τελευταίο 6-μηνο</MenuItem>
                             <MenuItem value="custom">Προσαρμοσμένο Διάστημα</MenuItem>
                             <Divider />
-                            {availableMonths.map(month => (
-                                <MenuItem key={month} value={month}>{dayjs(month).format('MMMM YYYY')}</MenuItem>
-                            ))}
+                            {availableMonths.map(month => (<MenuItem key={month} value={month}>{dayjs(month).format('MMMM YYYY')}</MenuItem>))}
                         </Select>
                     </FormControl>
                     {timeFilter === 'custom' && (
@@ -268,24 +359,24 @@ function Expenses({ allExpenses, loading, db, appId }) {
                             <TextField size="small" label="Έως" type="date" value={customDateRange.end} onChange={(e) => setCustomDateRange(prev => ({ ...prev, end: e.target.value }))} InputLabelProps={{ shrink: true }} />
                         </>
                     )}
+                    <Box sx={{ flexGrow: 1 }} />
+                    <Button onClick={handleExportCSV} startIcon={<DownloadIcon />} variant="text">Εξαγωγή σε CSV</Button>
                 </Box>
                 <Grid container spacing={3}>
+                    <Grid item xs={12} md={4}><SummaryCard title="Σύνολο Εσόδων" value={totalFilteredIncome} icon={<TrendingUpIcon sx={{ color: '#fff' }} />} color="#4caf50" /></Grid>
+                    <Grid item xs={12} md={4}><SummaryCard title="Σύνολο Εξόδων" value={totalFilteredExpenses} icon={<TrendingDownIcon sx={{ color: '#fff' }} />} color="#f44336" /></Grid>
+                    <Grid item xs={12} md={4}><SummaryCard title="Αποτέλεσμα" value={profitLoss} icon={<EuroIcon sx={{ color: '#fff' }} />} color={profitLoss >= 0 ? "#2196f3" : "#ff9800"} /></Grid>
+                </Grid>
+                <Divider sx={{ my: 3 }} />
+                <Grid container spacing={3}>
                     <Grid item xs={12} md={7}>
-                        <Typography variant="h6" sx={{ mb: 2 }}>Έξοδα ανά Μήνα</Typography>
-                        <Plot data={[expensesByMonthChart]} layout={{ autosize: true, margin: { l: 40, r: 20, b: 40, t: 20 } }} style={{ width: '100%', height: '300px' }} useResizeHandler />
+                        <Typography variant="h6" sx={{ mb: 2 }}>Έσοδα vs Έξοδα ανά Μήνα</Typography>
+                        <Plot data={incomeExpenseChartData} layout={barChartLayout} style={{ width: '100%', height: '300px' }} useResizeHandler />
                     </Grid>
                     <Grid item xs={12} md={5}>
-                        <Typography variant="h6" sx={{ mb: 2 }}>Ανάλυση Κατηγοριών</Typography>
+                        <Typography variant="h6" sx={{ mb: 2 }}>Ανάλυση Κατηγοριών Εξόδων</Typography>
                         {expensesByCategoryChart && expensesByCategoryChart.labels.length > 0 ? (
-                            <Plot
-                                data={[expensesByCategoryChart]}
-                                layout={{
-                                    autosize: true, showlegend: false, margin: { l: 40, r: 40, b: 40, t: 40 },
-                                    annotations: [{ font: { size: 20 }, showarrow: false, text: `<b>${totalFilteredExpenses.toFixed(2)}€</b>`, x: 0.5, y: 0.5 }]
-                                }}
-                                style={{ width: '100%', height: '300px' }}
-                                useResizeHandler
-                            />
+                            <Plot data={[expensesByCategoryChart]} layout={donutChartLayout} style={{ width: '100%', height: '300px' }} useResizeHandler />
                         ) : (
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
                                 <Typography color="text.secondary">Δεν υπάρχουν δεδομένα για αυτή την περίοδο.</Typography>
@@ -300,7 +391,6 @@ function Expenses({ allExpenses, loading, db, appId }) {
                     <Accordion key={month} defaultExpanded>
                         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                             <Typography variant="h6" sx={{ flexGrow: 1 }}>{dayjs(month).format('MMMM YYYY')}</Typography>
-                            <Typography sx={{ color: 'text.secondary', alignSelf: 'center' }}>Σύνολο: {total.toFixed(2)} €</Typography>
                         </AccordionSummary>
                         <AccordionDetails>
                             <TableContainer>
@@ -310,7 +400,7 @@ function Expenses({ allExpenses, loading, db, appId }) {
                                         {expenses.sort((a, b) => safeGetDate(b.date) - safeGetDate(a.date)).map(exp => (
                                             <TableRow key={exp.id} hover>
                                                 <TableCell>{safeGetDate(exp.date).format('DD/MM/YYYY')}</TableCell>
-                                                <TableCell>{exp.category}</TableCell>
+                                                <TableCell><Chip icon={<i className={categoryIconMap[exp.category]} style={{ fontSize: '1em', color: '#fff', width: '16px', textAlign: 'center' }}></i>} label={exp.category} size="small" sx={{ backgroundColor: categoryColorMap[exp.category] || '#9e9e9e', color: '#fff' }} /></TableCell>
                                                 <TableCell>{exp.description}</TableCell>
                                                 <TableCell align="right">{exp.amount.toFixed(2)} €</TableCell>
                                                 <TableCell align="center">
@@ -320,6 +410,13 @@ function Expenses({ allExpenses, loading, db, appId }) {
                                             </TableRow>
                                         ))}
                                     </TableBody>
+                                    <TableFooter>
+                                        <TableRow>
+                                            <TableCell colSpan={3} align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Σύνολο Μήνα:</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{total.toFixed(2)} €</TableCell>
+                                            <TableCell />
+                                        </TableRow>
+                                    </TableFooter>
                                 </Table>
                             </TableContainer>
                         </AccordionDetails>

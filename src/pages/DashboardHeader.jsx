@@ -2,7 +2,7 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box, IconButton } from '@mui/material';
 import { useTheme } from '../context/ThemeContext'; // <-- ΕΙΣΑΓΩΓΗ του useTheme
-import { Brightness4, Brightness7 } from '@mui/icons-material'; // <-- Εικονίδια για light/dark
+import { Brightness2, Brightness4, Brightness7 } from '@mui/icons-material'; // <-- Εικονίδια για light/dark
 
 // --- ΑΛΛΑΓΗ: Προσθέτουμε το toggleTheme στα props ---
 function DashboardHeader({ pageTitle, onBackClick, showBackButton, toggleTheme }) {
@@ -40,7 +40,7 @@ function DashboardHeader({ pageTitle, onBackClick, showBackButton, toggleTheme }
                     </IconButton>
                     {/* --- ΑΛΛΑΓΗ: Το κουμπί καλεί τη συνάρτηση toggleTheme και αλλάζει εικονίδιο --- */}
                     <IconButton sx={{ ml: 1 }} onClick={toggleTheme} color="inherit" title="Εναλλαγή Θέματος">
-                        {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
+                        {mode === 'dark' ? <Brightness7 /> : <Brightness2 />}
                     </IconButton>
                 </Box>
             </Toolbar>

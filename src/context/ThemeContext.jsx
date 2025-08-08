@@ -3,29 +3,30 @@ import React, { createContext, useState, useMemo, useContext, useEffect } from '
 import { createTheme, ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
 import { grey } from '@mui/material/colors';
 
-// Create a context for the theme
 const ThemeContext = createContext();
-
-// Custom hook to use the theme context
 export const useTheme = () => useContext(ThemeContext);
 
-// Define your color palettes
-const lightPalette = {
+// --- ΑΛΛΑΓΗ: Εξάγουμε τις παλέτες για να είναι προσβάσιμες από άλλα αρχεία ---
+export const lightPalette = {
   primary: '#1e88e5',
-  secondary: '#74008bff',
+  secondary: '#f57c00',
   background: '#f4f6f8',
   paper: '#ffffff',
   textPrimary: '#000000',
   textSecondary: grey[700],
   drawerBg: '#20303f',
   drawerText: '#eef6fb',
-  drawerHoverBg: '#2f465cff',
+  drawerHoverBg: '#30495fff',
   drawerHoverText: '#1e88e5',
+  chartPaperBg: '#ffffff',
+  chartPlotBg: '#ffffff',
+  chartFontColor: '#000000',
+  chartGridColor: '#e0e0e0',
 };
 
-const darkPalette = {
+export const darkPalette = {
   primary: '#64b5f6',
-  secondary: '#a008dbff',
+  secondary: '#ffb74d',
   background: '#121212',
   paper: '#1e1e1e',
   textPrimary: '#ffffff',
@@ -34,12 +35,16 @@ const darkPalette = {
   drawerText: '#eef6fb',
   drawerHoverBg: '#333333',
   drawerHoverText: '#64b5f6',
+  chartPaperBg: '#1e1e1e',
+  chartPlotBg: '#1e1e1e',
+  chartFontColor: '#ffffff',
+  chartGridColor: '#444444',
 };
 
-// ThemeProvider component that wraps the app
 export const ThemeProvider = ({ children }) => {
   const [mode, setMode] = useState('light');
 
+  // This useEffect is still needed for any SCSS styles that use CSS variables
   useEffect(() => {
     const palette = mode === 'light' ? lightPalette : darkPalette;
     for (const key in palette) {

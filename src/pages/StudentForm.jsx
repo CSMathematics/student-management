@@ -6,7 +6,7 @@ import {
     Checkbox, IconButton, CircularProgress, Alert, ListItemText, RadioGroup, Radio, Divider
 } from '@mui/material';
 import { Delete, Add } from '@mui/icons-material';
-import { addDoc, doc, updateDoc, collection, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, updateDoc, collection, writeBatch, arrayUnion, arrayRemove, addDoc } from 'firebase/firestore';
 import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,8 +17,6 @@ const formatSchedule = (schedule) => {
     return schedule.map(slot => `${dayMapping[slot.day] || slot.day.substring(0, 2)} ${slot.startTime}-${slot.endTime}`).join(', ');
 };
 
-// The unified form component
-// --- ΔΙΟΡΘΩΣΗ: Αλλάζουμε το όνομα του prop από allClassrooms σε classrooms ---
 function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, initialData = null }) {
     const navigate = useNavigate();
     const isEditMode = Boolean(initialData && initialData.id);
@@ -29,22 +27,19 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
 
-    // Effect to initialize or reset the form state
     useEffect(() => {
         if (isEditMode) {
-            // EDIT MODE: Populate form with existing student data
             const studentData = {
                 ...initialData,
                 parents: initialData.parents && initialData.parents.length > 0
                     ? initialData.parents.map(p => ({ ...p, id: p.id || Date.now() + Math.random() }))
-                    : [{ id: Date.now(), name: '', phones: [{ id: Date.now() + 1, value: '' }] }]
+                    : [{ id: Date.now(), name: '', phones: [] }]
             };
             setFormData(studentData);
 
             const initialSubjects = new Set();
             const initialClassrooms = {};
 
-            // --- ΔΙΟΡΘΩΣΗ: Χρησιμοποιούμε το 'classrooms' prop ---
             if (classrooms) {
                 classrooms.forEach(classroom => {
                     if (initialData.enrolledClassrooms?.includes(classroom.id)) {
@@ -57,10 +52,9 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
             setSelectedSubjects(Array.from(initialSubjects));
             setSelectedClassrooms(initialClassrooms);
         } else {
-            // CREATE MODE: Set form to its initial empty state
             setFormData({
                 firstName: '', lastName: '', dob: '', studentPhone: '', address: '', email: '',
-                parents: [{ id: Date.now(), name: '', phones: [{ id: Date.now() + 1, value: '' }] }],
+                parents: [{ id: Date.now(), name: '', phones: [] }],
                 grade: '', specialization: '', payment: '', debt: ''
             });
             setSelectedSubjects([]);
@@ -68,7 +62,6 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
         }
     }, [initialData, isEditMode, classrooms]);
 
-    // Memoized calculation for classroom enrollment counts
     const classroomEnrollmentCounts = useMemo(() => {
         const counts = new Map();
         if (allStudents) {
@@ -81,7 +74,6 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
         return counts;
     }, [allStudents]);
 
-    // Effect to update available subjects/specializations when grade changes
     const [availableSpecializations, setAvailableSpecializations] = useState([]);
     const [availableSubjects, setAvailableSubjects] = useState([]);
 
@@ -97,7 +89,6 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
         }
     }, [formData?.grade, formData?.specialization]);
 
-    // Handlers for form inputs
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -109,24 +100,21 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
         setFormData(prev => ({ ...prev, parents: newParents }));
     };
 
-    const handleParentPhoneChange = (parentIndex, phoneId, e) => {
+    const handleParentPhoneChange = (parentIndex, phoneIndex, e) => {
         const newParents = JSON.parse(JSON.stringify(formData.parents));
-        const phoneIndex = newParents[parentIndex].phones.findIndex(p => p.id === phoneId);
-        if (phoneIndex !== -1) {
-            newParents[parentIndex].phones[phoneIndex].value = e.target.value;
-            setFormData(prev => ({ ...prev, parents: newParents }));
-        }
+        newParents[parentIndex].phones[phoneIndex] = e.target.value;
+        setFormData(prev => ({ ...prev, parents: newParents }));
     };
 
     const addParentPhone = (parentIndex) => {
         const newParents = JSON.parse(JSON.stringify(formData.parents));
-        newParents[parentIndex].phones.push({ id: Date.now(), value: '' });
+        newParents[parentIndex].phones.push('');
         setFormData(prev => ({ ...prev, parents: newParents }));
     };
 
-    const removeParentPhone = (parentIndex, phoneId) => {
+    const removeParentPhone = (parentIndex, phoneIndex) => {
         const newParents = JSON.parse(JSON.stringify(formData.parents));
-        newParents[parentIndex].phones = newParents[parentIndex].phones.filter(p => p.id !== phoneId);
+        newParents[parentIndex].phones.splice(phoneIndex, 1);
         setFormData(prev => ({ ...prev, parents: newParents }));
     };
 
@@ -134,7 +122,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
         if (formData.parents.length < 2) {
             setFormData(prev => ({
                 ...prev,
-                parents: [...prev.parents, { id: Date.now(), name: '', phones: [{ id: Date.now() + 1, value: '' }] }]
+                parents: [...prev.parents, { id: Date.now(), name: '', phones: [] }]
             }));
         }
     };
@@ -167,7 +155,6 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
         openModalWithData(prefilledData);
     };
 
-    // Unified submit handler
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!db || !appId) {
@@ -177,19 +164,35 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
         setLoading(true);
         setFeedback({ type: '', message: '' });
 
+        const finalEnrolledClassrooms = Object.values(selectedClassrooms);
+
+        // --- ΝΕΑ ΛΟΓΙΚΗ ΕΛΕΓΧΟΥ ---
+        const subjectsOfSelectedClassrooms = new Set();
+        for (const classroomId of finalEnrolledClassrooms) {
+            const classroom = classrooms.find(c => c.id === classroomId);
+            if (classroom) {
+                if (subjectsOfSelectedClassrooms.has(classroom.subject)) {
+                    setFeedback({ type: 'error', message: `Δεν μπορείτε να εγγράψετε τον μαθητή σε δύο τμήματα του ίδιου μαθήματος (${classroom.subject}).` });
+                    setLoading(false);
+                    return; // Σταματάμε την αποθήκευση
+                }
+                subjectsOfSelectedClassrooms.add(classroom.subject);
+            }
+        }
+        // --- ΤΕΛΟΣ ΛΟΓΙΚΗΣ ΕΛΕΓΧΟΥ ---
+
         const cleanedParents = formData.parents.map(parent => ({
             name: parent.name,
-            phones: parent.phones.map(p => p.value).filter(Boolean)
+            phones: parent.phones.filter(Boolean)
         })).filter(parent => parent.name);
 
-        const finalEnrolledClassrooms = Object.values(selectedClassrooms);
         const studentData = { ...formData, parents: cleanedParents, enrolledClassrooms: finalEnrolledClassrooms };
+        delete studentData.id;
 
         try {
             const batch = writeBatch(db);
 
             if (isEditMode) {
-                // --- UPDATE LOGIC ---
                 const studentRef = doc(db, `artifacts/${appId}/public/data/students`, initialData.id);
                 batch.update(studentRef, studentData);
 
@@ -212,7 +215,6 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                 setFeedback({ type: 'success', message: 'Οι αλλαγές αποθηκεύτηκαν επιτυχώς!' });
 
             } else {
-                // --- CREATE LOGIC ---
                 studentData.createdAt = new Date();
                 const newStudentRef = doc(collection(db, `artifacts/${appId}/public/data/students`));
                 batch.set(newStudentRef, studentData);
@@ -250,7 +252,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                     <Grid container spacing={3}>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Όνομα" name="firstName" value={formData.firstName} onChange={handleInputChange} required size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Επώνυμο" name="lastName" value={formData.lastName} onChange={handleInputChange} required size="small" /></Grid>
-                        <Grid item xs={12} sm={6}><TextField fullWidth label="Ημερομηνία Εγγραφής" name="dob" type="date" value={formData.dob} onChange={handleInputChange} InputLabelProps={{ shrink: true }} size="small" /></Grid>
+                        <Grid item xs={12} sm={6}><TextField fullWidth label="Ημερομηνία Γέννησης" name="dob" type="date" value={formData.dob} onChange={handleInputChange} InputLabelProps={{ shrink: true }} size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Τηλέφωνο Μαθητή" name="studentPhone" value={formData.studentPhone} onChange={handleInputChange} size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Διεύθυνση" name="address" value={formData.address} onChange={handleInputChange} size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} size="small" /></Grid>
@@ -269,10 +271,10 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                             <Grid container spacing={3}>
                                 <Grid item xs={12}><TextField fullWidth label="Ονοματεπώνυμο Γονέα" value={parent.name} onChange={(e) => handleParentNameChange(parentIndex, e)} size="small" sx={{ mb: 2 }} /></Grid>
                                 <Grid item xs={12}>
-                                    {parent.phones.map((phoneEntry, phoneIndex) => (
-                                        <Box key={phoneEntry.id || phoneIndex} sx={{ display: 'flex', gap: '10px', mb: 2, alignItems: 'center' }}>
-                                            <TextField fullWidth label={`Τηλέφωνο ${phoneIndex + 1}`} value={phoneEntry.value} onChange={(e) => handleParentPhoneChange(parentIndex, phoneEntry.id, e)} size="small" />
-                                            {parent.phones.length > 1 && <IconButton color="error" onClick={() => removeParentPhone(parentIndex, phoneEntry.id)}><Delete /></IconButton>}
+                                    {parent.phones.map((phone, phoneIndex) => (
+                                        <Box key={phoneIndex} sx={{ display: 'flex', gap: '10px', mb: 2, alignItems: 'center' }}>
+                                            <TextField fullWidth label={`Τηλέφωνο ${phoneIndex + 1}`} value={phone} onChange={(e) => handleParentPhoneChange(parentIndex, phoneIndex, e)} size="small" />
+                                            {parent.phones.length > 1 && <IconButton color="error" onClick={() => removeParentPhone(parentIndex, phoneIndex)}><Delete /></IconButton>}
                                         </Box>
                                     ))}
                                     <Button variant="outlined" size="small" startIcon={<Add />} onClick={() => addParentPhone(parentIndex)}>Προσθήκη Τηλεφώνου</Button>
@@ -310,8 +312,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                                 {availableSubjects.length > 0 ? (
                                     <FormGroup>
                                         {availableSubjects.map(subject => {
-                                            // --- ΔΙΟΡΘΩΣΗ: Χρησιμοποιούμε το 'classrooms' prop ---
-                                            const matching = classrooms.filter(c => c.grade === formData.grade && (c.specialization || '') === formData.specialization && c.subject === subject);
+                                            const matching = classrooms.filter(c => c.grade === formData.grade && (c.specialization || '') === (formData.specialization || '') && c.subject === subject);
                                             const isSubjectSelected = selectedSubjects.includes(subject);
                                             return (
                                                 <Box key={subject} sx={{ mb: 1, p: 1, borderLeft: '4px solid', borderColor: isSubjectSelected ? 'primary.main' : 'transparent' }}>
@@ -329,7 +330,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                                                                                 label={
                                                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                                                         <Box sx={{ width: 16, height: 16, borderRadius: '50%', backgroundColor: c.color || '#ccc', flexShrink: 0 }} />
-                                                                                        <ListItemText primary={<Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Typography component="span" variant="body1">{c.classroomName || 'N/A'} -</Typography><Typography component="span" variant="body2" sx={{ color: isFull ? 'error.main' : 'text.secondary', fontWeight: 'bold' }}>Θέσεις: {enrolledCount}/{c.maxStudents} ({(c.maxStudents-enrolledCount)} θέσεις κενές)</Typography></Box>} secondary={formatSchedule(c.schedule)} sx={{ m: 0 }} />
+                                                                                        <ListItemText primary={<Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Typography component="span" variant="body1">{c.classroomName || 'N/A'} -</Typography><Typography component="span" variant="body2" sx={{ color: isFull ? 'error.main' : 'text.secondary', fontWeight: 'bold' }}>Θέσεις: {enrolledCount}/{c.maxStudents}</Typography></Box>} secondary={formatSchedule(c.schedule)} sx={{ m: 0 }} />
                                                                                     </Box>
                                                                                 }
                                                                             />

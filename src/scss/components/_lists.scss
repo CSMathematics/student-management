@@ -1,9 +1,27 @@
 @use '../base/variables' as v;
 
 .MuiListItemButton-root {
-    padding: 5px 16px !important;
-    transition: color 0.3s ease;
-    justify-content: center;
+    padding: 10px 16px;
+    transition: all 0.3s ease !important;
+    justify-content: flex-start;
+    gap: 8px;
+    border-left: 5px solid transparent;
+
+    .MuiListItemIcon-root {
+        color: v.$drawer-text !important;
+        transition: all 0.3s ease;
+    }
+
+    &:hover,
+    &.Mui-selected {
+        color: v.$drawer-hover-text !important;
+        border-left: 5px solid v.$primary-color;
+        padding-left: 24px !important;
+
+        .MuiListItemIcon-root {
+            color: v.$drawer-hover-text !important;
+        }
+    }
 }
 
 .MuiListItemText-root {
