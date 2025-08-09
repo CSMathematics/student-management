@@ -15,20 +15,18 @@ import {
     Attachment as AttachmentIcon,
     KeyboardArrowDown as KeyboardArrowDownIcon,
     KeyboardArrowUp as KeyboardArrowUpIcon,
-    Person as PersonIcon // <-- ΝΕΟ ΕΙΚΟΝΙΔΙΟ
+    Person as PersonIcon
 } from '@mui/icons-material';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faChalkboardUser } from '@fortawesome/free-solid-svg-icons';
 
-// --- ΠΡΟΣΘΗΚΗ allTeachers στα props ---
 function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db, appId }) {
     const navigate = useNavigate();
     const [selectedGrade, setSelectedGrade] = useState('');
     const [expandedCourseId, setExpandedCourseId] = useState(null);
     const [courseToDelete, setCourseToDelete] = useState(null);
 
-    // --- ΕΝΗΜΕΡΩΣΗ useMemo ΓΙΑ ΝΑ ΣΥΜΠΕΡΙΛΑΒΕΙ ΤΟΥΣ ΚΑΘΗΓΗΤΕΣ ---
     const coursesDataByGrade = useMemo(() => {
         if (!allCourses || !classrooms || !allStudents || !allTeachers) return {};
 
@@ -60,7 +58,7 @@ function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db
                     ...course, 
                     classroomCount: matchingClassrooms.length, 
                     studentCount: totalStudents,
-                    teacherNames: teacherNames, // <-- ΠΡΟΣΘΗΚΗ ΟΝΟΜΑΤΩΝ
+                    teacherNames: teacherNames,
                 };
             }).sort((a, b) => a.name.localeCompare(b.name));
         }
@@ -153,7 +151,6 @@ function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db
                                         <ListItemButton onClick={() => handleCourseClick(course.id)} divider>
                                             <ListItemText 
                                                 primary={course.name} 
-                                                // --- ΕΜΦΑΝΙΣΗ ΚΑΘΗΓΗΤΩΝ ---
                                                 secondary={
                                                     <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                                                         <PersonIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
@@ -201,7 +198,8 @@ function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db
                                                                                 {section.materials.map((material, mIndex) => (
                                                                                     <ListItem key={mIndex}>
                                                                                         <ListItemIcon sx={{minWidth: '30px'}}><AttachmentIcon fontSize="small" /></ListItemIcon>
-                                                                                        <Link href={material.url} download={material.name} sx={{wordBreak: 'break-all'}}>
+                                                                                        {/* --- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ --- */}
+                                                                                        <Link href={material.url} target="_blank" rel="noopener noreferrer" sx={{wordBreak: 'break-all'}}>
                                                                                             {material.name}
                                                                                         </Link>
                                                                                     </ListItem>

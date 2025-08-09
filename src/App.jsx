@@ -26,6 +26,7 @@ import TeacherForm from './pages/TeacherForm.jsx';
 import Announcements from './pages/Announcements.jsx';
 import Phonebook from './pages/Phonebook.jsx';
 import Expenses from './pages/Expenses.jsx';
+import Communication from './pages/Communication.jsx'; // <-- Βεβαιωθείτε ότι υπάρχει αυτή η γραμμή
 import { ThemeProvider, useTheme } from './context/ThemeContext.jsx';
 
 const drawerWidth = 280;
@@ -102,10 +103,6 @@ function AppContent() {
                         const unsubscribe = onSnapshot(query(ref), snapshot => { 
                             if (isMounted) { 
                                 const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                                // --- DEBUGGING: Log fetched data ---
-                                if (name === 'expenses') {
-                                    console.log('[App.jsx] Fetched Expenses Data:', data);
-                                }
                                 setter(data);
                             } 
                         });
@@ -163,6 +160,8 @@ function AppContent() {
                         <Route path="/announcements" element={<Announcements {...commonProps} />} />
                         <Route path="/phonebook" element={<Phonebook {...commonProps} />} />
                         <Route path="/expenses" element={<Expenses {...commonProps} />} />
+                        {/* --- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ --- */}
+                        <Route path="/communication" element={<Communication {...commonProps} />} />
                     </Routes>
                 </Box>
                 <Dialog open={isModalOpen} onClose={closeModal} maxWidth="md" fullWidth>

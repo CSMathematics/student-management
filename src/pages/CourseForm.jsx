@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, Schedule as ScheduleIcon, UploadFile as UploadFileIcon } from '@mui/icons-material';
 import { doc, updateDoc, setDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { SUBJECTS_BY_GRADE_AND_CLASS } from '../data/subjects.js';
 
 // Helper function to generate a random ID
@@ -19,7 +20,7 @@ const generateFirestoreId = () => {
   return autoId;
 };
 
-function CourseForm({ db, appId, allCourses, allTeachers }) { // <-- ΠΡΟΣΘΗΚΗ allTeachers
+function CourseForm({ db, appId, allCourses, allTeachers }) {
     const navigate = useNavigate();
     const { courseId } = useParams();
     const isEditMode = Boolean(courseId);
@@ -28,7 +29,7 @@ function CourseForm({ db, appId, allCourses, allTeachers }) { // <-- ΠΡΟΣΘ�
 
     const [courseName, setCourseName] = useState('');
     const [grade, setGrade] = useState('');
-    const [assignedTeacherIds, setAssignedTeacherIds] = useState([]); // <-- ΝΕΑ ΚΑΤΑΣΤΑΣΗ
+    const [assignedTeacherIds, setAssignedTeacherIds] = useState([]);
     const [syllabus, setSyllabus] = useState([{ id: Date.now(), title: '', sections: [{ id: Date.now() + 1, text: '', hours: '', materials: [] }] }]);
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
@@ -40,7 +41,7 @@ function CourseForm({ db, appId, allCourses, allTeachers }) { // <-- ΠΡΟΣΘ�
             if (courseToEdit) {
                 setCourseName(courseToEdit.name || '');
                 setGrade(courseToEdit.grade || '');
-                setAssignedTeacherIds(courseToEdit.assignedTeacherIds || []); // <-- ΦΟΡΤΩΣΗ ΚΑΘΗΓΗΤΩΝ
+                setAssignedTeacherIds(courseToEdit.assignedTeacherIds || []);
                 const syllabusWithIds = (courseToEdit.syllabus || []).map(ch => ({
                     ...ch,
                     id: Date.now() + Math.random(),
@@ -68,31 +69,66 @@ function CourseForm({ db, appId, allCourses, allTeachers }) { // <-- ΠΡΟΣΘ�
         setSyllabus(syllabus.map(ch => ch.id === chapterId ? { ...ch, sections: ch.sections.filter(s => s.id !== sectionId) } : ch));
     };
 
-    const handleFileUpload = (chapterId, sectionId, file) => {
+    const handleFileUpload = async (chapterId, sectionId, file) => {
         if (!file) return;
-        if (file.size > 1048576) {
-            setFeedback({ type: 'error', message: 'Το αρχείο είναι πολύ μεγάλο. Το όριο είναι 1MB.' });
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            setFeedback({ type: 'error', message: 'Το αρχείο είναι πολύ μεγάλο. Το όριο είναι 5MB.' });
             return;
         }
         setUploading({ active: true, sectionId: sectionId });
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => {
-            const base64String = reader.result;
-            const newMaterial = { name: file.name, url: base64String, storagePath: generateFirestoreId() };
-            setSyllabus(prevSyllabus => prevSyllabus.map(ch => ch.id === chapterId ? { ...ch, sections: ch.sections.map(s => s.id === sectionId ? { ...s, materials: [...s.materials, newMaterial] } : s) } : ch));
-            setUploading({ active: false, sectionId: null });
+        setFeedback({ type: '', message: '' });
+
+        const storage = getStorage(db.app);
+        const storagePath = `course_materials/${courseId || tempId}/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, storagePath);
+
+        try {
+            const snapshot = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+            
+            const newMaterial = { name: file.name, url: downloadURL, path: storagePath };
+            
+            setSyllabus(prevSyllabus => prevSyllabus.map(ch => 
+                ch.id === chapterId ? { 
+                    ...ch, 
+                    sections: ch.sections.map(s => 
+                        s.id === sectionId ? { ...s, materials: [...s.materials, newMaterial] } : s
+                    ) 
+                } : ch
+            ));
             setFeedback({ type: 'success', message: `Το αρχείο ${file.name} προστέθηκε.` });
-        };
-        reader.onerror = (error) => {
-            console.error("File Reader Error:", error);
+        } catch (error) {
+            console.error("File Upload Error:", error);
+            setFeedback({ type: 'error', message: 'Σφάλμα κατά τη μεταφόρτωση του αρχείου.' });
+        } finally {
             setUploading({ active: false, sectionId: null });
-            setFeedback({ type: 'error', message: 'Σφάλμα κατά την ανάγνωση του αρχείου.' });
-        };
+        }
     };
 
-    const handleDeleteMaterial = (chapterId, sectionId, materialToDelete) => {
-        setSyllabus(prevSyllabus => prevSyllabus.map(ch => ch.id === chapterId ? { ...ch, sections: ch.sections.map(s => s.id === sectionId ? { ...s, materials: s.materials.filter(m => m.storagePath !== materialToDelete.storagePath) } : s) } : ch));
+    const handleDeleteMaterial = async (chapterId, sectionId, materialToDelete) => {
+        // Remove from UI first for responsiveness
+        setSyllabus(prevSyllabus => prevSyllabus.map(ch => 
+            ch.id === chapterId ? { 
+                ...ch, 
+                sections: ch.sections.map(s => 
+                    s.id === sectionId ? { ...s, materials: s.materials.filter(m => (m.path || m.url) !== (materialToDelete.path || materialToDelete.url)) } : s
+                ) 
+            } : ch
+        ));
+
+        // --- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ ---
+        // Delete from Firebase Storage ONLY if it has a path (i.e., it's not a Base64 file)
+        if (materialToDelete.path) {
+            try {
+                const storage = getStorage(db.app);
+                const fileRef = ref(storage, materialToDelete.path);
+                await deleteObject(fileRef);
+                setFeedback({ type: 'info', message: `Το αρχείο ${materialToDelete.name} διαγράφηκε.` });
+            } catch (error) {
+                console.error("Error deleting file from storage:", error);
+                setFeedback({ type: 'error', message: 'Σφάλμα κατά τη διαγραφή του αρχείου από τον server.' });
+            }
+        }
     };
     
     const totalCourseHours = useMemo(() => syllabus.reduce((total, chapter) => total + chapter.sections.reduce((sum, section) => sum + Number(section.hours || 0), 0), 0), [syllabus]);
@@ -103,10 +139,6 @@ function CourseForm({ db, appId, allCourses, allTeachers }) { // <-- ΠΡΟΣΘ�
             setFeedback({ type: 'error', message: 'Παρακαλώ συμπληρώστε το όνομα και την τάξη.' });
             return;
         }
-        if (!isEditMode && !tempId) {
-             setFeedback({ type: 'error', message: 'Η δημιουργία αναγνωριστικού απέτυχε.' });
-             return;
-        }
         setLoading(true);
         setFeedback({ type: '', message: '' });
 
@@ -114,11 +146,15 @@ function CourseForm({ db, appId, allCourses, allTeachers }) { // <-- ΠΡΟΣΘ�
             const courseData = {
                 name: courseName,
                 grade: grade,
-                assignedTeacherIds: assignedTeacherIds, // <-- ΑΠΟΘΗΚΕΥΣΗ ΚΑΘΗΓΗΤΩΝ
+                assignedTeacherIds: assignedTeacherIds,
                 totalHours: totalCourseHours,
                 syllabus: syllabus.map(chapter => ({
                     title: chapter.title,
-                    sections: chapter.sections.filter(s => s.text.trim() !== '').map(s => ({ text: s.text, hours: Number(s.hours || 0), materials: s.materials || [] }))
+                    sections: chapter.sections.filter(s => s.text.trim() !== '').map(s => ({ 
+                        text: s.text, 
+                        hours: Number(s.hours || 0), 
+                        materials: s.materials.map(m => ({ name: m.name, url: m.url, path: m.path }))
+                    }))
                 })).filter(c => c.title.trim() !== ''),
             };
             
@@ -133,7 +169,7 @@ function CourseForm({ db, appId, allCourses, allTeachers }) { // <-- ΠΡΟΣΘ�
                 setFeedback({ type: 'success', message: 'Το μάθημα αποθηκεύτηκε!' });
             }
             
-            setTimeout(() => navigate('/courses'), 1500);
+            setTimeout(() => navigate('/courses/list'), 1500);
         } catch (error) {
             console.error("Error saving course:", error);
             setFeedback({ type: 'error', message: 'Σφάλμα κατά την αποθήκευση.' });
@@ -163,7 +199,6 @@ function CourseForm({ db, appId, allCourses, allTeachers }) { // <-- ΠΡΟΣΘ�
                             </Select>
                         </FormControl>
                     </Grid>
-                    {/* --- ΝΕΟ ΠΕΔΙΟ ΑΝΑΘΕΣΗΣ ΚΑΘΗΓΗΤΩΝ --- */}
                     <Grid item xs={12}>
                         <FormControl fullWidth>
                             <InputLabel>Καθηγητές</InputLabel>
@@ -211,7 +246,7 @@ function CourseForm({ db, appId, allCourses, allTeachers }) { // <-- ΠΡΟΣΘ�
                                 </Box>
                                 <Box sx={{ pl: 2, pt: 1 }}>
                                     {section.materials.map(material => (
-                                        <Chip key={material.storagePath} label={material.name} onDelete={() => handleDeleteMaterial(chapter.id, section.id, material)} size="small" sx={{ mr: 1, mb: 1 }} />
+                                        <Chip key={material.path || material.url} label={material.name} onDelete={() => handleDeleteMaterial(chapter.id, section.id, material)} size="small" sx={{ mr: 1, mb: 1 }} />
                                     ))}
                                     <Button component="label" size="small" startIcon={uploading.active && uploading.sectionId === section.id ? <CircularProgress size={16} /> : <UploadFileIcon />} disabled={uploading.active}>
                                         Προσθήκη Υλικού
@@ -228,7 +263,7 @@ function CourseForm({ db, appId, allCourses, allTeachers }) { // <-- ΠΡΟΣΘ�
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}><Chip icon={<ScheduleIcon />} label={`Συνολικές Διδακτικές Ώρες: ${totalCourseHours}`} color="primary" sx={{ fontSize: '1rem', padding: '10px' }} /></Box>
                 {feedback.message && <Alert severity={feedback.type} sx={{ mb: 2 }}>{feedback.message}</Alert>}
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                    <Button variant="outlined" color="secondary" onClick={() => navigate('/courses')}>Ακύρωση</Button>
+                    <Button variant="outlined" color="secondary" onClick={() => navigate('/courses/list')}>Ακύρωση</Button>
                     <Button type="submit" variant="contained" disabled={loading}>{loading ? <CircularProgress size={24} /> : (isEditMode ? 'Ενημέρωση Μαθήματος' : 'Αποθήκευση Μαθήματος')}</Button>
                 </Box>
             </Paper>

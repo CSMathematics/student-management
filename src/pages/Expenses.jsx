@@ -65,17 +65,18 @@ const SummaryCard = ({ title, value, icon, color }) => (
 );
 
 
-function Expenses({ allExpenses, allPayments, loading, db, appId }) {
+function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId }) {
     const { mode } = useTheme();
     const [formData, setFormData] = useState(getInitialFormState());
     const [expenseToDelete, setExpenseToDelete] = useState(null);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
+    const [isSaving, setIsSaving] = useState(false);
+    // --- ΝΕΑ ΠΡΟΣΘΗΚΗ: States για τα νέα φίλτρα ---
     const [timeFilter, setTimeFilter] = useState('all');
     const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
-    const [isSaving, setIsSaving] = useState(false);
-
+    const [categoryFilter, setCategoryFilter] = useState('all');
+    const [studentFilter, setStudentFilter] = useState('all');
     const isEditMode = Boolean(formData.id);
-
     React.useEffect(() => {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -83,7 +84,6 @@ function Expenses({ allExpenses, allPayments, loading, db, appId }) {
         document.head.appendChild(link);
         return () => { document.head.removeChild(link); };
     }, []);
-
     const availableMonths = useMemo(() => {
         if (!Array.isArray(allExpenses)) return [];
         const months = new Set(allExpenses.map(exp => {
@@ -92,36 +92,42 @@ function Expenses({ allExpenses, allPayments, loading, db, appId }) {
         }).filter(Boolean));
         return Array.from(months).sort().reverse();
     }, [allExpenses]);
-
     const filteredExpenses = useMemo(() => {
-        if (!Array.isArray(allExpenses)) return [];
+        let expenses = Array.isArray(allExpenses) ? [...allExpenses] : [];
         const now = dayjs();
-
-        if (timeFilter === 'all') return allExpenses;
-        if (timeFilter === '3-months') return allExpenses.filter(exp => safeGetDate(exp.date)?.isAfter(now.subtract(3, 'month')));
-        if (timeFilter === '6-months') return allExpenses.filter(exp => safeGetDate(exp.date)?.isAfter(now.subtract(6, 'month')));
-        if (timeFilter === 'custom' && customDateRange.start && customDateRange.end) {
+        // 1. Time Filter
+        if (timeFilter === '3-months') expenses = expenses.filter(exp => safeGetDate(exp.date)?.isAfter(now.subtract(3, 'month')));
+        else if (timeFilter === '6-months') expenses = expenses.filter(exp => safeGetDate(exp.date)?.isAfter(now.subtract(6, 'month')));
+        else if (timeFilter === 'custom' && customDateRange.start && customDateRange.end) {
             const start = dayjs(customDateRange.start);
             const end = dayjs(customDateRange.end);
-            return allExpenses.filter(exp => safeGetDate(exp.date)?.isBetween(start, end, 'day', '[]'));
+            expenses = expenses.filter(exp => safeGetDate(exp.date)?.isBetween(start, end, 'day', '[]'));
         }
-        return allExpenses.filter(exp => safeGetDate(exp.date)?.format('YYYY-MM') === timeFilter);
-    }, [allExpenses, timeFilter, customDateRange]);
-
+        else if (timeFilter !== 'all') expenses = expenses.filter(exp => safeGetDate(exp.date)?.format('YYYY-MM') === timeFilter);
+        // 2. Category Filter
+        if (categoryFilter !== 'all') {
+            expenses = expenses.filter(exp => exp.category === categoryFilter);
+        }
+        return expenses;
+    }, [allExpenses, timeFilter, customDateRange, categoryFilter]);
     const filteredIncome = useMemo(() => {
-        if (!Array.isArray(allPayments)) return [];
+        let income = Array.isArray(allPayments) ? [...allPayments] : [];
         const now = dayjs();
-
-        if (timeFilter === 'all') return allPayments;
-        if (timeFilter === '3-months') return allPayments.filter(p => safeGetDate(p.date)?.isAfter(now.subtract(3, 'month')));
-        if (timeFilter === '6-months') return allPayments.filter(p => safeGetDate(p.date)?.isAfter(now.subtract(6, 'month')));
-        if (timeFilter === 'custom' && customDateRange.start && customDateRange.end) {
+        // 1. Time Filter
+        if (timeFilter === '3-months') income = income.filter(p => safeGetDate(p.date)?.isAfter(now.subtract(3, 'month')));
+        else if (timeFilter === '6-months') income = income.filter(p => safeGetDate(p.date)?.isAfter(now.subtract(6, 'month')));
+        else if (timeFilter === 'custom' && customDateRange.start && customDateRange.end) {
             const start = dayjs(customDateRange.start);
             const end = dayjs(customDateRange.end);
-            return allPayments.filter(p => safeGetDate(p.date)?.isBetween(start, end, 'day', '[]'));
+            income = income.filter(p => safeGetDate(p.date)?.isBetween(start, end, 'day', '[]'));
         }
-        return allPayments.filter(p => safeGetDate(p.date)?.format('YYYY-MM') === timeFilter);
-    }, [allPayments, timeFilter, customDateRange]);
+        else if (timeFilter !== 'all') income = income.filter(p => safeGetDate(p.date)?.format('YYYY-MM') === timeFilter);
+        // 2. Student Filter
+        if (studentFilter !== 'all') {
+            income = income.filter(p => p.studentId === studentFilter);
+        }
+        return income;
+    }, [allPayments, timeFilter, customDateRange, studentFilter]);
 
 
     const handleFormChange = (e) => {
@@ -285,6 +291,12 @@ function Expenses({ allExpenses, allPayments, loading, db, appId }) {
         };
     }, [totalFilteredExpenses, mode]);
 
+    const handleClearFilters = () => {
+        setTimeFilter('all');
+        setCustomDateRange({ start: '', end: '' });
+        setCategoryFilter('all');
+        setStudentFilter('all');
+    };
 
     if (loading) {
         return <Container sx={{ mt: 4, textAlign: 'center' }}><CircularProgress /></Container>;
@@ -359,6 +371,21 @@ function Expenses({ allExpenses, allPayments, loading, db, appId }) {
                             <TextField size="small" label="Έως" type="date" value={customDateRange.end} onChange={(e) => setCustomDateRange(prev => ({ ...prev, end: e.target.value }))} InputLabelProps={{ shrink: true }} />
                         </>
                     )}
+                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                        <InputLabel>Κατηγορία Εξόδου</InputLabel>
+                        <Select value={categoryFilter} label="Κατηγορία Εξόδου" onChange={(e) => setCategoryFilter(e.target.value)}>
+                            <MenuItem value="all">Όλες οι Κατηγορίες</MenuItem>
+                            {expenseCategories.map(cat => <MenuItem key={cat.name} value={cat.name}>{cat.name}</MenuItem>)}
+                        </Select>
+                    </FormControl>
+                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                        <InputLabel>Έσοδα από Μαθητή</InputLabel>
+                        <Select value={studentFilter} label="Έσοδα από Μαθητή" onChange={(e) => setStudentFilter(e.target.value)}>
+                            <MenuItem value="all">Όλοι οι Μαθητές</MenuItem>
+                            {allStudents.map(s => <MenuItem key={s.id} value={s.id}>{s.lastName} {s.firstName}</MenuItem>)}
+                        </Select>
+                    </FormControl>
+                    <Button onClick={handleClearFilters} startIcon={<ClearIcon />} sx={{ ml: 1 }}>Καθαρισμός</Button>
                     <Box sx={{ flexGrow: 1 }} />
                     <Button onClick={handleExportCSV} startIcon={<DownloadIcon />} variant="text">Εξαγωγή σε CSV</Button>
                 </Box>
