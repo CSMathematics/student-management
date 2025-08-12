@@ -7,33 +7,11 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 
 const drawerWidth = 280;
 
-function Sidebar({ mobileOpen, handleDrawerToggle }) {
-    const location = useLocation();
-    const [openSubmenus, setOpenSubmenus] = useState({});
-
-    useEffect(() => {
-        const parentOfPath = (path) => {
-            if (path.startsWith('/student')) return 'Μαθητές';
-            if (path.startsWith('/classroom')) return 'Τάξεις - Τμήματα';
-            if (path.startsWith('/teacher')) return 'Καθηγητές';
-            return null;
-        };
-        const parent = parentOfPath(location.pathname);
-        if (parent) {
-            setOpenSubmenus(prev => ({ ...prev, [parent]: true }));
-        }
-    }, [location.pathname]);
-
-    const handleSubmenuClick = (name) => {
-        setOpenSubmenus(prev => ({ ...prev, [name]: !prev[name] }));
-    };
-
-    const navItems = [
+// --- ΝΕΑ ΔΟΜΗ: Μενού ανά ρόλο ---
+const navItemsByRole = {
+    admin: [
         { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
         { text: "Πρόγραμμα", icon: "fas fa-calendar-alt", path: "/calendar" },
-    ];
-
-    const managementItems = [
         {
             text: "Μαθητές", icon: "fas fa-user", isParent: true,
             subItems: [
@@ -62,9 +40,10 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
             ]
         },
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
+        { text: "Πληρωμές", icon: "fas fa-money-bill", path: "/payments" },
+
         { text: "Διαγωνίσματα - Εργασίες", icon: "fas fa-file-alt", path: "#" },
         { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", path: "/phonebook" },
-        { text: "Πληρωμές", icon: "fas fa-money-bill", path: "/payments" },
         { text: "Έξοδα", icon: "fas fa-file-invoice-dollar", path: "/expenses" },
         { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
         { text: "Βαθμολογίες", icon: "fas fa-chart-bar", path: "#" },
@@ -73,16 +52,68 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
         { text: "Βιβλιοθήκη", icon: "fas fa-file", path: "#" },
         { text: "Apprenticeships & Thesis", icon: "fas fa-briefcase", path: "#" },
         { text: "Transportation", icon: "fas fa-bus", path: "#" },
-    ];
-
-    const settingsItems = [
         { text: "Βασικές Ρυθμίσεις", icon: "fas fa-cog", path: "#" },
         { text: "Ρυθμίσεις μαθητών", icon: "fas fa-cogs", path: "#" },
-        { text: "Εμφάνιση", icon: "fas fa-sliders-h", path: "#" },
-        { text: "Πληρωμές", icon: "fas fa-wallet", path: "#" },
-        { text: "Library Settings", icon: "fas fa-university", path: "#" },
-        { text: "Apprenticeships / Thesis", icon: "fas fa-briefcase", path: "#" },
-    ];
+        { text: "Εμφάνιση", icon: "fas fa-sliders-h", path: "#" }
+
+    ],
+    teacher: [
+        { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
+        { text: "Το Πρόγραμμά μου", icon: "fas fa-calendar-alt", path: "/my-schedule" },
+        { text: "Τα Τμήματά μου", icon: "fas fa-chalkboard", path: "/my-classrooms" },
+        { text: "Οι Μαθητές μου", icon: "fas fa-users", path: "/my-students" }, // <-- Η ΝΕΑ ΠΡΟΣΘΗΚΗ
+        { text: "Οι Αξιολογήσεις μου", icon: "fas fa-tasks", path: "/my-assignments" },
+        { text: "Το Βαθμολόγιό μου", icon: "fas fa-book-reader", path: "/my-gradebook" },
+        { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
+    ],
+    student: [
+        { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
+        { text: "Το Προφίλ μου", icon: "fas fa-user-cog", path: "/my-profile" },
+        { text: "Το Ημερολόγιό μου", icon: "fas fa-calendar-alt", path: "/my-schedule" }, // <-- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ
+        { text: "Εργασίες & Διαγωνίσματα", icon: "fas fa-file-alt", path: "/my-assignments" },
+        { text: "Το Υλικό μου", icon: "fas fa-book-open", path: "/my-materials" },
+        { text: "Οι Βαθμοί μου", icon: "fas fa-chart-bar", path: "/my-grades" },
+        { text: "Οι Απουσίες μου", icon: "fas fa-times", path: "/my-absences" },
+        { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
+    ],
+    parent: [
+       { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
+       { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
+       { text: "Ημερολόγιο Παιδιού", icon: "fas fa-calendar-alt", path: "/child-schedule" },
+       { text: "Εργασίες Παιδιού", icon: "fas fa-file-alt", path: "/child-assignments" },
+       { text: "Υλικό Μαθημάτων", icon: "fas fa-book-open", path: "/child-materials" },
+       { text: "Βαθμολογία & Απουσίες", icon: "fas fa-chart-bar", path: "/child-grades-absences" },
+       { text: "Καθηγητές & Αναφορές", icon: "fas fa-chalkboard-user", path: "/child-teachers-report" }, // <-- Η ΝΕΑ ΠΡΟΣΘΗΚΗ
+       { text: "Οικονομικά", icon: "fas fa-money-bill", path: "/payments" },
+       { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
+    ],
+    unknown: [
+         { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
+    ]
+};
+
+
+function Sidebar({ mobileOpen, handleDrawerToggle, userRole }) {
+    const location = useLocation();
+    const [openSubmenus, setOpenSubmenus] = useState({});
+
+    // Επιλογή του σωστού μενού με βάση τον ρόλο
+    const navItems = navItemsByRole[userRole] || navItemsByRole.unknown;
+
+    useEffect(() => {
+        const parentOfPath = (path) => {
+            const item = navItems.find(item => item.isParent && path.startsWith(item.path));
+            return item ? item.text : null;
+        };
+        const parent = parentOfPath(location.pathname);
+        if (parent) {
+            setOpenSubmenus(prev => ({ ...prev, [parent]: true }));
+        }
+    }, [location.pathname, navItems]);
+
+    const handleSubmenuClick = (name) => {
+        setOpenSubmenus(prev => ({ ...prev, [name]: !prev[name] }));
+    };
 
     const renderListItemButton = (item, isSubItem = false) => {
         const isSelected = location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
@@ -99,7 +130,7 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
                 }
             },
             selected: isSelected,
-            className: isSubItem ? 'sub-item' : '',
+            sx: isSubItem ? { pl: 4 } : {},
         };
 
         return (
@@ -122,13 +153,6 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
             <Divider />
             <List>
                 {navItems.map((item, index) => (
-                    <ListItem key={index} disablePadding>{renderListItemButton(item)}</ListItem>
-                ))}
-            </List>
-            <Divider />
-            <Typography sx={{pl: 2, pt: 2, pb: 1, fontWeight: 'bold', color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.8rem'}}>Διαχείρηση</Typography>
-            <List>
-                {managementItems.map((item, index) => (
                     <React.Fragment key={index}>
                         <ListItem disablePadding>{renderListItemButton(item)}</ListItem>
                         {item.isParent && (
@@ -141,13 +165,6 @@ function Sidebar({ mobileOpen, handleDrawerToggle }) {
                             </Collapse>
                         )}
                     </React.Fragment>
-                ))}
-            </List>
-            <Divider />
-            <Typography sx={{pl: 2, pt: 2, pb: 1, fontWeight: 'bold', color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.8rem'}}>Ρυθμίσεις</Typography>
-            <List>
-                {settingsItems.map((item, index) => (
-                    <ListItem key={index} disablePadding>{renderListItemButton(item)}</ListItem>
                 ))}
             </List>
         </div>

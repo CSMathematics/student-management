@@ -1,67 +1,85 @@
 // src/pages/AssignmentForm.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField,
     FormControl, InputLabel, Select, MenuItem, Grid
 } from '@mui/material';
 import dayjs from 'dayjs';
 
-function AssignmentForm({ open, onClose, onSave, classroomId }) {
-    const [title, setTitle] = useState('');
-    const [type, setType] = useState('homework');
-    const [dueDate, setDueDate] = useState(dayjs().format('YYYY-MM-DD'));
+function AssignmentForm({ open, onClose, onSave, initialData, classrooms }) {
+    const [formData, setFormData] = useState({
+        title: '',
+        type: 'test',
+        dueDate: dayjs().format('YYYY-MM-DD'),
+        classroomId: ''
+    });
+
+    const isEditMode = Boolean(initialData && initialData.id);
+
+    useEffect(() => {
+        if (open) {
+            if (isEditMode) {
+                setFormData({
+                    title: initialData.title || '',
+                    type: initialData.type || 'test',
+                    dueDate: dayjs(initialData.dueDate.toDate()).format('YYYY-MM-DD'),
+                    classroomId: initialData.classroomId || ''
+                });
+            } else {
+                // Reset form for new entry
+                setFormData({
+                    title: '',
+                    type: 'test',
+                    dueDate: dayjs().format('YYYY-MM-DD'),
+                    classroomId: classrooms?.[0]?.id || '' // Pre-select first classroom if available
+                });
+            }
+        }
+    }, [initialData, open, isEditMode, classrooms]);
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
     const handleSave = () => {
-        if (!title.trim()) return;
+        if (!formData.title.trim() || !formData.classroomId) return;
         onSave({
-            title,
-            type,
-            dueDate: new Date(dueDate),
-            classroomId,
-            createdAt: new Date(),
+            ...formData,
+            dueDate: new Date(formData.dueDate),
         });
-        onClose();
-        // Reset form
-        setTitle('');
-        setType('homework');
-        setDueDate(dayjs().format('YYYY-MM-DD'));
     };
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-            <DialogTitle>Νέα Εργασία / Διαγώνισμα</DialogTitle>
+            <DialogTitle>{isEditMode ? 'Επεξεργασία Αξιολόγησης' : 'Νέα Αξιολόγηση'}</DialogTitle>
             <DialogContent>
                 <Grid container spacing={2} sx={{ pt: 2 }}>
                     <Grid item xs={12}>
-                        <TextField
-                            autoFocus
-                            label="Τίτλος"
-                            fullWidth
-                            variant="outlined"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                        />
+                        <FormControl fullWidth>
+                            <InputLabel>Τμήμα</InputLabel>
+                            <Select name="classroomId" value={formData.classroomId} label="Τμήμα" onChange={handleChange}>
+                                {classrooms?.map(c => (
+                                    <MenuItem key={c.id} value={c.id}>{c.classroomName} - {c.subject}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12}>
+                        <TextField autoFocus name="title" label="Τίτλος" fullWidth variant="outlined" value={formData.title} onChange={handleChange} />
                     </Grid>
                     <Grid item xs={12} sm={6}>
                         <FormControl fullWidth>
                             <InputLabel>Τύπος</InputLabel>
-                            <Select value={type} label="Τύπος" onChange={(e) => setType(e.target.value)}>
-                                <MenuItem value="homework">Εργασία για το Σπίτι</MenuItem>
+                            <Select name="type" value={formData.type} label="Τύπος" onChange={handleChange}>
                                 <MenuItem value="test">Διαγώνισμα</MenuItem>
+                                <MenuItem value="homework">Εργασία για το Σπίτι</MenuItem>
                                 <MenuItem value="project">Project</MenuItem>
                                 <MenuItem value="oral">Προφορική Εξέταση</MenuItem>
                             </Select>
                         </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                        <TextField
-                            label="Ημερομηνία Παράδοσης/Εξέτασης"
-                            type="date"
-                            fullWidth
-                            value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                        />
+                        <TextField name="dueDate" label="Ημερομηνία Παράδοσης/Εξέτασης" type="date" fullWidth value={formData.dueDate} onChange={handleChange} InputLabelProps={{ shrink: true }} />
                     </Grid>
                 </Grid>
             </DialogContent>

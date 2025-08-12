@@ -1,180 +1,160 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { Box, Dialog, DialogContent, DialogTitle, IconButton, Toolbar, AppBar, CircularProgress, Typography } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import MenuIcon from '@mui/icons-material/Menu';
+import { Box, CircularProgress } from '@mui/material';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
-import { getFirestore, collection, query, onSnapshot } from 'firebase/firestore';
-import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getFirestore, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import './scss/main.scss';
-import Sidebar from './pages/Sidebar.jsx';
-import DashboardHeader from './pages/DashboardHeader.jsx';
-import DashboardContent from './pages/DashboardContent.jsx';
-import StudentsList from './pages/StudentsList.jsx';
-import StudentReport from './pages/StudentReport.jsx';
-import Classrooms from './pages/Classrooms.jsx';
-import NewClassroomForm from './pages/NewClassroomForm.jsx';
-import WeeklyScheduleCalendar from './pages/WeeklyScheduleCalendar.jsx';
-import StudentForm from './pages/StudentForm.jsx';
-import Payments from './pages/Payments.jsx';
-import Courses from './pages/Courses.jsx';
-import CourseForm from './pages/CourseForm.jsx';
-import TeachersList from './pages/TeachersList.jsx';
-import TeacherForm from './pages/TeacherForm.jsx';
-import Announcements from './pages/Announcements.jsx';
-import Phonebook from './pages/Phonebook.jsx';
-import Expenses from './pages/Expenses.jsx';
-import Communication from './pages/Communication.jsx'; // <-- Βεβαιωθείτε ότι υπάρχει αυτή η γραμμή
-import { ThemeProvider, useTheme } from './context/ThemeContext.jsx';
+import AuthPage from './pages/Auth.jsx';
+import { ThemeProvider } from './context/ThemeContext.jsx';
+import Layout from './components/Layout.jsx';
 
-const drawerWidth = 280;
+import AdminPortal from './portals/AdminPortal.jsx';
+import TeacherPortal from './portals/TeacherPortal.jsx';
+import StudentPortal from './portals/StudentPortal.jsx';
+import ParentPortal from './portals/ParentPortal.jsx';
 
-// Wrappers
-const StudentFormWrapper = (props) => {
-    const { studentId } = useParams();
-    const studentToEdit = props.allStudents.find(s => s.id === studentId);
-    return <StudentForm {...props} initialData={studentToEdit} key={studentId} />;
-};
-const ClassroomFormWrapper = (props) => {
-    const { classroomId } = useParams();
-    const classroomToEdit = props.classrooms.find(c => c.id === classroomId);
-    return <NewClassroomForm {...props} classroomToEdit={classroomToEdit} key={classroomId} />;
-};
-const CourseFormWrapper = (props) => {
-    const { courseId } = useParams();
-    return <CourseForm {...props} key={courseId} />;
-};
-const TeacherFormWrapper = (props) => {
-    const { teacherId } = useParams();
-    return <TeacherForm {...props} key={teacherId} />;
-};
-
-function AppContent() {
-    const { toggleTheme } = useTheme(); 
-    const [classrooms, setClassrooms] = useState([]);
-    const [allStudents, setAllStudents] = useState([]);
-    const [allGrades, setAllGrades] = useState([]);
-    const [allAbsences, setAllAbsences] = useState([]);
-    const [allPayments, setAllPayments] = useState([]);
-    const [allCourses, setAllCourses] = useState([]);
-    const [allTeachers, setAllTeachers] = useState([]);
-    const [allAnnouncements, setAllAnnouncements] = useState([]);
-    const [allAssignments, setAllAssignments] = useState([]);
-    const [allExpenses, setAllExpenses] = useState([]);
-    const [loading, setLoading] = useState(true);
+function App() {
+    const [user, setUser] = useState(null);
+    const [userProfile, setUserProfile] = useState(null);
+    const [authLoading, setAuthLoading] = useState(true);
+    const [authError, setAuthError] = useState('');
     const [db, setDb] = useState(null);
     const [auth, setAuth] = useState(null);
-    const [userId, setUserId] = useState(null);
     const [appId, setAppId] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalData, setModalData] = useState(null);
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const [isFirebaseReady, setIsFirebaseReady] = useState(false);
-
-    const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
     useEffect(() => {
-        let isMounted = true;
-        const unsubscribes = [];
-        const setupFirebase = async () => {
-            try {
-                const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : import.meta.env.VITE_FIREBASE_CONFIG;
-                const currentAppId = typeof __app_id !== 'undefined' ? __app_id : import.meta.env.VITE_APP_ID || 'default-local-app-id';
-                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : import.meta.env.VITE_INITIAL_AUTH_TOKEN;
-                const parsedFirebaseConfig = firebaseConfigString ? JSON.parse(firebaseConfigString) : {};
-                if (!parsedFirebaseConfig.apiKey) { if (isMounted) { setLoading(false); setIsFirebaseReady(true); } return; }
-                const app = initializeApp(parsedFirebaseConfig);
-                const firestoreDb = getFirestore(app);
-                const firebaseAuth = getAuth(app);
-                if (isMounted) { setDb(firestoreDb); setAuth(firebaseAuth); setAppId(currentAppId); }
-                if (initialAuthToken) { await signInWithCustomToken(firebaseAuth, initialAuthToken); } else { await signInAnonymously(firebaseAuth); }
-                if (isMounted) {
-                    setUserId(firebaseAuth.currentUser?.uid || crypto.randomUUID());
-                    const collections = {
-                        classrooms: setClassrooms, students: setAllStudents, grades: setAllGrades,
-                        absences: setAllAbsences, payments: setAllPayments, courses: setAllCourses,
-                        teachers: setAllTeachers, announcements: setAllAnnouncements, assignments: setAllAssignments,
-                        expenses: setAllExpenses,
-                    };
-                    for (const [name, setter] of Object.entries(collections)) {
-                        const ref = collection(firestoreDb, `artifacts/${currentAppId}/public/data/${name}`);
-                        const unsubscribe = onSnapshot(query(ref), snapshot => { 
-                            if (isMounted) { 
-                                const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                                setter(data);
-                            } 
-                        });
-                        unsubscribes.push(unsubscribe);
-                    }
-                    setLoading(false); setIsFirebaseReady(true);
+        const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : import.meta.env.VITE_FIREBASE_CONFIG;
+        const currentAppId = typeof __app_id !== 'undefined' ? __app_id : import.meta.env.VITE_APP_ID || 'default-local-app-id';
+        const parsedFirebaseConfig = firebaseConfigString ? JSON.parse(firebaseConfigString) : {};
+        
+        if (parsedFirebaseConfig.apiKey) {
+            const app = initializeApp(parsedFirebaseConfig);
+            const firestoreDb = getFirestore(app);
+            const firebaseAuth = getAuth(app);
+            setDb(firestoreDb);
+            setAuth(firebaseAuth);
+            setAppId(currentAppId);
+
+            const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+                if (user) {
+                    setUser(user);
+                    const userDocRef = doc(firestoreDb, `users/${user.uid}`);
+                    const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
+                        if (doc.exists()) {
+                            setUserProfile(doc.data());
+                        } else {
+                            console.log("No such user profile!");
+                            setUserProfile({ role: 'unknown' });
+                        }
+                        setAuthLoading(false);
+                    });
+                    return () => unsubscribeProfile();
+                } else {
+                    setUser(null);
+                    setUserProfile(null);
+                    setAuthLoading(false);
                 }
-            } catch (error) {
-                console.error("Firebase Initialization/Auth Error:", error);
-                if (isMounted) { setLoading(false); setIsFirebaseReady(true); }
-            }
-        };
-        setupFirebase();
-        return () => { isMounted = false; unsubscribes.forEach(unsub => unsub()); };
+            });
+            return () => unsubscribe();
+        } else {
+            setAuthLoading(false);
+        }
     }, []);
 
-    const openModalWithData = (data) => { setModalData(data); setIsModalOpen(true); };
-    const closeModal = () => { setIsModalOpen(false); setModalData(null); };
-    
-    const commonProps = { db, appId, classrooms, allStudents, allGrades, allAbsences, allPayments, allCourses, allTeachers, allAnnouncements, allAssignments, allExpenses, loading, userId };
+    const handleSignUp = async (email, password, role) => {
+        setAuthLoading(true);
+        setAuthError('');
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            await setDoc(doc(db, "users", user.uid), {
+                uid: user.uid,
+                email: user.email,
+                role: role,
+                profileId: null,
+                createdAt: new Date(),
+            });
+        } catch (error) {
+            if (error.code === 'auth/email-already-in-use') {
+                setAuthError('Αυτό το email χρησιμοποιείται ήδη.');
+            } else if (error.code === 'auth/weak-password') {
+                setAuthError('Ο κωδικός πρέπει να είναι τουλάχιστον 6 χαρακτήρες.');
+            } else {
+                setAuthError('Προέκυψε ένα σφάλμα. Δοκιμάστε ξανά.');
+            }
+        } finally {
+            setAuthLoading(false);
+        }
+    };
 
-    if (!isFirebaseReady) {
-        return (<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /><Typography sx={{ ml: 2 }}>Σύνδεση στις υπηρεσίες...</Typography></Box>);
+    const handleLogin = async (email, password) => {
+        setAuthLoading(true);
+        setAuthError('');
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+        } catch (error) {
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                setAuthError('Λάθος email ή κωδικός πρόσβασης.');
+            } else {
+                setAuthError('Προέκυψε ένα σφάλμα. Δοκιμάστε ξανά.');
+            }
+        } finally {
+            setAuthLoading(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error("Error signing out: ", error);
+        }
+    };
+
+    const renderPortal = () => {
+        const props = { db, appId, user, userProfile };
+        switch (userProfile?.role) {
+            case 'admin':
+                return <AdminPortal {...props} />;
+            case 'teacher':
+                return <TeacherPortal {...props} />;
+            case 'student':
+                return <StudentPortal {...props} />;
+            case 'parent':
+                return <ParentPortal {...props} />;
+            default:
+                return <Box>Loading user profile...</Box>;
+        }
+    };
+
+    if (authLoading) {
+        return (<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>);
     }
 
     return (
-        <BrowserRouter>
-            <Box sx={{ display: 'flex' }}>
-                <Sidebar handleDrawerToggle={handleDrawerToggle} mobileOpen={mobileOpen} />
-                <Box component="main" sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - ${drawerWidth}px)` } }}>
-                    <AppBar position="fixed" sx={{ width: { md: `calc(100% - ${drawerWidth}px)` }, ml: { md: `${drawerWidth}px` }, backgroundColor: 'transparent', boxShadow: 'none', borderBottom: '1px solid', borderColor: 'divider' }}>
-                        <Toolbar>
-                            <IconButton color="inherit" aria-label="open drawer" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { md: 'none' } }}><MenuIcon /></IconButton>
-                            <DashboardHeader toggleTheme={toggleTheme} />
-                        </Toolbar>
-                    </AppBar>
-                    <Toolbar />
+        <ThemeProvider>
+            <BrowserRouter>
+                {user ? (
+                    <Layout 
+                        userProfile={userProfile} 
+                        handleLogout={handleLogout}
+                        db={db}
+                        appId={appId}
+                        user={user}
+                    >
+                        {renderPortal()}
+                    </Layout>
+                ) : (
                     <Routes>
-                        <Route path="/" element={<DashboardContent {...commonProps} />} />
-                        <Route path="/students" element={<StudentsList {...commonProps} />} />
-                        <Route path="/student/new" element={<StudentForm {...commonProps} />} />
-                        <Route path="/student/edit/:studentId" element={<StudentFormWrapper {...commonProps} />} />
-                        <Route path="/student/report/:studentId" element={<StudentReport {...commonProps} />} />
-                        <Route path="/classrooms" element={<Classrooms {...commonProps} />} />
-                        <Route path="/classroom/new" element={<NewClassroomForm {...commonProps} />} />
-                        <Route path="/classroom/edit/:classroomId" element={<ClassroomFormWrapper {...commonProps} />} />
-                        <Route path="/calendar" element={<WeeklyScheduleCalendar {...commonProps} />} />
-                        <Route path="/payments" element={<Payments {...commonProps} />} />
-                        <Route path="/courses/list" element={<Courses {...commonProps} />} />
-                        <Route path="/course/new" element={<CourseForm {...commonProps} />} />
-                        <Route path="/course/edit/:courseId" element={<CourseFormWrapper {...commonProps} />} />
-                        <Route path="/teachers" element={<TeachersList {...commonProps} />} />
-                        <Route path="/teacher/new" element={<TeacherForm {...commonProps} />} />
-                        <Route path="/teacher/edit/:teacherId" element={<TeacherFormWrapper {...commonProps} />} />
-                        <Route path="/announcements" element={<Announcements {...commonProps} />} />
-                        <Route path="/phonebook" element={<Phonebook {...commonProps} />} />
-                        <Route path="/expenses" element={<Expenses {...commonProps} />} />
-                        {/* --- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ --- */}
-                        <Route path="/communication" element={<Communication {...commonProps} />} />
+                        <Route path="*" element={<AuthPage handleLogin={handleLogin} handleSignUp={handleSignUp} loading={authLoading} error={authError} />} />
                     </Routes>
-                </Box>
-                <Dialog open={isModalOpen} onClose={closeModal} maxWidth="md" fullWidth>
-                     <DialogTitle>Δημιουργία Νέου Τμήματος<IconButton onClick={closeModal} sx={{ position: 'absolute', right: 8, top: 8 }}><CloseIcon /></IconButton></DialogTitle>
-                    <DialogContent dividers><NewClassroomForm classroomToEdit={modalData} onSaveSuccess={closeModal} onCancel={closeModal} {...commonProps} /></DialogContent>
-                </Dialog>
-            </Box>
-        </BrowserRouter>
+                )}
+            </BrowserRouter>
+        </ThemeProvider>
     );
-}
-
-function App() {
-    return (<ThemeProvider><AppContent /></ThemeProvider>);
 }
 
 export default App;

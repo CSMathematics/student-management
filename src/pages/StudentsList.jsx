@@ -9,9 +9,9 @@ import {
 } from '@mui/material';
 import { 
     Edit, Delete, Payment as PaymentIcon, Save as SaveIcon, Add as AddIcon, UploadFile, 
-    Download, DeleteForever, KeyboardArrowDown, KeyboardArrowUp, PeopleAlt, Clear, Assessment as ReportIcon 
+    Download, DeleteForever, KeyboardArrowDown, KeyboardArrowUp, PeopleAlt, Clear, Assessment as ReportIcon, Link as LinkIcon
 } from '@mui/icons-material';
-import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, collection, onSnapshot } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import dayjs from 'dayjs';
 import StudentProgressChart from './StudentProgressChart.jsx';
@@ -37,7 +37,6 @@ function TabPanel(props) {
     );
 }
 
-// Πιο ανθεκτική συνάρτηση για ημερομηνίες από το Firestore
 const getDateFromFirestoreTimestamp = (timestamp) => {
     if (!timestamp) return new Date(0);
     if (timestamp && typeof timestamp.toDate === 'function') return timestamp.toDate();
@@ -60,7 +59,6 @@ const formatSchedule = (schedule) => {
     return schedule.map(slot => `${dayMapping[slot.day] || slot.day.substring(0, 2)} ${slot.startTime}-${slot.endTime}`).join(' | ');
 };
 
-// Component για το πεδίο φίλτρου
 const FilterTextField = ({ name, filters, handleFilterChange, handleClearFilter, ...props }) => (
     <TextField
         name={name}
@@ -105,15 +103,14 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     const [studentToDelete, setStudentToDelete] = useState(null);
     const [activeTab, setActiveTab] = useState(0);
 
+    const [allUsers, setAllUsers] = useState([]);
+    const [openLinkDialog, setOpenLinkDialog] = useState({ open: false, type: null });
+    const [studentToLink, setStudentToLink] = useState(null);
+    const [selectedUserId, setSelectedUserId] = useState('');
+
     const [filters, setFilters] = useState({
-        lastName: '',
-        firstName: '',
-        studentPhone: '',
-        grade: '',
-        specialization: '',
-        address: '',
-        createdAt: '',
-        email: ''
+        lastName: '', firstName: '', studentPhone: '', grade: '',
+        specialization: '', address: '', createdAt: '', email: ''
     });
 
     const [startDate, setStartDate] = useState('');
@@ -133,6 +130,34 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     const [documentToDelete, setDocumentToDelete] = useState(null);
     const [openDocDeleteConfirm, setOpenDocDeleteConfirm] = useState(false);
 
+    useEffect(() => {
+        if (!db) return;
+        const usersRef = collection(db, 'users');
+        const unsubscribe = onSnapshot(usersRef, (snapshot) => {
+            const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setAllUsers(usersData);
+        });
+        return () => unsubscribe();
+    }, [db]);
+
+    const usersByProfileId = useMemo(() => {
+        const map = new Map();
+        allUsers.forEach(user => {
+            if (user.profileId) {
+                map.set(user.profileId, user);
+            }
+        });
+        return map;
+    }, [allUsers]);
+
+    const unlinkedStudentUsers = useMemo(() => allUsers.filter(user => user.role === 'student' && !user.profileId), [allUsers]);
+    const unlinkedParentUsers = useMemo(() => allUsers.filter(user => user.role === 'parent' && !user.childId), [allUsers]);
+
+    // --- ΝΕΑ ΛΟΓΙΚΗ: Εύρεση των συνδεδεμένων γονέων για τον επιλεγμένο μαθητή ---
+    const linkedParentUsers = useMemo(() => {
+        if (!selectedStudent || !allUsers) return [];
+        return allUsers.filter(user => user.role === 'parent' && user.childId === selectedStudent.id);
+    }, [selectedStudent, allUsers]);
 
     useEffect(() => {
         setActiveTab(0);
@@ -147,10 +172,33 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     };
 
     const handleClearFilter = (filterName) => {
-        setFilters(prevFilters => ({
-            ...prevFilters,
-            [filterName]: ''
-        }));
+        setFilters(prevFilters => ({...prevFilters, [filterName]: ''}));
+    };
+
+    const handleOpenLinkDialog = (student, type) => {
+        setStudentToLink(student);
+        setOpenLinkDialog({ open: true, type: type });
+    };
+
+    const handleCloseLinkDialog = () => {
+        setStudentToLink(null);
+        setOpenLinkDialog({ open: false, type: null });
+        setSelectedUserId('');
+    };
+
+    const handleLinkUser = async () => {
+        if (!studentToLink || !selectedUserId) return;
+        try {
+            const userDocRef = doc(db, 'users', selectedUserId);
+            if (openLinkDialog.type === 'student') {
+                await updateDoc(userDocRef, { profileId: studentToLink.id });
+            } else if (openLinkDialog.type === 'parent') {
+                await updateDoc(userDocRef, { childId: studentToLink.id });
+            }
+            handleCloseLinkDialog();
+        } catch (error) {
+            console.error("Error linking user:", error);
+        }
     };
 
     const availableSubjects = useMemo(() => {
@@ -169,14 +217,11 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
 
     const studentGrades = useMemo(() => {
         if (!selectedStudent || !allGrades) return [];
-        
         let grades = allGrades.filter(grade => grade.studentId === selectedStudent.id);
-
         if (startDate) grades = grades.filter(grade => dayjs(getDateFromFirestoreTimestamp(grade.date)).isAfter(dayjs(startDate).startOf('day')));
         if (endDate) grades = grades.filter(grade => dayjs(getDateFromFirestoreTimestamp(grade.date)).isBefore(dayjs(endDate).endOf('day')));
         if (selectedSubject) grades = grades.filter(grade => grade.subject === selectedSubject);
         if (selectedGradeType) grades = grades.filter(grade => grade.type === selectedGradeType);
-
         return grades.sort((a, b) => getDateFromFirestoreTimestamp(b.date) - getDateFromFirestoreTimestamp(a.date));
     }, [selectedStudent, allGrades, startDate, endDate, selectedSubject, selectedGradeType]);
 
@@ -191,12 +236,9 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
         const groups = {};
         allGrades.forEach(grade => {
             const key = `${dayjs(getDateFromFirestoreTimestamp(grade.date)).format('YYYY-MM-DD')}-${grade.subject}-${grade.type}`;
-            if (!groups[key]) {
-                groups[key] = [];
-            }
+            if (!groups[key]) { groups[key] = []; }
             groups[key].push(parseFloat(grade.grade));
         });
-
         const averages = new Map();
         for (const key in groups) {
             const sum = groups[key].reduce((acc, curr) => acc + curr, 0);
@@ -265,24 +307,20 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
 
     const filteredAndSortedStudents = useMemo(() => {
         let filtered = (allStudents || []).filter(student => student && student.id && student.lastName);
-
         filtered = filtered.filter(student => {
             return Object.keys(filters).every(key => {
                 const filterValue = filters[key];
                 if (!filterValue) return true;
-
                 if (key === 'createdAt') {
                     if (!student.createdAt) return false;
                     const studentDate = dayjs(getDateFromFirestoreTimestamp(student.createdAt));
                     const filterDate = dayjs(filterValue);
                     return studentDate.isSame(filterDate, 'day');
                 }
-
                 const studentValue = student[key]?.toString().toLowerCase() || '';
                 return studentValue.includes(filterValue.toLowerCase());
             });
         });
-
         if (sortColumn) {
             filtered.sort((a, b) => {
                 const aValue = a[sortColumn] || '';
@@ -301,7 +339,6 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     const handleRowClick = (student) => {
         const isAlreadySelected = selectedStudent?.id === student.id;
         setSelectedStudent(isAlreadySelected ? null : student);
-
         if (!isAlreadySelected) {
             setStartDate(''); setEndDate(''); setSelectedSubject(''); setSelectedGradeType('');
             setStudentNotes(student.notes || '');
@@ -392,7 +429,6 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
         finally { setOpenDocDeleteConfirm(false); setDocumentToDelete(null); }
     };
 
-
     const paginatedStudents = filteredAndSortedStudents.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
     if (loading) {
@@ -404,12 +440,8 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
             <Paper elevation={2} sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
                 <PeopleAlt color="primary" sx={{ fontSize: 40 }}/>
                 <Box>
-                    <Typography variant="h6">
-                        {filteredAndSortedStudents.length} Μαθητές
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        Εμφανίζονται {filteredAndSortedStudents.length} από {allStudents.length} σύνολο
-                    </Typography>
+                    <Typography variant="h6">{filteredAndSortedStudents.length} Μαθητές</Typography>
+                    <Typography variant="body2" color="text.secondary">Εμφανίζονται {filteredAndSortedStudents.length} από {allStudents.length} σύνολο</Typography>
                 </Box>
             </Paper>
             <TableContainer component={Paper} elevation={3} sx={{ borderRadius: '5px' }}>
@@ -421,10 +453,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                             <TableCell sx={{ cursor: 'pointer' }} onClick={() => handleSort('firstName')}>Όνομα</TableCell>
                             <TableCell>Τηλέφωνο</TableCell>
                             <TableCell>Τάξη</TableCell>
-                            <TableCell>Κατεύθυνση</TableCell>
-                            <TableCell>Διεύθυνση</TableCell>
-                            <TableCell>Ημ/νία Εγγραφής</TableCell>
-                            <TableCell>Email</TableCell>
+                            <TableCell>Συνδεδεμένος Χρήστης</TableCell>
                             <TableCell sx={{ width: '10%' }}>Ενέργειες</TableCell>
                         </TableRow>
                     </TableHead>
@@ -435,73 +464,33 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                             <TableCell><FilterTextField name="firstName" placeholder="Όνομα..." filters={filters} handleFilterChange={handleFilterChange} handleClearFilter={handleClearFilter} /></TableCell>
                             <TableCell><FilterTextField name="studentPhone" placeholder="Τηλέφωνο..." filters={filters} handleFilterChange={handleFilterChange} handleClearFilter={handleClearFilter} /></TableCell>
                             <TableCell><FilterTextField name="grade" placeholder="Τάξη..." filters={filters} handleFilterChange={handleFilterChange} handleClearFilter={handleClearFilter} /></TableCell>
-                            <TableCell><FilterTextField name="specialization" placeholder="Κατεύθυνση..." filters={filters} handleFilterChange={handleFilterChange} handleClearFilter={handleClearFilter} /></TableCell>
-                            <TableCell><FilterTextField name="address" placeholder="Διεύθυνση..." filters={filters} handleFilterChange={handleFilterChange} handleClearFilter={handleClearFilter} /></TableCell>
-                            <TableCell>
-                                <TextField
-                                    name="createdAt"
-                                    type="date"
-                                    variant="standard"
-                                    value={filters.createdAt}
-                                    onChange={handleFilterChange}
-                                    onClick={(e) => e.stopPropagation()}
-                                    fullWidth
-                                    InputLabelProps={{ shrink: true }}
-                                    InputProps={{
-                                        endAdornment: filters.createdAt ? (
-                                            <InputAdornment position="end">
-                                                <IconButton
-                                                    aria-label="clear date filter"
-                                                    onClick={() => handleClearFilter('createdAt')}
-                                                    size="small"
-                                                >
-                                                    <Clear sx={{ fontSize: '1rem' }} />
-                                                </IconButton>
-                                            </InputAdornment>
-                                        ) : null,
-                                    }}
-                                />
-                            </TableCell>
-                            <TableCell><FilterTextField name="email" placeholder="Email..." filters={filters} handleFilterChange={handleFilterChange} handleClearFilter={handleClearFilter} /></TableCell>
+                            <TableCell />
                             <TableCell />
                         </TableRow>
                         {paginatedStudents.map((student) => {
                             const isSelected = selectedStudent?.id === student.id;
+                            const linkedUser = usersByProfileId.get(student.id);
                             return (
                                 <React.Fragment key={student.id}>
-                                    <TableRow
-                                        onClick={() => handleRowClick(student)}
-                                        hover
-                                        sx={{
-                                            cursor: 'pointer',
-                                            '& > *': { borderBottom: isSelected ? 'unset' : undefined },
-                                        }}
-                                    >
-                                        <TableCell>
-                                            <IconButton aria-label="expand row" size="small" onClick={() => handleRowClick(student)}>
-                                                {isSelected ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-                                            </IconButton>
-                                        </TableCell>
+                                    <TableRow onClick={() => handleRowClick(student)} hover sx={{ cursor: 'pointer', '& > *': { borderBottom: isSelected ? 'unset' : undefined } }}>
+                                        <TableCell><IconButton aria-label="expand row" size="small" onClick={() => handleRowClick(student)}>{isSelected ? <KeyboardArrowUp /> : <KeyboardArrowDown />}</IconButton></TableCell>
                                         <TableCell>{student.lastName}</TableCell>
                                         <TableCell>{student.firstName}</TableCell>
                                         <TableCell>{student.studentPhone}</TableCell>
                                         <TableCell>{student.grade}</TableCell>
-                                        <TableCell>{student.specialization || '-'}</TableCell>
-                                        <TableCell>{student.address}</TableCell>
                                         <TableCell>
-                                            {student.createdAt ? dayjs(getDateFromFirestoreTimestamp(student.createdAt)).format('DD/MM/YYYY') : '-'}
+                                            {linkedUser ? (<Chip label={linkedUser.email} size="small" color="success" variant="outlined" />) : (<Button variant="outlined" size="small" startIcon={<LinkIcon />} onClick={(e) => { e.stopPropagation(); handleOpenLinkDialog(student, 'student'); }}>Σύνδεση</Button>)}
                                         </TableCell>
-                                        <TableCell>{student.email}</TableCell>
                                         <TableCell>
                                             <IconButton size="small" color="primary" onClick={(e) => { e.stopPropagation(); handleEditClick(student); }}><Edit /></IconButton>
                                             <IconButton size="small" color="secondary" onClick={(e) => { e.stopPropagation(); handleReportClick(student); }}><ReportIcon /></IconButton>
                                             <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); handleDeleteClick(student); }}><Delete /></IconButton>
                                         </TableCell>
                                     </TableRow>
-                                    {isSelected && (
-                                        <TableRow>
-                                            <TableCell sx={{ padding: 0, border: 'none' }} colSpan={10}>
-                                                <Collapse in={isSelected} timeout="auto">
+                                    <TableRow>
+                                        <TableCell sx={{ padding: 0, border: 'none' }} colSpan={10}>
+                                            <Collapse in={isSelected} timeout="auto" unmountOnExit>
+                                                {selectedStudent && (
                                                     <Box sx={{ margin: 1 }}>
                                                         <Paper elevation={0} sx={{ minHeight: '300px' }}>
                                                             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -531,7 +520,26 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                                 </Grid>
                                                                 <Divider sx={{ my: 2 }} />
                                                                 <Typography variant="h6" sx={{ mb: 1.5, fontSize: '1.1rem' }}>Στοιχεία Γονέων</Typography>
-                                                                {selectedStudent.parents && selectedStudent.parents.length > 0 ? (selectedStudent.parents.map((parent, index) => (<React.Fragment key={index}>{selectedStudent.parents.length > 1 && (<Typography variant="subtitle2" color="text.secondary" sx={{ mt: index > 0 ? 2 : 0, mb: 1 }}>Γονέας {index + 1}</Typography>)}<Grid container spacing={2}><Grid item xs={12} sm={6}><DetailItem label="Ονοματεπώνυμο Γονέα" value={parent.name} /></Grid><Grid item xs={12} sm={6}><DetailItem label="Τηλέφωνα" value={parent.phones?.join(', ')} /></Grid></Grid></React.Fragment>))) : (<Typography>Δεν υπάρχουν καταχωρημένα στοιχεία γονέων.</Typography>)}
+                                                                {selectedStudent.parents && selectedStudent.parents.length > 0 ? (selectedStudent.parents.map((parent, index) => (
+                                                                    <React.Fragment key={index}>
+                                                                        <Typography variant="subtitle2" color="text.secondary" sx={{ mt: index > 0 ? 2 : 0, mb: 1 }}>Γονέας {index + 1}</Typography>
+                                                                        <Grid container spacing={2}><Grid item xs={12} sm={6}><DetailItem label="Ονοματεπώνυμο Γονέα" value={parent.name} /></Grid><Grid item xs={12} sm={6}><DetailItem label="Τηλέφωνα" value={parent.phones?.join(', ')} /></Grid></Grid>
+                                                                    </React.Fragment>
+                                                                ))) : (<Typography>Δεν υπάρχουν καταχωρημένα στοιχεία γονέων.</Typography>)}
+                                                                
+                                                                {/* --- ΔΙΟΡΘΩΣΗ: Νέα ενότητα για συνδεδεμένους γονείς --- */}
+                                                                <Divider sx={{ my: 2 }} />
+                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Συνδεδεμένοι Λογαριασμοί Γονέων</Typography>
+                                                                    <Button size="small" startIcon={<LinkIcon />} onClick={() => handleOpenLinkDialog(selectedStudent, 'parent')}>Σύνδεση Νέου Λογαριασμού</Button>
+                                                                </Box>
+                                                                {linkedParentUsers.length > 0 ? (
+                                                                    linkedParentUsers.map(user => (
+                                                                        <Chip key={user.id} label={user.email} size="small" color="success" variant="outlined" sx={{ mr: 1 }} />
+                                                                    ))
+                                                                ) : (
+                                                                    <Typography variant="body2" color="text.secondary">Κανένας λογαριασμός γονέα δεν έχει συνδεθεί.</Typography>
+                                                                )}
                                                             </TabPanel>
                                                             <TabPanel value={activeTab} index={1}>
                                                                 <Typography variant="h6" sx={{ mb: 2 }}>Πρόγραμμα Μαθητή</Typography>
@@ -591,10 +599,10 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                             </TabPanel>
                                                         </Paper>
                                                     </Box>
-                                                </Collapse>
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
+                                                )}
+                                            </Collapse>
+                                        </TableCell>
+                                    </TableRow>
                                 </React.Fragment>
                             );
                         })}
@@ -602,10 +610,33 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                 </Table>
             </TableContainer>
             <TablePagination rowsPerPageOptions={[5, 10, 20, 50]} component="div" count={filteredAndSortedStudents.length} rowsPerPage={rowsPerPage} page={page} onPageChange={handlePageChange} onRowsPerPageChange={handleRowsPerPageChange} />
-                
             <Dialog open={openDeleteConfirm} onClose={handleCloseDeleteConfirm}><DialogTitle>Επιβεβαίωση Διαγραφής</DialogTitle><DialogContent><DialogContentText>Είστε σίγουροι ότι θέλετε να διαγράψετε τον μαθητή {studentToDelete?.firstName} {studentToDelete?.lastName};</DialogContentText></DialogContent><DialogActions><Button onClick={handleCloseDeleteConfirm}>Ακύρωση</Button><Button onClick={handleConfirmDelete} color="error">Διαγραφή</Button></DialogActions></Dialog>
             <Dialog open={openCommunicationDialog} onClose={() => setOpenCommunicationDialog(false)} fullWidth maxWidth="sm"><DialogTitle>Νέα Καταχώρηση Επικοινωνίας</DialogTitle><DialogContent><Grid container spacing={2} sx={{pt: 1}}><Grid item xs={12} sm={6}><TextField label="Ημερομηνία" type="date" value={newCommunicationEntry.date} onChange={(e) => setNewCommunicationEntry(prev => ({ ...prev, date: e.target.value }))} fullWidth InputLabelProps={{ shrink: true }}/></Grid><Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>Τύπος</InputLabel><Select value={newCommunicationEntry.type} label="Τύπος" onChange={(e) => setNewCommunicationEntry(prev => ({ ...prev, type: e.target.value }))}><MenuItem value="Τηλεφώνημα">Τηλεφώνημα</MenuItem><MenuItem value="Email">Email</MenuItem><MenuItem value="Συνάντηση">Συνάντηση</MenuItem></Select></FormControl></Grid><Grid item xs={12}><TextField label="Περίληψη" multiline rows={4} fullWidth value={newCommunicationEntry.summary} onChange={(e) => setNewCommunicationEntry(prev => ({ ...prev, summary: e.target.value }))}/></Grid></Grid></DialogContent><DialogActions><Button onClick={() => setOpenCommunicationDialog(false)}>Ακύρωση</Button><Button onClick={handleSaveCommunication} variant="contained" disabled={isSavingCommunication}>{isSavingCommunication ? <CircularProgress size={24} /> : 'Αποθήκευση'}</Button></DialogActions></Dialog>
             <Dialog open={openDocDeleteConfirm} onClose={() => setOpenDocDeleteConfirm(false)}><DialogTitle>Επιβεβαίωση Διαγραφής Εγγράφου</DialogTitle><DialogContent><DialogContentText>Είστε σίγουροι ότι θέλετε να διαγράψετε το έγγραφο "{documentToDelete?.name}"; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</DialogContentText></DialogContent><DialogActions><Button onClick={() => setOpenDocDeleteConfirm(false)}>Ακύρωση</Button><Button onClick={handleConfirmDocDelete} color="error">Διαγραφή</Button></DialogActions></Dialog>
+            <Dialog open={openLinkDialog.open} onClose={handleCloseLinkDialog} fullWidth maxWidth="xs">
+                <DialogTitle>Σύνδεση {openLinkDialog.type === 'student' ? 'Μαθητή' : 'Γονέα'}</DialogTitle>
+                {studentToLink && (
+                    <>
+                        <DialogContent>
+                            <DialogContentText sx={{ mb: 2 }}>Επιλέξτε τον λογαριασμό χρήστη για τον/την <strong>{studentToLink.firstName} {studentToLink.lastName}</strong>.</DialogContentText>
+                            <FormControl fullWidth>
+                                <InputLabel>Λογαριασμός Χρήστη</InputLabel>
+                                <Select value={selectedUserId} label="Λογαριασμός Χρήστη" onChange={(e) => setSelectedUserId(e.target.value)}>
+                                    {(openLinkDialog.type === 'student' ? unlinkedStudentUsers : unlinkedParentUsers).length > 0 ? (
+                                        (openLinkDialog.type === 'student' ? unlinkedStudentUsers : unlinkedParentUsers).map(user => (
+                                            <MenuItem key={user.id} value={user.id}>{user.email}</MenuItem>
+                                        ))
+                                    ) : (<MenuItem disabled>Δεν υπάρχουν διαθέσιμοι χρήστες</MenuItem>)}
+                                </Select>
+                            </FormControl>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleCloseLinkDialog}>Ακύρωση</Button>
+                            <Button onClick={handleLinkUser} variant="contained" disabled={!selectedUserId}>Σύνδεση</Button>
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
         </Container>
     );
 }

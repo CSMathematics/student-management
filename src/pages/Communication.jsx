@@ -1,5 +1,6 @@
 // src/pages/Communication.jsx
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
 import {
     Box, Grid, Paper, Typography, List, Divider, ListSubheader,
     InputAdornment, IconButton, Container, TextField as MuiTextField,
@@ -9,42 +10,23 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import {
-    Search as SearchIcon,
-    Info as InfoIcon,
-    ChevronRight as ChevronRightIcon,
-    Campaign as CampaignIcon,
-    People as PeopleIcon,
-    Person as PersonIcon,
-    Class as ClassIcon,
-    Email as EmailIcon,
-    Phone as PhoneIcon,
-    PhotoCamera as PhotoCameraIcon,
-    Delete as DeleteIcon,
-    Send as SendIcon,
-    ExpandLess,
-    ExpandMore,
-    AttachFile as AttachFileIcon,
-    Reply as ReplyIcon,
-    Close as CloseIcon,
-    InsertDriveFile as FileIcon,
-    Done as DoneIcon,
-    DoneAll as DoneAllIcon
+    Search as SearchIcon, Info as InfoIcon, ChevronRight as ChevronRightIcon, Campaign as CampaignIcon,
+    People as PeopleIcon, Person as PersonIcon, Class as ClassIcon, Email as EmailIcon, Phone as PhoneIcon,
+    PhotoCamera as PhotoCameraIcon, Delete as DeleteIcon, Send as SendIcon, ExpandLess, ExpandMore,
+    AttachFile as AttachFileIcon, Reply as ReplyIcon, Close as CloseIcon, InsertDriveFile as FileIcon,
+    Done as DoneIcon, DoneAll as DoneAllIcon, School as TeacherIcon // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
 } from '@mui/icons-material';
 import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, updateDoc, deleteField, writeBatch, arrayUnion, deleteDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject, uploadBytes } from "firebase/storage";
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
 import { blue, green } from '@mui/material/colors';
-
 import 'react-chat-elements/dist/main.css';
 import { SystemMessage } from 'react-chat-elements';
-
-// --- ΝΕΑ ΕΙΣΑΓΩΓΗ: Βιβλιοθήκη για το crop της εικόνας ---
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
-
-// --- STYLED COMPONENT ΓΙΑ ΤΗΝ ΕΝΔΕΙΞΗ ONLINE STATUS ---
+// ... (Όλα τα helper components όπως StyledBadge, InfoCard, ReadReceipts, ChatMessage παραμένουν ίδια) ...
 const StyledBadge = styled(Badge)(({ theme, isOnline }) => ({
   '& .MuiBadge-badge': {
     backgroundColor: isOnline ? '#44b700' : theme.palette.action.disabled,
@@ -73,23 +55,17 @@ const StyledBadge = styled(Badge)(({ theme, isOnline }) => ({
     },
   },
 }));
-
-
-// Helper component for the Info Card
 const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClick, db, appId }) => {
     const fileInputRef = useRef(null);
-    const imgRef = useRef(null); // Ref για την εικόνα στο cropper
+    const imgRef = useRef(null);
     const [isUploading, setIsUploading] = useState(false);
     const [openConfirmDelete, setOpenConfirmDelete] = useState(false);
     const [uploadError, setUploadError] = useState('');
-    
-    // --- ΝΕΕΣ ΚΑΤΑΣΤΑΣΕΙΣ ΓΙΑ ΤΟ CROP ---
     const [crop, setCrop] = useState();
     const [completedCrop, setCompletedCrop] = useState(null);
     const [imageSrc, setImageSrc] = useState('');
     const [openCropModal, setOpenCropModal] = useState(false);
     const [originalFile, setOriginalFile] = useState(null);
-
 
     if (!channel) return null;
 
@@ -125,7 +101,6 @@ const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClic
         }
     };
     
-    // --- ΝΕΑ ΛΟΓΙΚΗ: Όταν φορτώνεται η εικόνα στο cropper ---
     function onImageLoad(e) {
         imgRef.current = e.currentTarget;
         const { width, height } = e.currentTarget;
@@ -137,21 +112,19 @@ const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClic
         setCrop(crop);
     }
 
-    // --- ΕΝΗΜΕΡΩΜΕΝΗ ΛΟΓΙΚΗ: Ανοίγει το modal αντί να ανεβάζει απευθείας ---
     const handleFileSelect = (event) => {
         if (event.target.files && event.target.files.length > 0) {
             const file = event.target.files[0];
             setOriginalFile(file);
-            setCrop(undefined); // Reset crop state
+            setCrop(undefined);
             const reader = new FileReader();
             reader.addEventListener('load', () => setImageSrc(reader.result.toString() || ''));
             reader.readAsDataURL(file);
             setOpenCropModal(true);
-            event.target.value = null; // Clear input
+            event.target.value = null;
         }
     };
 
-    // --- ΝΕΑ ΣΥΝΑΡΤΗΣΗ: Δημιουργεί και ανεβάζει την περικομμένη εικόνα ---
     const handleSaveCrop = async () => {
         if (!completedCrop || !imgRef.current || !originalFile) {
             return;
@@ -208,7 +181,6 @@ const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClic
             }
         }, originalFile.type);
     };
-
 
     const handleDeleteImage = async () => {
         setOpenConfirmDelete(false);
@@ -307,7 +279,6 @@ const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClic
                 </DialogActions>
             </Dialog>
             
-            {/* --- ΝΕΟ: Modal για την περικοπή της εικόνας --- */}
             <Dialog open={openCropModal} onClose={() => setOpenCropModal(false)} maxWidth="sm">
                 <DialogTitle>Περικοπή Εικόνας</DialogTitle>
                 <DialogContent>
@@ -337,7 +308,6 @@ const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClic
         </>
     );
 };
-
 const ReadReceipts = ({ msg, currentUser, participants = [] }) => {
     if (msg.senderId !== currentUser.id) {
         return null;
@@ -364,7 +334,6 @@ const ReadReceipts = ({ msg, currentUser, participants = [] }) => {
         </Box>
     );
 };
-
 const ChatMessage = ({ msg, onReplyClick, onDeleteClick, currentUser, participants }) => {
     const { mode } = useTheme();
     const isMe = msg.position === 'right';
@@ -493,7 +462,9 @@ const ChatMessage = ({ msg, onReplyClick, onDeleteClick, currentUser, participan
 };
 
 
-function Communication({ db, appId, allStudents, classrooms, userId }) {
+// --- ΑΛΛΑΓΗ: Προσθήκη του `allTeachers` στα props ---
+function Communication({ db, appId, allStudents, classrooms, allTeachers, userId }) {
+    const location = useLocation(); // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
     const { mode } = useTheme();
     const [selectedChannel, setSelectedChannel] = useState({ id: 'global', type: 'global', title: 'Γενική Ανακοίνωση' });
     const [messages, setMessages] = useState([]);
@@ -504,7 +475,7 @@ function Communication({ db, appId, allStudents, classrooms, userId }) {
     const [inputText, setInputText] = useState(""); 
     const messageListRef = useRef(null);
     const fileInputRef = useRef(null);
-    const [openSections, setOpenSections] = useState({ classrooms: true, students: true });
+    const [openSections, setOpenSections] = useState({ classrooms: true, students: true, teachers: true });
     const [replyingTo, setReplyingTo] = useState(null);
     const [messageToDelete, setMessageToDelete] = useState(null);
 
@@ -517,14 +488,18 @@ function Communication({ db, appId, allStudents, classrooms, userId }) {
         name: 'Me' 
     }), [userId]);
     
+    // --- ΑΛΛΑΓΗ: Το `allUsersMap` περιλαμβάνει πλέον και τους καθηγητές ---
     const allUsersMap = useMemo(() => {
         const map = new Map();
         if(allStudents) {
             allStudents.forEach(s => map.set(s.id, { name: `${s.lastName} ${s.firstName}`, avatar: s.profileImageUrl }));
         }
+        if(allTeachers) {
+            allTeachers.forEach(t => map.set(t.id, { name: `${t.firstName} ${t.lastName}`, avatar: t.profileImageUrl }));
+        }
         map.set(currentUser.id, { name: currentUser.name, avatar: null });
         return map;
-    }, [allStudents, currentUser]);
+    }, [allStudents, allTeachers, currentUser]);
 
 
     useEffect(() => {
@@ -710,6 +685,25 @@ function Communication({ db, appId, allStudents, classrooms, userId }) {
         title: `${s.lastName} ${s.firstName}`, subtitle: s.grade, date: null, unread: 0,
     })), [allStudents, searchTerm]);
     
+    // --- ΝΕΑ ΛΟΓΙΚΗ: Δημιουργία καναλιών για τους καθηγητές ---
+    const teacherChannels = useMemo(() => (allTeachers || []).filter(t => `${t.firstName} ${t.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())).map(t => ({
+        id: t.id, type: 'personal', avatar: t.profileImageUrl || null,
+        title: `${t.firstName} ${t.lastName}`, subtitle: t.specialty || 'Καθηγητής', date: null, unread: 0,
+    })), [allTeachers, searchTerm]);
+
+    // --- ΝΕΟ EFFECT: Ελέγχει το state της πλοήγησης για να προ-επιλέξει συνομιλία ---
+    useEffect(() => {
+        const channelId = location.state?.selectedChannelId;
+        if (channelId) {
+            const allPersonalChannels = [...studentChannels, ...teacherChannels];
+            const channelToSelect = allPersonalChannels.find(c => c.id === channelId);
+            if (channelToSelect) {
+                setSelectedChannel(channelToSelect);
+            }
+        }
+    }, [location.state, studentChannels, teacherChannels]);
+
+    
     const selectedStudentDetails = useMemo(() => (selectedChannel?.type === 'personal') ? allStudents.find(s => s.id === selectedChannel.id) : null, [selectedChannel, allStudents]);
     const selectedClassroomDetails = useMemo(() => (selectedChannel?.type === 'classroom') ? classrooms.find(c => c.id === selectedChannel.id) : null, [selectedChannel, classrooms]);
     
@@ -779,6 +773,20 @@ function Communication({ db, appId, allStudents, classrooms, userId }) {
                             <Collapse in={openSections.classrooms} timeout="auto" unmountOnExit>
                                 {renderChannelList(classroomChannels)}
                             </Collapse>
+
+                            {/* --- ΝΕΑ ΕΝΟΤΗΤΑ: Καθηγητές --- */}
+                            {teacherChannels.length > 0 && (
+                                <>
+                                    <ListItemButton onClick={() => handleToggleSection('teachers')}>
+                                        <ListItemIcon><TeacherIcon /></ListItemIcon>
+                                        <ListItemText primary="Καθηγητές" />
+                                        {openSections.teachers ? <ExpandLess /> : <ExpandMore />}
+                                    </ListItemButton>
+                                    <Collapse in={openSections.teachers} timeout="auto" unmountOnExit>
+                                        {renderChannelList(teacherChannels)}
+                                    </Collapse>
+                                </>
+                            )}
 
                             <ListItemButton onClick={() => handleToggleSection('students')}>
                                 <ListItemIcon><PersonIcon /></ListItemIcon>

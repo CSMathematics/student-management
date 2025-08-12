@@ -14,7 +14,6 @@ import isBetween from 'dayjs/plugin/isBetween';
 dayjs.locale('el');
 dayjs.extend(isBetween);
 
-// Helper component for displaying details inside each accordion
 const StatItem = ({ label, value, color }) => (
     <Box textAlign="center">
         <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', display: 'block' }}>
@@ -41,7 +40,9 @@ function StudentReport({ allStudents, allGrades, allAbsences, classrooms, allAss
     }, [student, classrooms]);
 
     const reportDataByClassroom = useMemo(() => {
-        if (!student) return [];
+        // --- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ ---
+        if (!student || !allGrades || !allAbsences || !allAssignments) return [];
+        
         const start = dayjs(startDate).startOf('day');
         const end = dayjs(endDate).endOf('day');
 

@@ -1,11 +1,12 @@
 // src/pages/Announcements.jsx
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     Container, Paper, Typography, Button, Box, IconButton, List, ListItem, ListItemText,
     Dialog, DialogActions, DialogContent, DialogTitle, TextField, CircularProgress, Alert, DialogContentText
-} from '@mui/material'; // <-- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ
+} from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import dayjs from 'dayjs';
 
 const generateFirestoreId = () => {
@@ -106,6 +107,19 @@ function Announcements({ allAnnouncements, loading, db, appId }) {
                 dataToSave.createdAt = serverTimestamp();
             }
             await setDoc(docRef, dataToSave, { merge: true });
+
+            if (!data.id) {
+                const notificationsRef = collection(db, `artifacts/${appId}/public/data/notifications`);
+                await addDoc(notificationsRef, {
+                    recipientId: 'global',
+                    type: 'announcement',
+                    message: `Νέα ανακοίνωση: "${data.title}"`,
+                    link: '/announcements',
+                    readBy: [], // <-- ΑΛΛΑΓΗ: Χρήση readBy array
+                    timestamp: serverTimestamp()
+                });
+            }
+
             setFeedback({ type: 'success', message: 'Η ανακοίνωση αποθηκεύτηκε.' });
         } catch (error) {
             console.error("Error saving announcement: ", error);

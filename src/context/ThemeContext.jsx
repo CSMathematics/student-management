@@ -9,7 +9,7 @@ export const useTheme = () => useContext(ThemeContext);
 // --- ΑΛΛΑΓΗ: Εξάγουμε τις παλέτες για να είναι προσβάσιμες από άλλα αρχεία ---
 export const lightPalette = {
   primary: '#1e88e5',
-  secondary: '#f57c00',
+  secondary: '#a71793ff',
   background: '#f4f6f8',
   paper: '#ffffff',
   textPrimary: '#000000',
@@ -26,7 +26,7 @@ export const lightPalette = {
 
 export const darkPalette = {
   primary: '#64b5f6',
-  secondary: '#ffb74d',
+  secondary: '#d61dbeff',
   background: '#121212',
   paper: '#1e1e1e',
   textPrimary: '#ffffff',

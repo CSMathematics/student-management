@@ -2,27 +2,44 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
     Box, Paper, Typography, Button, Table, TableBody, TableCell,
-    TableContainer, TableHead, TableRow, TextField, FormControl,
-    InputLabel, Select, MenuItem, CircularProgress, Alert
+    TableContainer, TableHead, TableRow, TextField, CircularProgress, Alert
 } from '@mui/material';
 import { Save } from '@mui/icons-material';
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection, doc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 
-// --- ΑΛΛΑΓΗ: Το component δέχεται το classroom ως prop ---
-function Gradebook({ db, appId, allStudents, classroom }) {
+function Gradebook({ db, appId, allStudents, classroom, assignment }) {
     const [grades, setGrades] = useState({});
-    const [assessmentType, setAssessmentType] = useState('Διαγώνισμα');
-    const [assessmentDate, setAssessmentDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
+    const [existingGrades, setExistingGrades] = useState(new Map());
 
-    // --- ΑΛΛΑΓΗ: Κάθε φορά που αλλάζει το τμήμα, καθαρίζουμε τη φόρμα ---
+    // Fetch existing grades for this specific assignment when it changes
     useEffect(() => {
-        setGrades({});
-        setFeedback({ type: '', message: '' });
-        setAssessmentType('Διαγώνισμα');
-        setAssessmentDate(new Date().toISOString().split('T')[0]);
-    }, [classroom]);
+        const fetchExistingGrades = async () => {
+            if (!assignment) return;
+            setLoading(true);
+            try {
+                const q = query(
+                    collection(db, `artifacts/${appId}/public/data/grades`),
+                    where('assignmentId', '==', assignment.id)
+                );
+                const snapshot = await getDocs(q);
+                const gradesMap = new Map();
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    gradesMap.set(data.studentId, data.grade);
+                });
+                setExistingGrades(gradesMap);
+                setGrades(Object.fromEntries(gradesMap)); // Pre-fill the form with existing grades
+            } catch (error) {
+                console.error("Error fetching existing grades:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchExistingGrades();
+    }, [assignment, db, appId]);
 
 
     const studentsInClassroom = useMemo(() => {
@@ -34,6 +51,7 @@ function Gradebook({ db, appId, allStudents, classroom }) {
 
     const handleGradeChange = (studentId, value) => {
         const sanitizedValue = value.replace(/[^0-9,.]/g, '').replace(/[.,]/, ',');
+        if (parseFloat(sanitizedValue.replace(',', '.')) > 20) return; // Limit max grade to 20
         setGrades(prev => ({
             ...prev,
             [studentId]: sanitizedValue
@@ -41,10 +59,7 @@ function Gradebook({ db, appId, allStudents, classroom }) {
     };
 
     const handleSaveGrades = async () => {
-        if (!db || !appId) {
-            setFeedback({ type: 'error', message: 'Η σύνδεση με τη βάση δεδομένων απέτυχε.' });
-            return;
-        }
+        if (!db || !appId || !assignment) return;
         setLoading(true);
         setFeedback({ type: '', message: '' });
 
@@ -54,86 +69,61 @@ function Gradebook({ db, appId, allStudents, classroom }) {
             let gradesCount = 0;
 
             for (const student of studentsInClassroom) {
-                const gradeValue = grades[student.id];
-                if (gradeValue) {
+                const gradeValueStr = grades[student.id];
+                if (gradeValueStr) {
                     gradesCount++;
+                    const gradeValue = parseFloat(gradeValueStr.replace(',', '.'));
                     const gradeData = {
                         studentId: student.id,
-                        studentName: `${student.firstName} ${student.lastName}`,
                         classroomId: classroom.id,
-                        classroomName: classroom.classroomName,
                         subject: classroom.subject,
-                        grade: parseFloat(gradeValue.replace(',', '.')),
-                        type: assessmentType,
-                        date: new Date(assessmentDate),
+                        grade: gradeValue,
+                        type: assignment.type, // Get type from assignment
+                        date: assignment.dueDate.toDate(), // Get date from assignment
+                        assignmentId: assignment.id, // Link the grade to the assignment
                         createdAt: new Date(),
                     };
-                    const gradeDocRef = doc(gradesCollectionRef);
-                    batch.set(gradeDocRef, gradeData);
+                    const docId = `${assignment.id}_${student.id}`;
+                    const gradeDocRef = doc(gradesCollectionRef, docId);
+                    batch.set(gradeDocRef, gradeData, { merge: true });
                 }
             }
             
             if (gradesCount === 0) {
-                 setFeedback({ type: 'info', message: 'Δεν έχετε εισάγει βαθμούς για αποθήκευση.' });
+                 setFeedback({ type: 'info', message: 'Δεν έχετε εισάγει βαθμούς.' });
                  setLoading(false);
                  return;
             }
 
             await batch.commit();
-            setFeedback({ type: 'success', message: `Αποθηκεύτηκαν ${gradesCount} βαθμοί με επιτυχία!` });
-            setGrades({}); // Καθαρίζουμε τη φόρμα μετά την επιτυχία
+            setFeedback({ type: 'success', message: `Οι βαθμοί για "${assignment.title}" αποθηκεύτηκαν!` });
 
         } catch (error) {
             console.error("Error saving grades:", error);
-            setFeedback({ type: 'error', message: 'Αποτυχία αποθήκευσης. Παρακαλώ δοκιμάστε ξανά.' });
+            setFeedback({ type: 'error', message: 'Αποτυχία αποθήκευσης.' });
         } finally {
             setLoading(false);
         }
     };
 
-    if (!classroom) {
-        return <Typography>Σφάλμα: Δεν βρέθηκε τμήμα.</Typography>;
-    }
-
     return (
         <Box>
             <Typography variant="h6" color="primary.main" gutterBottom>
-                Τμήμα: {classroom.classroomName} ({classroom.subject})
+                Καταχώρηση Βαθμών για: {assignment.title}
             </Typography>
 
-            <Box sx={{ display: 'flex', gap: 2, my: 3, flexWrap: 'wrap' }}>
-                <FormControl sx={{ minWidth: 200 }}>
-                    <InputLabel>Τύπος Αξιολόγησης</InputLabel>
-                    <Select value={assessmentType} label="Τύπος Αξιολόγησης" onChange={(e) => setAssessmentType(e.target.value)}>
-                        <MenuItem value="Διαγώνισμα">Διαγώνισμα</MenuItem>
-                        <MenuItem value="Εργασία">Εργασία</MenuItem>
-                        <MenuItem value="Προφορικά">Προφορικά</MenuItem>
-                        <MenuItem value="Συμμετοχή">Συμμετοχή</MenuItem>
-                    </Select>
-                </FormControl>
-                <TextField
-                    type="date"
-                    label="Ημερομηνία"
-                    value={assessmentDate}
-                    onChange={(e) => setAssessmentDate(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                />
-            </Box>
-
-            <TableContainer component={Paper} variant="outlined">
+            <TableContainer component={Paper} variant="outlined" sx={{ mt: 2 }}>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Επώνυμο</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Όνομα</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Ονοματεπώνυμο</TableCell>
                             <TableCell sx={{ fontWeight: 'bold', width: '150px' }}>Βαθμός (0-20)</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {studentsInClassroom.map((student) => (
                             <TableRow key={student.id}>
-                                <TableCell>{student.lastName}</TableCell>
-                                <TableCell>{student.firstName}</TableCell>
+                                <TableCell>{student.lastName} {student.firstName}</TableCell>
                                 <TableCell>
                                     <TextField
                                         variant="outlined"
@@ -141,7 +131,7 @@ function Gradebook({ db, appId, allStudents, classroom }) {
                                         fullWidth
                                         value={grades[student.id] || ''}
                                         onChange={(e) => handleGradeChange(student.id, e.target.value)}
-                                        inputProps={{ maxLength: 5 }}
+                                        placeholder={existingGrades.has(student.id) ? existingGrades.get(student.id).toString() : ""}
                                     />
                                 </TableCell>
                             </TableRow>
@@ -153,7 +143,6 @@ function Gradebook({ db, appId, allStudents, classroom }) {
             <Box sx={{ mt: 3, textAlign: 'right' }}>
                 <Button
                     variant="contained"
-                    color="primary"
                     startIcon={<Save />}
                     onClick={handleSaveGrades}
                     disabled={loading}
