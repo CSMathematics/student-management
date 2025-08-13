@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Box, CircularProgress } from '@mui/material';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { getFirestore, onSnapshot, doc, setDoc } from 'firebase/firestore';
+// --- ΑΛΛΑΓΗ: Προσθήκη νέων imports ---
+import { getFirestore, onSnapshot, doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import './scss/main.scss';
@@ -70,6 +71,7 @@ function App() {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
+            // Δημιουργία προφίλ χρήστη
             await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,
                 email: user.email,
@@ -77,6 +79,18 @@ function App() {
                 profileId: null,
                 createdAt: new Date(),
             });
+
+            // --- ΑΛΛΑΓΗ: Δημιουργία ειδοποίησης για τον admin ---
+            const notificationsRef = collection(db, `artifacts/${appId}/public/data/notifications`);
+            await addDoc(notificationsRef, {
+                recipientId: 'admin', // Ειδικό ID για όλους τους admins
+                type: 'newUser',
+                message: `Νέος χρήστης (${email}) εγγράφηκε με ρόλο: ${role}.`,
+                link: role === 'student' ? '/students' : (role === 'teacher' ? '/teachers' : '/'),
+                readBy: [],
+                timestamp: serverTimestamp()
+            });
+
         } catch (error) {
             if (error.code === 'auth/email-already-in-use') {
                 setAuthError('Αυτό το email χρησιμοποιείται ήδη.');

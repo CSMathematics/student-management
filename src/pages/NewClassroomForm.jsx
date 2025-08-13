@@ -29,7 +29,8 @@ const generateTimeSlots = (startHour, endHour) => {
 const DAYS_OF_WEEK = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο'];
 const TIME_SLOTS = generateTimeSlots(8, 22);
 
-function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allTeachers }) {
+// --- ΑΛΛΑΓΗ: Προσθήκη onCancel και onSaveSuccess στα props ---
+function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allTeachers, onCancel, onSaveSuccess }) {
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -63,7 +64,6 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allT
         return durationString || '0 λεπτά';
     }, []);
 
-    // --- ΑΝΑΒΑΘΜΙΣΜΕΝΗ ΣΥΝΑΡΤΗΣΗ ΕΛΕΓΧΟΥ ΕΠΙΚΑΛΥΨΗΣ ---
     const checkOverlap = useCallback((targetDay, targetStartTimeStr, targetEndTimeStr, currentFormSchedule = [], ignoreFormScheduleIds = []) => {
         const targetStart = dayjs(`2000-01-01T${targetStartTimeStr}`);
         const targetEnd = dayjs(`2000-01-01T${targetEndTimeStr}`);
@@ -73,18 +73,11 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allT
         }
 
         const targetTeacherId = formData.teacherId;
+        if (!targetTeacherId) return false;
 
-        // Αν δεν έχει επιλεγεί καθηγητής, δεν υπάρχει λόγος για έλεγχο επικάλυψης.
-        if (!targetTeacherId) {
-            return false;
-        }
-
-        // Έλεγχος σε σχέση με τα ήδη υπάρχοντα τμήματα στη βάση δεδομένων
         if (Array.isArray(classrooms)) {
             for (const classroom of classrooms) {
                 if (classroomToEdit && classroom.id === classroomToEdit.id) continue;
-                
-                // Έλεγχος μόνο στα τμήματα του ΙΔΙΟΥ καθηγητή
                 if (classroom.teacherId === targetTeacherId) {
                     if (classroom.schedule && Array.isArray(classroom.schedule)) {
                         for (const slot of classroom.schedule) {
@@ -99,7 +92,6 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allT
             }
         }
 
-        // Έλεγχος σε σχέση με τις άλλες ώρες που προστίθενται σε αυτή τη φόρμα
         for (const slot of currentFormSchedule) {
             if (ignoreFormScheduleIds.includes(slot.id)) continue;
             if (slot.day === targetDay) {
@@ -109,7 +101,7 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allT
             }
         }
         return false;
-    }, [classroomToEdit, classrooms, formData.teacherId]); // <-- Προσθήκη formData.teacherId
+    }, [classroomToEdit, classrooms, formData.teacherId]);
 
     const getAvailableTimeSlotsForDay = useCallback((day, currentFormSchedule) => {
         if (!day) return [];
@@ -201,11 +193,26 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allT
                 const classroomsCollectionRef = collection(db, `artifacts/${appId}/public/data/classrooms`);
                 await addDoc(classroomsCollectionRef, dataToSave);
             }
-            navigate('/classrooms');
+            
+            if (onSaveSuccess) {
+                onSaveSuccess(); // Κλείνει το modal αν υπάρχει
+            } else {
+                navigate('/classrooms'); // Πλοηγείται πίσω αν είναι σελίδα
+            }
+
         } catch (error) {
             console.error("Error saving classroom:", error);
             setAlertMessage("Σφάλμα κατά την αποθήκευση.");
             setOpenAlertDialog(true);
+        }
+    };
+
+    // --- ΑΛΛΑΓΗ: Νέα συνάρτηση για το κουμπί "Ακύρωση" ---
+    const handleCancel = () => {
+        if (onCancel) {
+            onCancel(); // Αν υπάρχει η onCancel (δηλαδή είναι σε modal), την καλεί
+        } else {
+            navigate(-1); // Αλλιώς, πηγαίνει πίσω
         }
     };
 
@@ -301,7 +308,8 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allT
                     )}
                 </Paper>
                 <Box sx={{ mt: 3, textAlign: 'right', display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                    <Button variant="outlined" color="secondary" onClick={() => navigate(-1)}>Ακύρωση</Button>
+                    {/* --- ΑΛΛΑΓΗ: Χρήση της νέας συνάρτησης --- */}
+                    <Button variant="outlined" color="secondary" onClick={handleCancel}>Ακύρωση</Button>
                     <Button type="submit" variant="contained" color="primary">{classroomToEdit ? 'Ενημέρωση' : 'Αποθήκευση'}</Button>
                 </Box>
             </Box>

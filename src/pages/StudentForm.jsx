@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
     Box, Button, Container, Grid, Paper, Typography, TextField,
     FormControl, InputLabel, Select, MenuItem, FormGroup, FormControlLabel,
-    Checkbox, IconButton, CircularProgress, Alert, ListItemText, RadioGroup, Radio, Divider
+    Checkbox, IconButton, CircularProgress, Alert, ListItemText, RadioGroup, Radio, Divider, FormLabel
 } from '@mui/material';
 import { Delete, Add } from '@mui/icons-material';
 import { doc, updateDoc, collection, writeBatch, arrayUnion, arrayRemove, addDoc } from 'firebase/firestore';
@@ -28,12 +28,13 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
     const [feedback, setFeedback] = useState({ type: '', message: '' });
 
     useEffect(() => {
+        const defaultParent = { id: Date.now(), name: '', phones: [], relationship: 'Άλλο' };
         if (isEditMode) {
             const studentData = {
                 ...initialData,
                 parents: initialData.parents && initialData.parents.length > 0
-                    ? initialData.parents.map(p => ({ ...p, id: p.id || Date.now() + Math.random() }))
-                    : [{ id: Date.now(), name: '', phones: [] }]
+                    ? initialData.parents.map(p => ({ ...p, id: p.id || Date.now() + Math.random(), relationship: p.relationship || 'Άλλο' }))
+                    : [defaultParent]
             };
             setFormData(studentData);
 
@@ -54,7 +55,8 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
         } else {
             setFormData({
                 firstName: '', lastName: '', dob: '', studentPhone: '', address: '', email: '',
-                parents: [{ id: Date.now(), name: '', phones: [] }],
+                gender: 'Άρρεν', // --- ΑΛΛΑΓΗ: Προεπιλεγμένη τιμή ---
+                parents: [defaultParent],
                 grade: '', specialization: '', payment: '', debt: ''
             });
             setSelectedSubjects([]);
@@ -94,9 +96,9 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleParentNameChange = (parentIndex, e) => {
+    const handleParentChange = (parentIndex, field, value) => {
         const newParents = JSON.parse(JSON.stringify(formData.parents));
-        newParents[parentIndex].name = e.target.value;
+        newParents[parentIndex][field] = value;
         setFormData(prev => ({ ...prev, parents: newParents }));
     };
 
@@ -122,7 +124,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
         if (formData.parents.length < 2) {
             setFormData(prev => ({
                 ...prev,
-                parents: [...prev.parents, { id: Date.now(), name: '', phones: [] }]
+                parents: [...prev.parents, { id: Date.now(), name: '', phones: [], relationship: 'Άλλο' }]
             }));
         }
     };
@@ -166,7 +168,6 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
 
         const finalEnrolledClassrooms = Object.values(selectedClassrooms);
 
-        // --- ΝΕΑ ΛΟΓΙΚΗ ΕΛΕΓΧΟΥ ---
         const subjectsOfSelectedClassrooms = new Set();
         for (const classroomId of finalEnrolledClassrooms) {
             const classroom = classrooms.find(c => c.id === classroomId);
@@ -174,16 +175,16 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                 if (subjectsOfSelectedClassrooms.has(classroom.subject)) {
                     setFeedback({ type: 'error', message: `Δεν μπορείτε να εγγράψετε τον μαθητή σε δύο τμήματα του ίδιου μαθήματος (${classroom.subject}).` });
                     setLoading(false);
-                    return; // Σταματάμε την αποθήκευση
+                    return;
                 }
                 subjectsOfSelectedClassrooms.add(classroom.subject);
             }
         }
-        // --- ΤΕΛΟΣ ΛΟΓΙΚΗΣ ΕΛΕΓΧΟΥ ---
 
         const cleanedParents = formData.parents.map(parent => ({
             name: parent.name,
-            phones: parent.phones.filter(Boolean)
+            phones: parent.phones.filter(Boolean),
+            relationship: parent.relationship // --- ΑΛΛΑΓΗ: Αποθήκευση της σχέσης ---
         })).filter(parent => parent.name);
 
         const studentData = { ...formData, parents: cleanedParents, enrolledClassrooms: finalEnrolledClassrooms };
@@ -252,6 +253,16 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                     <Grid container spacing={3}>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Όνομα" name="firstName" value={formData.firstName} onChange={handleInputChange} required size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Επώνυμο" name="lastName" value={formData.lastName} onChange={handleInputChange} required size="small" /></Grid>
+                        {/* --- ΑΛΛΑΓΗ: Προσθήκη πεδίου φύλου --- */}
+                        <Grid item xs={12}>
+                            <FormControl component="fieldset">
+                                <FormLabel component="legend">Φύλο</FormLabel>
+                                <RadioGroup row name="gender" value={formData.gender} onChange={handleInputChange}>
+                                    <FormControlLabel value="Άρρεν" control={<Radio />} label="Άρρεν" />
+                                    <FormControlLabel value="Θήλυ" control={<Radio />} label="Θήλυ" />
+                                </RadioGroup>
+                            </FormControl>
+                        </Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Ημερομηνία Γέννησης" name="dob" type="date" value={formData.dob} onChange={handleInputChange} InputLabelProps={{ shrink: true }} size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Τηλέφωνο Μαθητή" name="studentPhone" value={formData.studentPhone} onChange={handleInputChange} size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Διεύθυνση" name="address" value={formData.address} onChange={handleInputChange} size="small" /></Grid>
@@ -269,7 +280,24 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                                 {parentIndex > 0 && <Button color="error" startIcon={<Delete />} onClick={removeSecondParent}>Αφαίρεση Γονέα</Button>}
                             </Box>
                             <Grid container spacing={3}>
-                                <Grid item xs={12}><TextField fullWidth label="Ονοματεπώνυμο Γονέα" value={parent.name} onChange={(e) => handleParentNameChange(parentIndex, e)} size="small" sx={{ mb: 2 }} /></Grid>
+                                {/* --- ΑΛΛΑΓΗ: Προσθήκη dropdown σχέσης --- */}
+                                <Grid item xs={12} sm={7}><TextField fullWidth label="Ονοματεπώνυμο Γονέα" value={parent.name} onChange={(e) => handleParentChange(parentIndex, 'name', e.target.value)} size="small" /></Grid>
+                                <Grid item xs={12} sm={5}>
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Σχέση</InputLabel>
+                                        <Select
+                                            value={parent.relationship}
+                                            label="Σχέση"
+                                            onChange={(e) => handleParentChange(parentIndex, 'relationship', e.target.value)}
+                                        >
+                                            <MenuItem value="Πατέρας">Πατέρας</MenuItem>
+                                            <MenuItem value="Μητέρα">Μητέρα</MenuItem>
+                                            <MenuItem value="Παππούς">Παππούς</MenuItem>
+                                            <MenuItem value="Γιαγιά">Γιαγιά</MenuItem>
+                                            <MenuItem value="Άλλο">Άλλο</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
                                 <Grid item xs={12}>
                                     {parent.phones.map((phone, phoneIndex) => (
                                         <Box key={phoneIndex} sx={{ display: 'flex', gap: '10px', mb: 2, alignItems: 'center' }}>
@@ -286,7 +314,8 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                 </Paper>
 
                 <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-                    <Typography variant="h5" component="h3" sx={{ mb: 3 }}>Ακαδημαϊκά & Εγγραφή</Typography>
+                    {/* --- ΑΛΛΑΓΗ: Αλλαγή τίτλου --- */}
+                    <Typography variant="h5" component="h3" sx={{ mb: 3 }}>Τάξη και μαθήματα</Typography>
                     <Grid container spacing={3}>
                         <Grid item xs={12} sm={6}>
                             <FormControl fullWidth size="small" sx={{ mb: 3 }}>

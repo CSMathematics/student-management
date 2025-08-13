@@ -22,8 +22,10 @@ import Announcements from '../pages/Announcements.jsx';
 import Phonebook from '../pages/Phonebook.jsx';
 import Expenses from '../pages/Expenses.jsx';
 import Communication from '../pages/Communication.jsx';
+import GradeSummary from '../pages/GradeSummary.jsx';
+import MyAssignmentsManager from '../portals/teacher/MyAssignmentsManager.jsx'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
 
-// Wrappers (όπως ήταν στο παλιό App.jsx)
+// Wrappers
 const StudentFormWrapper = (props) => {
     const { studentId } = useParams();
     const studentToEdit = props.allStudents.find(s => s.id === studentId);
@@ -45,7 +47,6 @@ const TeacherFormWrapper = (props) => {
 
 
 function AdminPortal({ db, appId, user }) {
-    // Η λογική φόρτωσης δεδομένων μεταφέρεται εδώ από το App.jsx
     const [classrooms, setClassrooms] = useState([]);
     const [allStudents, setAllStudents] = useState([]);
     const [allGrades, setAllGrades] = useState([]);
@@ -117,6 +118,8 @@ function AdminPortal({ db, appId, user }) {
                 <Route path="/phonebook" element={<Phonebook {...commonProps} />} />
                 <Route path="/expenses" element={<Expenses {...commonProps} />} />
                 <Route path="/communication" element={<Communication {...commonProps} />} />
+                <Route path="/grades-summary" element={<GradeSummary {...commonProps} />} />
+                <Route path="/assignments" element={<MyAssignmentsManager {...commonProps} />} /> {/* <-- ΝΕΑ ΔΙΑΔΡΟΜΗ */}
             </Routes>
 
             <Dialog open={isModalOpen} onClose={closeModal} maxWidth="md" fullWidth>

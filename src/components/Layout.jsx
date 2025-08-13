@@ -20,8 +20,12 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
         if (!db || !user?.uid) return;
 
         const recipientIds = ['global', user.uid];
-        if (userProfile?.role === 'parent' && userProfile.childId) {
-            recipientIds.push(userProfile.childId);
+        // --- ΑΛΛΑΓΗ: Προσθήκη ελέγχου για τον ρόλο του admin ---
+        if (userProfile?.role === 'admin') {
+            recipientIds.push('admin');
+        }
+        if (userProfile?.role === 'parent' && userProfile.childIds) {
+            recipientIds.push(...userProfile.childIds);
         }
 
         const notificationsQuery = query(

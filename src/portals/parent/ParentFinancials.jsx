@@ -1,6 +1,6 @@
 // src/portals/parent/ParentFinancials.jsx
 import React, { useMemo } from 'react';
-import { Container, Paper, Typography, Grid, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Divider } from '@mui/material'; // <-- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ
+import { Container, Paper, Typography, Grid, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Divider } from '@mui/material';
 import dayjs from 'dayjs';
 
 const schoolYearMonths = [
@@ -18,21 +18,22 @@ const DetailItem = ({ label, value }) => (
     </Box>
 );
 
-function ParentFinancials({ studentData, payments }) {
+// --- ΔΙΟΡΘΩΣΗ: Αλλαγή του prop από studentData σε childData ---
+function ParentFinancials({ childData, payments }) {
 
     const studentFinancials = useMemo(() => {
-        if (!studentData || !payments) return null;
-        const monthlyFeeRaw = parseFloat(studentData.payment) || 0;
-        const discount = parseFloat(studentData.debt) || 0;
+        if (!childData || !payments) return null;
+        const monthlyFeeRaw = parseFloat(childData.payment) || 0;
+        const discount = parseFloat(childData.debt) || 0;
         const monthlyFee = monthlyFeeRaw - (monthlyFeeRaw * (discount / 100));
         const finalFees = monthlyFee * schoolYearMonths.length;
         const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
         const balance = finalFees - totalPaid;
         return { monthlyFee, finalFees, totalPaid, balance };
-    }, [studentData, payments]);
+    }, [childData, payments]);
 
     const monthlyBreakdown = useMemo(() => {
-        if (!studentData || !payments || !studentFinancials) return [];
+        if (!childData || !payments || !studentFinancials) return [];
         const today = dayjs();
         const currentSchoolYearStartYear = today.month() + 1 >= 9 ? today.year() : today.year() - 1;
 
@@ -58,7 +59,7 @@ function ParentFinancials({ studentData, payments }) {
                 status: balance <= 0.01 ? 'Εξοφλημένο' : 'Εκκρεμεί'
             };
         });
-    }, [studentData, payments, studentFinancials]);
+    }, [childData, payments, studentFinancials]);
 
     if (!studentFinancials) {
         return <Typography>Φόρτωση οικονομικών στοιχείων...</Typography>;
@@ -68,7 +69,7 @@ function ParentFinancials({ studentData, payments }) {
         <Container maxWidth="lg" sx={{ mt: 4 }}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: '12px' }}>
                 <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                    Οικονομική Καρτέλα - {studentData.firstName} {studentData.lastName}
+                    Οικονομική Καρτέλα - {childData.firstName} {childData.lastName}
                 </Typography>
                 <Grid container spacing={3} sx={{ my: 2 }}>
                     <Grid item xs={12} sm={4}><DetailItem label="Σύνολο Διδάκτρων" value={`${studentFinancials.finalFees.toFixed(2)} €`} /></Grid>

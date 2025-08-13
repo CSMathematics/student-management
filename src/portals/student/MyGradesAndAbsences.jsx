@@ -50,6 +50,7 @@ function MyGradesAndAbsences({ enrolledClassrooms, grades, absences, type }) {
                                             <TableRow>
                                                 <TableCell>Ημερομηνία</TableCell>
                                                 <TableCell>Τύπος</TableCell>
+                                                <TableCell>Σχόλια Καθηγητή</TableCell> {/* --- ΑΛΛΑΓΗ --- */}
                                                 <TableCell align="right">Βαθμός</TableCell>
                                             </TableRow>
                                         </TableHead>
@@ -58,10 +59,14 @@ function MyGradesAndAbsences({ enrolledClassrooms, grades, absences, type }) {
                                                 <TableRow key={g.id}>
                                                     <TableCell>{dayjs(g.date.toDate()).format('DD/MM/YYYY')}</TableCell>
                                                     <TableCell>{g.type}</TableCell>
+                                                    {/* --- ΑΛΛΑΓΗ: Εμφάνιση του feedback --- */}
+                                                    <TableCell sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                                                        {g.feedback || '-'}
+                                                    </TableCell>
                                                     <TableCell align="right">{g.grade}</TableCell>
                                                 </TableRow>
                                             )) : (
-                                                <TableRow><TableCell colSpan={3} align="center">Δεν υπάρχουν βαθμοί</TableCell></TableRow>
+                                                <TableRow><TableCell colSpan={4} align="center">Δεν υπάρχουν βαθμοί</TableCell></TableRow>
                                             )}
                                         </TableBody>
                                     </Table>

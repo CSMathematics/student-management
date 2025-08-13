@@ -93,7 +93,8 @@ function SyllabusTracker({ classroom, allCourses, db, appId }) {
                 {course.syllabus.map((chapter, chapterIndex) => (
                     <li key={`chapter-${chapterIndex}`}>
                         <ul>
-                            <ListSubheader sx={{ bgcolor: 'grey.100', fontWeight: 'bold' }}>
+                            {/* --- ΑΛΛΑΓΗ: Χρήση χρώματος από το θέμα --- */}
+                            <ListSubheader sx={{ bgcolor: 'action.hover', fontWeight: 'bold' }}>
                                 {`Κεφάλαιο ${chapterIndex + 1}: ${chapter.title}`}
                             </ListSubheader>
                             {chapter.sections.map((section, sectionIndex) => {

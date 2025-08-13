@@ -14,14 +14,14 @@ import 'dayjs/locale/el';
 
 dayjs.locale('el');
 
-function StudentCalendar({ enrolledClassrooms, allAssignments, announcements }) {
+// --- ΔΙΟΡΘΩΣΗ: Αλλαγή του prop από allAssignments σε assignments ---
+function StudentCalendar({ enrolledClassrooms, assignments, announcements }) {
     const [selectedEvent, setSelectedEvent] = useState(null);
 
     const calendarEvents = useMemo(() => {
         const events = [];
         const dayMapping = { 'Δευτέρα': 1, 'Τρίτη': 2, 'Τετάρτη': 3, 'Πέμπτη': 4, 'Παρασκευή': 5, 'Σάββατο': 6 };
 
-        // --- ΔΙΟΡΘΩΣΗ: Προσθήκη ελέγχων για να αποφύγουμε το σφάλμα ---
         if (enrolledClassrooms && Array.isArray(enrolledClassrooms)) {
             enrolledClassrooms.forEach(classroom => {
                 classroom.schedule?.forEach(slot => {
@@ -41,8 +41,8 @@ function StudentCalendar({ enrolledClassrooms, allAssignments, announcements }) 
             });
         }
 
-        if (allAssignments && Array.isArray(allAssignments)) {
-            allAssignments.forEach(assignment => {
+        if (assignments && Array.isArray(assignments)) {
+            assignments.forEach(assignment => {
                 events.push({
                     title: `Προθεσμία: ${assignment.title}`,
                     date: dayjs(assignment.dueDate.toDate()).format('YYYY-MM-DD'),
@@ -73,7 +73,7 @@ function StudentCalendar({ enrolledClassrooms, allAssignments, announcements }) 
         }
 
         return events;
-    }, [enrolledClassrooms, allAssignments, announcements]);
+    }, [enrolledClassrooms, assignments, announcements]);
 
     const handleEventClick = (clickInfo) => {
         setSelectedEvent(clickInfo.event);

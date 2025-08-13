@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { InsertDriveFile as FileIcon } from '@mui/icons-material';
 
-function MaterialSelector({ open, onClose, onAttach, classroomMaterials, courseMaterials, alreadyAttached = [] }) {
+function MaterialSelector({ open, onClose, onAttach, classroomMaterials, courseMaterials, teacherLibraryMaterials, alreadyAttached = [] }) {
     const [selected, setSelected] = useState([]);
 
     const handleToggle = (value) => () => {
@@ -29,48 +29,48 @@ function MaterialSelector({ open, onClose, onAttach, classroomMaterials, courseM
     };
 
     const isAttached = (material) => alreadyAttached.some(attached => attached.path === material.path);
+    
+    const renderMaterialList = (materials) => {
+        return materials.map(material => (
+            <ListItem key={material.path} button onClick={handleToggle(material)} disabled={isAttached(material)}>
+                <ListItemIcon>
+                    <Checkbox
+                        edge="start"
+                        checked={selected.some(item => item.path === material.path) || isAttached(material)}
+                        tabIndex={-1}
+                        disableRipple
+                    />
+                </ListItemIcon>
+                <ListItemText primary={material.name} />
+            </ListItem>
+        ));
+    };
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
             <DialogTitle>Επιλογή Υλικού από τη Βιβλιοθήκη</DialogTitle>
             <DialogContent dividers>
-                <List dense>
-                    <ListSubheader>Υλικό Τμήματος</ListSubheader>
-                    {classroomMaterials && classroomMaterials.length > 0 ? (
-                        classroomMaterials.map(material => (
-                            <ListItem key={material.path} button onClick={handleToggle(material)} disabled={isAttached(material)}>
-                                <ListItemIcon>
-                                    <Checkbox
-                                        edge="start"
-                                        checked={selected.some(item => item.path === material.path) || isAttached(material)}
-                                        tabIndex={-1}
-                                        disableRipple
-                                    />
-                                </ListItemIcon>
-                                <ListItemText primary={material.name} />
-                            </ListItem>
-                        ))
-                    ) : (
-                        <ListItem><ListItemText primary="Δεν υπάρχει υλικό για αυτό το τμήμα." /></ListItem>
+                <List dense sx={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                    {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Προσωπική Βιβλιοθήκη --- */}
+                    {teacherLibraryMaterials && teacherLibraryMaterials.length > 0 && (
+                        <>
+                            <ListSubheader sx={{ bgcolor: 'primary.lighter' }}>Προσωπική Βιβλιοθήκη</ListSubheader>
+                            {renderMaterialList(teacherLibraryMaterials)}
+                        </>
                     )}
 
-                    <ListSubheader sx={{ mt: 2 }}>Γενικό Υλικό Μαθήματος</ListSubheader>
-                    {courseMaterials && courseMaterials.length > 0 ? (
-                        courseMaterials.map(material => (
-                            <ListItem key={material.path} button onClick={handleToggle(material)} disabled={isAttached(material)}>
-                                <ListItemIcon>
-                                    <Checkbox
-                                        edge="start"
-                                        checked={selected.some(item => item.path === material.path) || isAttached(material)}
-                                        tabIndex={-1}
-                                        disableRipple
-                                    />
-                                </ListItemIcon>
-                                <ListItemText primary={material.name} />
-                            </ListItem>
-                        ))
-                    ) : (
-                        <ListItem><ListItemText primary="Δεν υπάρχει γενικό υλικό για αυτό το μάθημα." /></ListItem>
+                    {classroomMaterials && classroomMaterials.length > 0 && (
+                        <>
+                            <ListSubheader>Υλικό Τμήματος</ListSubheader>
+                            {renderMaterialList(classroomMaterials)}
+                        </>
+                    )}
+
+                    {courseMaterials && courseMaterials.length > 0 && (
+                        <>
+                            <ListSubheader>Γενικό Υλικό Μαθήματος</ListSubheader>
+                            {renderMaterialList(courseMaterials)}
+                        </>
                     )}
                 </List>
             </DialogContent>

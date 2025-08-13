@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import {
     Container, Paper, Typography, Box, Grid, Button, TextField, Divider,
     Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    Accordion, AccordionSummary, AccordionDetails
+    Accordion, AccordionSummary, AccordionDetails, Tooltip
 } from '@mui/material';
 import { Print as PrintIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
@@ -13,6 +13,15 @@ import isBetween from 'dayjs/plugin/isBetween';
 
 dayjs.locale('el');
 dayjs.extend(isBetween);
+
+const gradeTypeLabels = {
+    participation: 'Συμμετοχή',
+    homework: 'Εργασία Σπιτιού',
+    test: 'Διαγώνισμα',
+    project: 'Project',
+    oral: 'Προφορική Εξέταση',
+    assignment: 'Αξιολόγηση',
+};
 
 const StatItem = ({ label, value, color }) => (
     <Box textAlign="center">
@@ -24,6 +33,90 @@ const StatItem = ({ label, value, color }) => (
         </Typography>
     </Box>
 );
+
+// --- ΝΕΟ COMPONENT: Διαχειρίζεται την εμφάνιση για ένα μάθημα ---
+const ClassroomReportAccordion = ({ classData }) => {
+    const groupedGrades = useMemo(() => {
+        if (!classData.grades) return [];
+        const groups = classData.grades.reduce((acc, grade) => {
+            const date = dayjs(grade.date.toDate()).format('DD/MM/YYYY');
+            if (!acc[date]) {
+                acc[date] = [];
+            }
+            acc[date].push(grade);
+            return acc;
+        }, {});
+        return Object.entries(groups);
+    }, [classData.grades]);
+
+    return (
+        <Accordion defaultExpanded sx={{ mb: 2 }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Box>
+                    <Typography variant="h5">{classData.subject} ({classData.classroomName})</Typography>
+                    <Typography variant="body2" color="text.secondary">Καθηγητής: {classData.teacherName || 'N/A'}</Typography>
+                </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+                <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                        <Paper variant="outlined" sx={{ p: 2 }}>
+                            <Grid container spacing={2}>
+                                <Grid item xs={6} sm={3}><StatItem label="Μ.Ο. Βαθμών" value={classData.stats.avg} color="#1e88e5" /></Grid>
+                                <Grid item xs={6} sm={3}><StatItem label="Υψηλότερος" value={classData.stats.highest} color="#43a047" /></Grid>
+                                <Grid item xs={6} sm={3}><StatItem label="Χαμηλότερος" value={classData.stats.lowest} color="#e53935" /></Grid>
+                                <Grid item xs={6} sm={3}><StatItem label="Απουσίες" value={classData.stats.totalAbsences} /></Grid>
+                            </Grid>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Typography variant="h6" gutterBottom>Βαθμολογία</Typography>
+                        {groupedGrades.length > 0 ? (
+                            <TableContainer component={Paper} variant="outlined">
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{width: '20%'}}>Ημερομηνία</TableCell>
+                                            <TableCell>Αξιολογήσεις</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {groupedGrades.map(([date, grades]) => (
+                                            <TableRow key={date}>
+                                                <TableCell component="th" scope="row">
+                                                    <Typography variant="subtitle2" sx={{fontWeight: 500}}>{date}</Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
+                                                        {grades.map(grade => (
+                                                            <Tooltip key={grade.id} title={grade.feedback || 'Χωρίς σχόλια'}>
+                                                                <Chip 
+                                                                    label={`${gradeTypeLabels[grade.type] || grade.type}: ${grade.grade}`} 
+                                                                    size="small" 
+                                                                />
+                                                            </Tooltip>
+                                                        ))}
+                                                    </Box>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        ) : <Typography variant="body2">Δεν βρέθηκαν βαθμοί.</Typography>}
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Typography variant="h6" gutterBottom>Απουσίες</Typography>
+                        {classData.absences.length > 0 ? (
+                            <TableContainer component={Paper} variant="outlined"><Table size="small"><TableHead><TableRow><TableCell>Ημ/νία</TableCell><TableCell>Κατάσταση</TableCell></TableRow></TableHead><TableBody>{classData.absences.map(a => (<TableRow key={a.id}><TableCell>{dayjs(a.date.toDate()).format('DD/MM')}</TableCell><TableCell><Chip label={a.status === 'justified' ? 'Δικ/νη' : 'Αδικ/τη'} size="small" color={a.status === 'justified' ? 'success' : 'error'}/></TableCell></TableRow>))}</TableBody></Table></TableContainer>
+                        ) : <Typography variant="body2">Καμία απουσία.</Typography>}
+                    </Grid>
+                </Grid>
+            </AccordionDetails>
+        </Accordion>
+    );
+};
+
 
 function StudentReport({ allStudents, allGrades, allAbsences, classrooms, allAssignments }) {
     const { studentId } = useParams();
@@ -40,7 +133,6 @@ function StudentReport({ allStudents, allGrades, allAbsences, classrooms, allAss
     }, [student, classrooms]);
 
     const reportDataByClassroom = useMemo(() => {
-        // --- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ ---
         if (!student || !allGrades || !allAbsences || !allAssignments) return [];
         
         const start = dayjs(startDate).startOf('day');
@@ -74,6 +166,7 @@ function StudentReport({ allStudents, allGrades, allAbsences, classrooms, allAss
                 assignments,
                 stats
             };
+
         });
 
     }, [student, enrolledClassrooms, allGrades, allAbsences, allAssignments, startDate, endDate]);
@@ -121,46 +214,11 @@ function StudentReport({ allStudents, allGrades, allAbsences, classrooms, allAss
                     
                     <Divider sx={{ mb: 3 }}><Chip label="Αναλυση Ανα Μαθημα" /></Divider>
 
-                    {reportDataByClassroom.map((classData, index) => (
-                        <Accordion key={classData.id} defaultExpanded sx={{ mb: 2 }}>
-                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                <Box>
-                                    <Typography variant="h5">{classData.subject} ({classData.classroomName})</Typography>
-                                    <Typography variant="body2" color="text.secondary">Καθηγητής: {classData.teacherName || 'N/A'}</Typography>
-                                </Box>
-                            </AccordionSummary>
-                            <AccordionDetails>
-                                <Grid container spacing={3}>
-                                    <Grid item xs={12}>
-                                        <Paper variant="outlined" sx={{ p: 2 }}>
-                                            <Grid container spacing={2}>
-                                                <Grid item xs={6} sm={3}><StatItem label="Μ.Ο. Βαθμών" value={classData.stats.avg} color="#1e88e5" /></Grid>
-                                                <Grid item xs={6} sm={3}><StatItem label="Υψηλότερος" value={classData.stats.highest} color="#43a047" /></Grid>
-                                                <Grid item xs={6} sm={3}><StatItem label="Χαμηλότερος" value={classData.stats.lowest} color="#e53935" /></Grid>
-                                                <Grid item xs={6} sm={3}><StatItem label="Απουσίες" value={classData.stats.totalAbsences} /></Grid>
-                                            </Grid>
-                                        </Paper>
-                                    </Grid>
-
-                                    <Grid item xs={12} md={6}>
-                                        <Typography variant="h6" gutterBottom>Βαθμολογία</Typography>
-                                        {classData.grades.length > 0 ? (
-                                            <TableContainer component={Paper} variant="outlined"><Table size="small"><TableHead><TableRow><TableCell>Ημ/νία</TableCell><TableCell>Τύπος</TableCell><TableCell align="right">Βαθμός</TableCell></TableRow></TableHead><TableBody>{classData.grades.map(g => (<TableRow key={g.id}><TableCell>{dayjs(g.date.toDate()).format('DD/MM')}</TableCell><TableCell>{g.type}</TableCell><TableCell align="right">{g.grade}</TableCell></TableRow>))}</TableBody></Table></TableContainer>
-                                        ) : <Typography variant="body2">Δεν βρέθηκαν βαθμοί.</Typography>}
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <Typography variant="h6" gutterBottom>Απουσίες</Typography>
-                                        {classData.absences.length > 0 ? (
-                                            <TableContainer component={Paper} variant="outlined"><Table size="small"><TableHead><TableRow><TableCell>Ημ/νία</TableCell><TableCell>Κατάσταση</TableCell></TableRow></TableHead><TableBody>{classData.absences.map(a => (<TableRow key={a.id}><TableCell>{dayjs(a.date.toDate()).format('DD/MM')}</TableCell><TableCell><Chip label={a.status === 'justified' ? 'Δικ/νη' : 'Αδικ/τη'} size="small" color={a.status === 'justified' ? 'success' : 'error'}/></TableCell></TableRow>))}</TableBody></Table></TableContainer>
-                                        ) : <Typography variant="body2">Καμία απουσία.</Typography>}
-                                    </Grid>
-                                </Grid>
-                            </AccordionDetails>
-                        </Accordion>
+                    {reportDataByClassroom.map((classData) => (
+                        <ClassroomReportAccordion key={classData.id} classData={classData} />
                     ))}
                     
                     <Divider sx={{ my: 4 }} />
-                    
                     <Box sx={{ pageBreakBefore: 'always' }}>
                         <Typography variant="h5" gutterBottom>Γενικά Σχόλια Καθηγητών</Typography>
                         <Paper variant="outlined" sx={{ minHeight: 150, p: 2, mt: 1, overflowY: 'auto' }}>

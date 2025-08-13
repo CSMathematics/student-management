@@ -16,6 +16,16 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'fire
 import dayjs from 'dayjs';
 import StudentProgressChart from './StudentProgressChart.jsx';
 
+// --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Αντιστοίχιση τύπων βαθμολογίας ---
+const gradeTypeLabels = {
+    participation: 'Συμμετοχή',
+    homework: 'Εργασία Σπιτιού',
+    test: 'Διαγώνισμα',
+    project: 'Project',
+    oral: 'Προφορική Εξέταση',
+    assignment: 'Αξιολόγηση',
+};
+
 // Helper component για την εμφάνιση λεπτομερειών
 const DetailItem = ({ label, value }) => (
     <Box sx={{ mb: 2 }}>
@@ -151,12 +161,11 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     }, [allUsers]);
 
     const unlinkedStudentUsers = useMemo(() => allUsers.filter(user => user.role === 'student' && !user.profileId), [allUsers]);
-    const unlinkedParentUsers = useMemo(() => allUsers.filter(user => user.role === 'parent' && !user.childId), [allUsers]);
+    const unlinkedParentUsers = useMemo(() => allUsers.filter(user => user.role === 'parent'), [allUsers]);
 
-    // --- ΝΕΑ ΛΟΓΙΚΗ: Εύρεση των συνδεδεμένων γονέων για τον επιλεγμένο μαθητή ---
     const linkedParentUsers = useMemo(() => {
         if (!selectedStudent || !allUsers) return [];
-        return allUsers.filter(user => user.role === 'parent' && user.childId === selectedStudent.id);
+        return allUsers.filter(user => user.role === 'parent' && user.childIds?.includes(selectedStudent.id));
     }, [selectedStudent, allUsers]);
 
     useEffect(() => {
@@ -193,7 +202,9 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
             if (openLinkDialog.type === 'student') {
                 await updateDoc(userDocRef, { profileId: studentToLink.id });
             } else if (openLinkDialog.type === 'parent') {
-                await updateDoc(userDocRef, { childId: studentToLink.id });
+                await updateDoc(userDocRef, {
+                    childIds: arrayUnion(studentToLink.id)
+                });
             }
             handleCloseLinkDialog();
         } catch (error) {
@@ -224,6 +235,21 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
         if (selectedGradeType) grades = grades.filter(grade => grade.type === selectedGradeType);
         return grades.sort((a, b) => getDateFromFirestoreTimestamp(b.date) - getDateFromFirestoreTimestamp(a.date));
     }, [selectedStudent, allGrades, startDate, endDate, selectedSubject, selectedGradeType]);
+
+    // --- ΝΕΑ ΛΟΓΙΚΗ: Ομαδοποίηση βαθμών ανά ημερομηνία ---
+    const groupedStudentGrades = useMemo(() => {
+        if (!studentGrades) return [];
+        const groups = studentGrades.reduce((acc, grade) => {
+            const date = dayjs(getDateFromFirestoreTimestamp(grade.date)).format('DD/MM/YYYY');
+            if (!acc[date]) {
+                acc[date] = [];
+            }
+            acc[date].push(grade);
+            return acc;
+        }, {});
+        return Object.entries(groups).map(([date, grades]) => ({ date, grades }));
+    }, [studentGrades]);
+
 
     const subjectAverage = useMemo(() => {
         if (!selectedSubject || studentGrades.length === 0) return null;
@@ -527,7 +553,6 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                                     </React.Fragment>
                                                                 ))) : (<Typography>Δεν υπάρχουν καταχωρημένα στοιχεία γονέων.</Typography>)}
                                                                 
-                                                                {/* --- ΔΙΟΡΘΩΣΗ: Νέα ενότητα για συνδεδεμένους γονείς --- */}
                                                                 <Divider sx={{ my: 2 }} />
                                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                                                                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Συνδεδεμένοι Λογαριασμοί Γονέων</Typography>
@@ -554,13 +579,38 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                                     <Button size="small" onClick={() => { setStartDate(''); setEndDate(''); setSelectedSubject(''); setSelectedGradeType(''); }}>Καθαρισμός</Button>
                                                                 </Box>
                                                                 {subjectAverage && <Typography variant="subtitle1" sx={{mb: 2}}>Μέσος όρος στο μάθημα <strong>{selectedSubject}</strong>: <strong>{subjectAverage}</strong></Typography>}
-                                                                {studentGrades.length > 0 ? (
+                                                                {/* --- ΑΛΛΑΓΗ: Νέα λογική εμφάνισης βαθμών --- */}
+                                                                {groupedStudentGrades.length > 0 ? (
                                                                     <>
-                                                                        <TableContainer><Table size="small"><TableHead><TableRow><TableCell>Ημ/νία</TableCell><TableCell>Μάθημα</TableCell><TableCell>Τύπος</TableCell><TableCell align="right">Βαθμός</TableCell><TableCell align="right">Μ.Ο. Τάξης</TableCell></TableRow></TableHead><TableBody>{studentGrades.map((grade) => {
-                                                                            const key = `${dayjs(getDateFromFirestoreTimestamp(grade.date)).format('YYYY-MM-DD')}-${grade.subject}-${grade.type}`;
-                                                                            const classAvg = classAveragesMap.get(key);
-                                                                            return (<TableRow key={grade.id}><TableCell>{dayjs(getDateFromFirestoreTimestamp(grade.date)).format('DD/MM/YYYY')}</TableCell><TableCell>{grade.subject}</TableCell><TableCell>{grade.type}</TableCell><TableCell align="right">{grade.grade}</TableCell><TableCell align="right">{classAvg || '-'}</TableCell></TableRow>);
-                                                                        })}</TableBody></Table></TableContainer>
+                                                                        <TableContainer>
+                                                                            <Table size="small">
+                                                                                <TableHead>
+                                                                                    <TableRow>
+                                                                                        <TableCell sx={{width: '20%'}}>Ημερομηνία</TableCell>
+                                                                                        <TableCell>Αξιολογήσεις</TableCell>
+                                                                                    </TableRow>
+                                                                                </TableHead>
+                                                                                <TableBody>
+                                                                                    {groupedStudentGrades.map(({ date, grades }) => (
+                                                                                        <TableRow key={date}>
+                                                                                            <TableCell component="th" scope="row">
+                                                                                                <Typography variant="subtitle2" sx={{fontWeight: 500}}>{date}</Typography>
+                                                                                            </TableCell>
+                                                                                            <TableCell>
+                                                                                                <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
+                                                                                                    {grades.map(grade => {
+                                                                                                        const key = `${dayjs(getDateFromFirestoreTimestamp(grade.date)).format('YYYY-MM-DD')}-${grade.subject}-${grade.type}`;
+                                                                                                        const classAvg = classAveragesMap.get(key);
+                                                                                                        const label = `${grade.subject} (${gradeTypeLabels[grade.type] || grade.type}): ${grade.grade}` + (classAvg ? ` (Μ.Ο. ${classAvg})` : '');
+                                                                                                        return <Chip key={grade.id} label={label} size="small" />;
+                                                                                                    })}
+                                                                                                </Box>
+                                                                                            </TableCell>
+                                                                                        </TableRow>
+                                                                                    ))}
+                                                                                </TableBody>
+                                                                            </Table>
+                                                                        </TableContainer>
                                                                         <Divider sx={{ my: 3 }} />
                                                                         <Typography variant="h6" sx={{ mb: 2 }}>Γράφημα Προόδου</Typography>
                                                                         <StudentProgressChart studentGrades={studentGrades} startDate={startDate} endDate={endDate}/>

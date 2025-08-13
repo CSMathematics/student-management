@@ -1,6 +1,6 @@
 // src/portals/TeacherPortal.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useParams } from 'react-router-dom';
 import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { Box, CircularProgress, Typography } from '@mui/material';
 
@@ -8,11 +8,22 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 import TeacherDashboard from './teacher/TeacherDashboard.jsx';
 import MyGradebook from './teacher/MyGradebook.jsx';
 import MyAssignmentsManager from './teacher/MyAssignmentsManager.jsx';
-import MyStudents from './teacher/MyStudents.jsx'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
+import MyStudents from './teacher/MyStudents.jsx';
 import WeeklyScheduleCalendar from '../pages/WeeklyScheduleCalendar.jsx';
 import Communication from '../pages/Communication.jsx';
+import TeacherStats from './teacher/TeacherStats.jsx';
 import Classrooms from '../pages/Classrooms.jsx';
-import StudentReport from '../pages/StudentReport.jsx'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
+import StudentReport from '../pages/StudentReport.jsx';
+import TeacherProfile from './teacher/TeacherProfile.jsx';
+import MyLibrary from './teacher/MyLibrary.jsx';
+import MyCourses from './teacher/MyCourses.jsx'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
+import CourseForm from '../pages/CourseForm.jsx'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
+
+// Wrapper for editing a course
+const CourseFormWrapper = (props) => {
+    const { courseId } = useParams();
+    return <CourseForm {...props} key={courseId} />;
+};
 
 function TeacherPortal({ db, appId, user, userProfile }) {
     const [teacherData, setTeacherData] = useState(null);
@@ -24,11 +35,14 @@ function TeacherPortal({ db, appId, user, userProfile }) {
     const [allGrades, setAllGrades] = useState([]);
     const [allAbsences, setAllAbsences] = useState([]);
     const [allTeachers, setAllTeachers] = useState([]);
+    const [allUsers, setAllUsers] = useState([]);
+    const [allPayments, setAllPayments] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const teacherId = userProfile?.profileId;
 
     useEffect(() => {
+        // ... (η λογική φόρτωσης παραμένει ίδια)
         if (!db || !appId || !teacherId) {
             setLoading(false);
             return;
@@ -39,18 +53,25 @@ function TeacherPortal({ db, appId, user, userProfile }) {
         unsubscribes.push(onSnapshot(teacherRef, (doc) => {
             if (doc.exists()) setTeacherData({ id: doc.id, ...doc.data() });
         }));
+        
+        const usersRef = collection(db, 'users');
+        unsubscribes.push(onSnapshot(usersRef, (snapshot) => {
+            setAllUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }));
+
         const queries = {
             announcements: query(collection(db, `artifacts/${appId}/public/data/announcements`)),
             assignments: query(collection(db, `artifacts/${appId}/public/data/assignments`)),
             courses: query(collection(db, `artifacts/${appId}/public/data/courses`)),
             grades: query(collection(db, `artifacts/${appId}/public/data/grades`)),
             absences: query(collection(db, `artifacts/${appId}/public/data/absences`)),
-            teachers: query(collection(db, `artifacts/${appId}/public/data/teachers`))
+            teachers: query(collection(db, `artifacts/${appId}/public/data/teachers`)),
+            payments: query(collection(db, `artifacts/${appId}/public/data/payments`)),
         };
         const setters = {
             announcements: setAnnouncements, assignments: setAllAssignments,
             courses: setAllCourses, grades: setAllGrades, absences: setAllAbsences,
-            teachers: setAllTeachers
+            teachers: setAllTeachers, payments: setAllPayments,
         };
         for (const [key, q] of Object.entries(queries)) {
             unsubscribes.push(onSnapshot(q, (snapshot) => {
@@ -94,31 +115,38 @@ function TeacherPortal({ db, appId, user, userProfile }) {
     }
 
     const commonProps = { 
-        db, appId, userId: user.uid, 
+        db, appId, userId: user.uid, user,
         allStudents: studentsInClassrooms, 
         classrooms: assignedClassrooms,
-        allTeachers: allTeachers,
+        allTeachers,
+        allUsers,
         teacherData,
         assignedClassrooms,
         studentsInClassrooms,
         assignments: teacherAssignments,
-        allAssignments: allAssignments,
+        allAssignments,
         announcements,
         allCourses,
         allGrades,
         allAbsences,
+        allPayments,
         loading
     };
 
     return (
         <Routes>
             <Route path="/" element={<TeacherDashboard {...commonProps} />} />
+            <Route path="/my-profile" element={<TeacherProfile {...commonProps} />} />
+            <Route path="/my-library" element={<MyLibrary {...commonProps} />} />
+            <Route path="/my-courses" element={<MyCourses {...commonProps} />} /> {/* <-- ΝΕΑ ΔΙΑΔΡΟΜΗ */}
+            <Route path="/course/edit/:courseId" element={<CourseFormWrapper {...commonProps} />} /> {/* <-- ΝΕΑ ΔΙΑΔΡΟΜΗ */}
             <Route path="/my-classrooms" element={<Classrooms {...commonProps} />} />
             <Route path="/my-schedule" element={<WeeklyScheduleCalendar {...commonProps} />} />
             <Route path="/my-gradebook" element={<MyGradebook {...commonProps} />} />
             <Route path="/my-assignments" element={<MyAssignmentsManager {...commonProps} />} />
-            <Route path="/my-students" element={<MyStudents {...commonProps} />} /> {/* <-- ΝΕΑ ΔΙΑΔΡΟΜΗ */}
-            <Route path="/student/report/:studentId" element={<StudentReport {...commonProps} />} /> {/* <-- ΝΕΑ ΔΙΑΔΡΟΜΗ */}
+            <Route path="/teacher-stats" element={<TeacherStats {...commonProps} />} />
+            <Route path="/my-students" element={<MyStudents {...commonProps} />} />
+            <Route path="/student/report/:studentId" element={<StudentReport {...commonProps} />} />
             <Route path="/communication" element={<Communication {...commonProps} />} />
         </Routes>
     );

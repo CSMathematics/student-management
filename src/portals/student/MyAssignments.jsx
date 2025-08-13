@@ -10,7 +10,6 @@ import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 
 dayjs.extend(isSameOrAfter);
 
-// Helper object to translate assignment types
 const assignmentTypeLabels = {
     homework: 'Εργασία για το Σπίτι',
     test: 'Διαγώνισμα',
@@ -18,16 +17,16 @@ const assignmentTypeLabels = {
     oral: 'Προφορική Εξέταση'
 };
 
-function MyAssignments({ enrolledClassrooms, allAssignments, allDailyLogs }) {
+// --- ΔΙΟΡΘΩΣΗ: Αλλαγή του prop από allAssignments σε assignments ---
+function MyAssignments({ enrolledClassrooms, assignments, allDailyLogs }) {
 
     const assignmentsByClassroom = useMemo(() => {
-        if (!enrolledClassrooms || !allAssignments) return [];
+        if (!enrolledClassrooms || !assignments) return [];
 
         return enrolledClassrooms.map(classroom => {
-            const classroomAssignments = allAssignments
+            const classroomAssignments = assignments
                 .filter(a => a.classroomId === classroom.id)
                 .map(assignment => {
-                    // Find the corresponding dailyLog for instructions and files
                     const dailyLog = allDailyLogs.find(log => log.id === assignment.id);
                     return {
                         ...assignment,
@@ -47,7 +46,7 @@ function MyAssignments({ enrolledClassrooms, allAssignments, allDailyLogs }) {
                 pastAssignments: past
             };
         });
-    }, [enrolledClassrooms, allAssignments, allDailyLogs]);
+    }, [enrolledClassrooms, assignments, allDailyLogs]);
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4 }}>
@@ -62,7 +61,6 @@ function MyAssignments({ enrolledClassrooms, allAssignments, allDailyLogs }) {
                             <Typography variant="h6">{classroom.subject} ({classroom.classroomName})</Typography>
                         </AccordionSummary>
                         <AccordionDetails sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            {/* Active Assignments */}
                             <Box>
                                 <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>Ενεργές Εργασίες</Typography>
                                 {classroom.activeAssignments.length > 0 ? (
@@ -91,10 +89,7 @@ function MyAssignments({ enrolledClassrooms, allAssignments, allDailyLogs }) {
                                     </List>
                                 ) : <Typography color="text.secondary" sx={{ p: 1 }}>Δεν υπάρχουν ενεργές εργασίες.</Typography>}
                             </Box>
-
                             <Divider />
-
-                            {/* Past Assignments */}
                             <Box>
                                 <Typography variant="subtitle1" sx={{ fontWeight: 500, color: 'text.secondary' }}>Παλαιότερες Εργασίες</Typography>
                                 {classroom.pastAssignments.length > 0 ? (

@@ -1,7 +1,8 @@
 // src/components/ClassroomTableVisual.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Typography, Tooltip, CircularProgress, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, Avatar, Menu, MenuItem, ListItemIcon } from '@mui/material';
-import { Add as AddIcon, RemoveCircleOutline as RemoveIcon, SwapHoriz as SwapIcon, MoveUp as MoveIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { Box, Typography, Tooltip, CircularProgress, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, Avatar, Menu, MenuItem, ListItemIcon, Grid, Paper, IconButton, ListItemAvatar, Divider } from '@mui/material';
+import { Add as AddIcon, RemoveCircleOutline as RemoveIcon, SwapHoriz as SwapIcon, MoveUp as MoveIcon, Chat as ChatIcon } from '@mui/icons-material';
 
 const Chair = ({ student, isOccupied, onChairClick, onChairContextMenu }) => (
     <Tooltip title={isOccupied ? `${student.firstName} ${student.lastName}` : 'Κενή Θέση - Προσθήκη Μαθητή'} placement="top">
@@ -23,8 +24,8 @@ const Chair = ({ student, isOccupied, onChairClick, onChairContextMenu }) => (
     </Tooltip>
 );
 
-// --- ΑΛΛΑΓΗ: Προσθήκη του `classrooms` prop ---
 function ClassroomTableVisual({ classroom, db, appId, allStudents, classrooms, onAssignStudent, onRemoveStudent, onMoveStudent, onSwapStudent, otherClassrooms }) {
+    const navigate = useNavigate();
     const [enrolledStudents, setEnrolledStudents] = useState([]);
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
     
@@ -36,31 +37,24 @@ function ClassroomTableVisual({ classroom, db, appId, allStudents, classrooms, o
             setEnrolledStudents([]);
             return;
         }
-        const currentEnrolled = allStudents.filter(student => 
-            student.enrolledClassrooms?.includes(classroom.id)
-        );
+        const currentEnrolled = allStudents
+            .filter(student => student.enrolledClassrooms?.includes(classroom.id))
+            .sort((a, b) => a.lastName.localeCompare(b.lastName));
         setEnrolledStudents(currentEnrolled);
     }, [classroom, allStudents]);
 
-    // --- ΑΛΛΑΓΗ: Η λογική ενημερώθηκε για να ελέγχει όλα τα τμήματα του ίδιου μαθήματος ---
     const availableStudents = useMemo(() => {
         if (!classroom || !allStudents || !classrooms) return [];
-
-        // Βρίσκουμε όλα τα IDs των τμημάτων που διδάσκουν το ίδιο μάθημα
         const sameSubjectClassroomIds = classrooms
             .filter(c => c.subject === classroom.subject && c.grade === classroom.grade)
             .map(c => c.id);
 
         return allStudents.filter(student => {
-            // Συνθήκη 1: Ο μαθητής πρέπει να είναι στην ίδια τάξη
             const isInSameGrade = student.grade === classroom.grade;
             if (!isInSameGrade) return false;
-
-            // Συνθήκη 2: Ο μαθητής δεν πρέπει να είναι ήδη εγγεγραμμένος σε ΚΑΝΕΝΑ τμήμα αυτού του μαθήματος
             const isEnrolledInSubject = student.enrolledClassrooms?.some(enrolledId => 
                 sameSubjectClassroomIds.includes(enrolledId)
             );
-            
             return !isEnrolledInSubject;
         });
     }, [classroom, allStudents, classrooms]);
@@ -120,6 +114,10 @@ function ClassroomTableVisual({ classroom, db, appId, allStudents, classrooms, o
         const sideChairs = chairsData.slice(topCount + bottomCount);
         return { topChairs, bottomChairs, sideChairs };
     }, [classroom, enrolledStudents]);
+    
+    const handleChatClick = (student) => {
+        navigate('/communication', { state: { selectedChannelId: student.id } });
+    };
 
 
     if (!classroom) {
@@ -132,37 +130,73 @@ function ClassroomTableVisual({ classroom, db, appId, allStudents, classrooms, o
 
     return (
         <>
-            <Box sx={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                mt: 4, mb: 4, p: 2, border: '1px solid #e0e0e0', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                minHeight: '350px', position: 'relative',
-            }}>
-                <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary' }}>
-                    Δεξί κλικ σε μαθητή για ενέργειες (αφαίρεση, μετακίνηση, ανταλλαγή).
-                </Typography>
+            <Grid container spacing={3}>
+                <Grid item xs={12} md={7}>
+                    <Box sx={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        mt: 4, mb: 4, p: 2, border: '1px solid #e0e0e0', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                        minHeight: '350px', position: 'relative',
+                    }}>
+                        <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary' }}>
+                            Δεξί κλικ σε μαθητή για ενέργειες (αφαίρεση, μετακίνηση, ανταλλαγή).
+                        </Typography>
 
-                <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-                    <Box sx={{ display: 'flex', gap: '20px', mb: 2 }}>
-                        {chairLayout.topChairs.map((chair, index) => (
-                            <Chair key={`top-${index}`} {...chair} onChairClick={() => handleChairClick(chair.isOccupied, chair.student)} onChairContextMenu={(e) => handleContextMenu(e, chair.student)} />
-                        ))}
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', gap: '20px' }}>
-                        {chairLayout.sideChairs.length > 0 && <Chair {...chairLayout.sideChairs[0]} onChairClick={() => handleChairClick(chairLayout.sideChairs[0].isOccupied, chairLayout.sideChairs[0].student)} onChairContextMenu={(e) => handleContextMenu(e, chairLayout.sideChairs[0].student)} />}
-                        <Box sx={{ width: '70%', maxWidth: '400px', height: '150px', backgroundColor: '#87ceeb', borderRadius: '75px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2, boxShadow: '0 4px 8px rgba(0,0,0,0.2)', textAlign: 'center', color: '#fff', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
-                            <Typography variant="body2" sx={{ color: '#fff' }}>Μάθημα: {classroom.subject}</Typography>
-                            <Typography variant="body2" sx={{ color: '#fff' }}>Τάξη: {classroom.grade} ({classroom.specialization || 'Γενικό'})</Typography>
-                            <Typography variant="body2" sx={{ color: '#fff' }}>Μαθητές: {enrolledStudents.length} / {classroom.maxStudents}</Typography>
+                        <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                            <Box sx={{ display: 'flex', gap: '20px', mb: 2 }}>
+                                {chairLayout.topChairs.map((chair, index) => (
+                                    <Chair key={`top-${index}`} {...chair} onChairClick={() => handleChairClick(chair.isOccupied, chair.student)} onChairContextMenu={(e) => handleContextMenu(e, chair.student)} />
+                                ))}
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', gap: '20px' }}>
+                                {chairLayout.sideChairs.length > 0 && <Chair {...chairLayout.sideChairs[0]} onChairClick={() => handleChairClick(chairLayout.sideChairs[0].isOccupied, chairLayout.sideChairs[0].student)} onChairContextMenu={(e) => handleContextMenu(e, chairLayout.sideChairs[0].student)} />}
+                                <Box sx={{ width: '70%', maxWidth: '400px', height: '150px', backgroundColor: '#87ceeb', borderRadius: '75px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2, boxShadow: '0 4px 8px rgba(0,0,0,0.2)', textAlign: 'center', color: '#fff', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
+                                    <Typography variant="body2" sx={{ color: '#fff' }}>Μάθημα: {classroom.subject}</Typography>
+                                    <Typography variant="body2" sx={{ color: '#fff' }}>Τάξη: {classroom.grade} ({classroom.specialization || 'Γενικό'})</Typography>
+                                    <Typography variant="body2" sx={{ color: '#fff' }}>Μαθητές: {enrolledStudents.length} / {classroom.maxStudents}</Typography>
+                                </Box>
+                                {chairLayout.sideChairs.length > 1 && <Chair {...chairLayout.sideChairs[1]} onChairClick={() => handleChairClick(chairLayout.sideChairs[1].isOccupied, chairLayout.sideChairs[1].student)} onChairContextMenu={(e) => handleContextMenu(e, chairLayout.sideChairs[1].student)} />}
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: '20px', mt: 2 }}>
+                                {chairLayout.bottomChairs.map((chair, index) => (
+                                    <Chair key={`bottom-${index}`} {...chair} onChairClick={() => handleChairClick(chair.isOccupied, chair.student)} onChairContextMenu={(e) => handleContextMenu(e, chair.student)} />
+                                ))}
+                            </Box>
                         </Box>
-                        {chairLayout.sideChairs.length > 1 && <Chair {...chairLayout.sideChairs[1]} onChairClick={() => handleChairClick(chairLayout.sideChairs[1].isOccupied, chairLayout.sideChairs[1].student)} onChairContextMenu={(e) => handleContextMenu(e, chairLayout.sideChairs[1].student)} />}
                     </Box>
-                    <Box sx={{ display: 'flex', gap: '20px', mt: 2 }}>
-                        {chairLayout.bottomChairs.map((chair, index) => (
-                            <Chair key={`bottom-${index}`} {...chair} onChairClick={() => handleChairClick(chair.isOccupied, chair.student)} onChairContextMenu={(e) => handleContextMenu(e, chair.student)} />
-                        ))}
-                    </Box>
-                </Box>
-            </Box>
+                </Grid>
+                <Grid item xs={12} md={5}>
+                    <Paper variant="outlined" sx={{ p: 2, mt: 4, height: 'calc(100% - 32px)' }}>
+                        {/* --- ΑΛΛΑΓΗ: Προσθήκη κουμπιού για chat τμήματος --- */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="h6" gutterBottom>Μαθητές Τμήματος</Typography>
+                            <Tooltip title="Συνομιλία με το Τμήμα">
+                                <IconButton color="primary" onClick={() => navigate('/communication', { state: { selectedChannelId: classroom.id } })}>
+                                    <ChatIcon />
+                                </IconButton>
+                            </Tooltip>
+                        </Box>
+                        <List sx={{ maxHeight: 350, overflowY: 'auto' }}>
+                            {enrolledStudents.map(student => (
+                                <React.Fragment key={student.id}>
+                                    <ListItem
+                                        secondaryAction={
+                                            <Box>
+                                                <Tooltip title="Συνομιλία"><IconButton size="small" color="primary" onClick={() => handleChatClick(student)}><ChatIcon fontSize="small" /></IconButton></Tooltip>
+                                                <Tooltip title="Αφαίρεση"><IconButton size="small" color="error" onClick={() => onRemoveStudent(student, classroom)}><RemoveIcon fontSize="small" /></IconButton></Tooltip>
+                                                <Tooltip title="Μετακίνηση"><IconButton size="small" color="info" onClick={() => onMoveStudent(student, classroom)}><MoveIcon fontSize="small" /></IconButton></Tooltip>
+                                                <Tooltip title="Ανταλλαγή"><IconButton size="small" color="secondary" onClick={() => onSwapStudent(student, classroom)}><SwapIcon fontSize="small" /></IconButton></Tooltip>
+                                            </Box>
+                                        }
+                                    >
+                                        <ListItemText primary={`${student.lastName} ${student.firstName}`} />
+                                    </ListItem>
+                                    <Divider />
+                                </React.Fragment>
+                            ))}
+                        </List>
+                    </Paper>
+                </Grid>
+            </Grid>
 
             <Dialog open={isSelectorOpen} onClose={() => setIsSelectorOpen(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>Επιλογή Μαθητή για το τμήμα ({classroom.grade})</DialogTitle>

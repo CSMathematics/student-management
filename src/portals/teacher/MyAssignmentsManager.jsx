@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import {
     Container, Paper, Typography, Box, FormControl, InputLabel, Select, MenuItem,
-    List, ListItem, ListItemText, Button, IconButton, Tooltip, Dialog, DialogContent, // <-- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ
+    List, ListItem, ListItemText, Button, IconButton, Tooltip, Dialog, DialogContent,
     DialogContentText, DialogActions, DialogTitle, Divider
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
@@ -46,13 +46,12 @@ function MyAssignmentsManager({ db, appId, classrooms, allAssignments }) {
         try {
             if (isEditMode) {
                 const docRef = doc(db, `artifacts/${appId}/public/data/assignments`, assignmentToEdit.id);
-                // When editing, we need to make sure we don't overwrite the createdAt field
                 delete dataToSave.createdAt;
                 await setDoc(docRef, dataToSave, { merge: true });
             } else {
                 const collectionRef = collection(db, `artifacts/${appId}/public/data/assignments`);
-                const newDocRef = doc(collectionRef); // Create a new doc reference to get the ID
-                dataToSave.id = newDocRef.id; // Add the ID to the data
+                const newDocRef = doc(collectionRef);
+                dataToSave.id = newDocRef.id;
                 dataToSave.createdAt = serverTimestamp();
                 await setDoc(newDocRef, dataToSave);
             }
@@ -63,6 +62,7 @@ function MyAssignmentsManager({ db, appId, classrooms, allAssignments }) {
         }
     };
     
+    // --- ΝΕΑ ΛΟΓΙΚΗ: Διαχείριση διαγραφής ---
     const handleDeleteClick = (assignment) => {
         setAssignmentToDelete(assignment);
     };
@@ -116,6 +116,7 @@ function MyAssignmentsManager({ db, appId, classrooms, allAssignments }) {
                                             <Tooltip title="Επεξεργασία">
                                                 <IconButton edge="end" onClick={() => handleOpenForm(item)}><EditIcon /></IconButton>
                                             </Tooltip>
+                                            {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Κουμπί διαγραφής --- */}
                                             <Tooltip title="Διαγραφή">
                                                 <IconButton edge="end" onClick={() => handleDeleteClick(item)}><DeleteIcon /></IconButton>
                                             </Tooltip>
@@ -134,7 +135,6 @@ function MyAssignmentsManager({ db, appId, classrooms, allAssignments }) {
                 </List>
             </Paper>
 
-            {/* Dialog for New/Edit Assignment */}
             <AssignmentForm
                 open={formOpen}
                 onClose={handleCloseForm}
@@ -143,7 +143,7 @@ function MyAssignmentsManager({ db, appId, classrooms, allAssignments }) {
                 classrooms={classrooms}
             />
             
-            {/* Dialog for Delete Confirmation */}
+            {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Παράθυρο επιβεβαίωσης διαγραφής --- */}
             <Dialog open={Boolean(assignmentToDelete)} onClose={() => setAssignmentToDelete(null)}>
                 <DialogTitle>Επιβεβαίωση Διαγραφής</DialogTitle>
                 <DialogContent>

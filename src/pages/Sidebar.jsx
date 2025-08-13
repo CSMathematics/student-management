@@ -42,11 +42,11 @@ const navItemsByRole = {
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
         { text: "Πληρωμές", icon: "fas fa-money-bill", path: "/payments" },
 
-        { text: "Διαγωνίσματα - Εργασίες", icon: "fas fa-file-alt", path: "#" },
+        { text: "Διαγωνίσματα - Εργασίες", icon: "fas fa-file-alt", path: "assignments" },
         { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", path: "/phonebook" },
         { text: "Έξοδα", icon: "fas fa-file-invoice-dollar", path: "/expenses" },
         { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
-        { text: "Βαθμολογίες", icon: "fas fa-chart-bar", path: "#" },
+        { text: "Βαθμολογίες", icon: "fas fa-chart-bar", path: "/grades-summary" },
         { text: "Απουσίες", icon: "fas fa-times", path: "#" },
         { text: "Εργασίες υποχρεώσεις", icon: "fas fa-tasks", path: "#" },
         { text: "Βιβλιοθήκη", icon: "fas fa-file", path: "#" },
@@ -59,11 +59,15 @@ const navItemsByRole = {
     ],
     teacher: [
         { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
+        { text: "Το Προφίλ μου", icon: "fas fa-user-cog", path: "/my-profile" }, // <-- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ
+        { text: "Η Βιβλιοθήκη μου", icon: "fas fa-book-open", path: "/my-library" }, // <-- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ
+        { text: "Τα Μαθήματά μου", icon: "fas fa-book", path: "/my-courses" },
         { text: "Το Πρόγραμμά μου", icon: "fas fa-calendar-alt", path: "/my-schedule" },
         { text: "Τα Τμήματά μου", icon: "fas fa-chalkboard", path: "/my-classrooms" },
         { text: "Οι Μαθητές μου", icon: "fas fa-users", path: "/my-students" }, // <-- Η ΝΕΑ ΠΡΟΣΘΗΚΗ
         { text: "Οι Αξιολογήσεις μου", icon: "fas fa-tasks", path: "/my-assignments" },
         { text: "Το Βαθμολόγιό μου", icon: "fas fa-book-reader", path: "/my-gradebook" },
+        { text: "Στατιστικά", icon: "fas fa-chart-pie", path: "/teacher-stats" },
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
     ],
     student: [
@@ -78,6 +82,7 @@ const navItemsByRole = {
     ],
     parent: [
        { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
+       { text: "Το Προφίλ μου", icon: "fas fa-user-cog", path: "/my-profile" }, // <-- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ
        { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
        { text: "Ημερολόγιο Παιδιού", icon: "fas fa-calendar-alt", path: "/child-schedule" },
        { text: "Εργασίες Παιδιού", icon: "fas fa-file-alt", path: "/child-assignments" },

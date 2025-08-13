@@ -2,16 +2,19 @@
 import React, { useState, useEffect } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField,
-    FormControl, InputLabel, Select, MenuItem, Grid
+    FormControl, InputLabel, Select, MenuItem, Grid, FormControlLabel, Checkbox
 } from '@mui/material';
 import dayjs from 'dayjs';
 
-function AssignmentForm({ open, onClose, onSave, initialData, classrooms }) {
+function AssignmentForm({ open, onClose, onSave, initialData, classrooms, classroomId = null }) {
     const [formData, setFormData] = useState({
         title: '',
         type: 'test',
         dueDate: dayjs().format('YYYY-MM-DD'),
-        classroomId: ''
+        classroomId: '',
+        isAllDay: true,
+        startTime: '09:00',
+        endTime: '10:00'
     });
 
     const isEditMode = Boolean(initialData && initialData.id);
@@ -23,7 +26,10 @@ function AssignmentForm({ open, onClose, onSave, initialData, classrooms }) {
                     title: initialData.title || '',
                     type: initialData.type || 'test',
                     dueDate: dayjs(initialData.dueDate.toDate()).format('YYYY-MM-DD'),
-                    classroomId: initialData.classroomId || ''
+                    classroomId: initialData.classroomId || '',
+                    isAllDay: initialData.isAllDay !== false, // Default to true if undefined
+                    startTime: initialData.startTime || '09:00',
+                    endTime: initialData.endTime || '10:00'
                 });
             } else {
                 // Reset form for new entry
@@ -31,22 +37,37 @@ function AssignmentForm({ open, onClose, onSave, initialData, classrooms }) {
                     title: '',
                     type: 'test',
                     dueDate: dayjs().format('YYYY-MM-DD'),
-                    classroomId: classrooms?.[0]?.id || '' // Pre-select first classroom if available
+                    classroomId: classroomId || (classrooms && classrooms.length > 0 ? classrooms[0].id : ''),
+                    isAllDay: true,
+                    startTime: '09:00',
+                    endTime: '10:00'
                 });
             }
         }
-    }, [initialData, open, isEditMode, classrooms]);
+    }, [initialData, open, isEditMode, classrooms, classroomId]);
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value, type, checked } = e.target;
+        setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
     };
 
     const handleSave = () => {
         if (!formData.title.trim() || !formData.classroomId) return;
-        onSave({
-            ...formData,
-            dueDate: new Date(formData.dueDate),
-        });
+        
+        const dataToSave = {
+            title: formData.title,
+            type: formData.type,
+            classroomId: formData.classroomId,
+            dueDate: dayjs(formData.dueDate).startOf('day').toDate(),
+            isAllDay: formData.isAllDay,
+        };
+
+        if (!formData.isAllDay) {
+            dataToSave.startTime = formData.startTime;
+            dataToSave.endTime = formData.endTime;
+        }
+
+        onSave(dataToSave);
     };
 
     return (
@@ -54,16 +75,18 @@ function AssignmentForm({ open, onClose, onSave, initialData, classrooms }) {
             <DialogTitle>{isEditMode ? 'Επεξεργασία Αξιολόγησης' : 'Νέα Αξιολόγηση'}</DialogTitle>
             <DialogContent>
                 <Grid container spacing={2} sx={{ pt: 2 }}>
-                    <Grid item xs={12}>
-                        <FormControl fullWidth>
-                            <InputLabel>Τμήμα</InputLabel>
-                            <Select name="classroomId" value={formData.classroomId} label="Τμήμα" onChange={handleChange}>
-                                {classrooms?.map(c => (
-                                    <MenuItem key={c.id} value={c.id}>{c.classroomName} - {c.subject}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
+                    {!classroomId && (
+                        <Grid item xs={12}>
+                            <FormControl fullWidth>
+                                <InputLabel>Τμήμα</InputLabel>
+                                <Select name="classroomId" value={formData.classroomId} label="Τμήμα" onChange={handleChange}>
+                                    {classrooms?.map(c => (
+                                        <MenuItem key={c.id} value={c.id}>{c.classroomName} - {c.subject}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    )}
                     <Grid item xs={12}>
                         <TextField autoFocus name="title" label="Τίτλος" fullWidth variant="outlined" value={formData.title} onChange={handleChange} />
                     </Grid>
@@ -79,8 +102,24 @@ function AssignmentForm({ open, onClose, onSave, initialData, classrooms }) {
                         </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                        <TextField name="dueDate" label="Ημερομηνία Παράδοσης/Εξέτασης" type="date" fullWidth value={formData.dueDate} onChange={handleChange} InputLabelProps={{ shrink: true }} />
+                        <TextField name="dueDate" label="Ημερομηνία" type="date" fullWidth value={formData.dueDate} onChange={handleChange} InputLabelProps={{ shrink: true }} />
                     </Grid>
+                    <Grid item xs={12}>
+                        <FormControlLabel
+                            control={<Checkbox checked={formData.isAllDay} onChange={handleChange} name="isAllDay" />}
+                            label="Ημερήσια (χωρίς συγκεκριμένη ώρα)"
+                        />
+                    </Grid>
+                    {!formData.isAllDay && (
+                        <>
+                            <Grid item xs={12} sm={6}>
+                                <TextField name="startTime" label="Ώρα Έναρξης" type="time" fullWidth value={formData.startTime} onChange={handleChange} InputLabelProps={{ shrink: true }} />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField name="endTime" label="Ώρα Λήξης" type="time" fullWidth value={formData.endTime} onChange={handleChange} InputLabelProps={{ shrink: true }} />
+                            </Grid>
+                        </>
+                    )}
                 </Grid>
             </DialogContent>
             <DialogActions>
