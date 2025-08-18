@@ -15,17 +15,22 @@ import {
     Attachment as AttachmentIcon,
     KeyboardArrowDown as KeyboardArrowDownIcon,
     KeyboardArrowUp as KeyboardArrowUpIcon,
-    Person as PersonIcon
+    Person as PersonIcon,
+    GetApp as ImportIcon // Νέο εικονίδιο
 } from '@mui/icons-material';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faChalkboardUser } from '@fortawesome/free-solid-svg-icons';
+import CourseImporter from '../components/CourseImporter.jsx'; // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
+import { useAcademicYear } from '../context/AcademicYearContext.jsx'; // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
 
-function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db, appId }) {
+function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db, appId, selectedYear }) {
     const navigate = useNavigate();
+    const { academicYears } = useAcademicYear(); // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
     const [selectedGrade, setSelectedGrade] = useState('');
     const [expandedCourseId, setExpandedCourseId] = useState(null);
     const [courseToDelete, setCourseToDelete] = useState(null);
+    const [isImporting, setIsImporting] = useState(false); // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
 
     const coursesDataByGrade = useMemo(() => {
         if (!allCourses || !classrooms || !allStudents || !allTeachers) return {};
@@ -87,9 +92,9 @@ function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db
         setCourseToDelete(course);
     };
     const handleConfirmDelete = async () => {
-        if (!courseToDelete) return;
+        if (!courseToDelete || !selectedYear) return;
         try {
-            await deleteDoc(doc(db, `artifacts/${appId}/public/data/courses`, courseToDelete.id));
+            await deleteDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/courses`, courseToDelete.id));
             setCourseToDelete(null);
         } catch (error) {
             console.error("Error deleting course:", error);
@@ -97,6 +102,14 @@ function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db
     };
 
     const handleCourseClick = (courseId) => setExpandedCourseId(prevId => (prevId === courseId ? null : courseId));
+    
+    // --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Συνάρτηση για κλείσιμο του importer ---
+    const handleCloseImporter = (didImport) => {
+        setIsImporting(false);
+        if (didImport) {
+            // Αν έγινε import, μπορείτε να προσθέσετε ένα μήνυμα επιτυχίας
+        }
+    };
 
     if (loading) {
         return <Container sx={{ mt: 4, textAlign: 'center' }}><CircularProgress /></Container>;
@@ -114,7 +127,7 @@ function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db
                     Επιλέξτε μια τάξη για να δείτε τα διαθέσιμα μαθήματα και πατήστε πάνω σε ένα μάθημα για να δείτε την ύλη του.
                 </Typography>
 
-                <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
                     <FormControl sx={{ minWidth: 240 }}>
                         <InputLabel id="grade-select-label">Επιλογή Τάξης</InputLabel>
                         <Select
@@ -135,7 +148,15 @@ function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db
                         onClick={handleAddCourse}
                         disabled={!selectedGrade}
                     >
-                        Προσθήκη Νέου Μαθήματος
+                        Προσθήκη Νέου
+                    </Button>
+                    {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Κουμπί για την εισαγωγή --- */}
+                    <Button 
+                        variant="outlined" 
+                        startIcon={<ImportIcon />}
+                        onClick={() => setIsImporting(true)}
+                    >
+                        Εισαγωγή από Έτος
                     </Button>
                 </Box>
                 
@@ -152,13 +173,11 @@ function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db
                                             <ListItemText 
                                                 primary={course.name} 
                                                 secondary={
-                                                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                                                        <PersonIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            {course.teacherNames.length > 0 ? course.teacherNames.join(', ') : 'Χωρίς ανάθεση'}
-                                                        </Typography>
-                                                        <ScheduleIcon fontSize='small'/>
-                                                        <Typography fontSize='small'>{course.totalHours|| 0} ώρες</Typography>
+                                                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5, color: 'text.secondary', fontSize: '0.875rem' }}>
+                                                        <PersonIcon sx={{ fontSize: '1rem' }} />
+                                                        {course.teacherNames.length > 0 ? course.teacherNames.join(', ') : 'Χωρίς ανάθεση'}
+                                                        <ScheduleIcon sx={{ fontSize: '1rem', ml: 1 }}/>
+                                                        {course.totalHours || 0} ώρες
                                                     </Box>
                                                 }
                                                 primaryTypographyProps={{ fontWeight: '500' }}
@@ -198,7 +217,6 @@ function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db
                                                                                 {section.materials.map((material, mIndex) => (
                                                                                     <ListItem key={mIndex}>
                                                                                         <ListItemIcon sx={{minWidth: '30px'}}><AttachmentIcon fontSize="small" /></ListItemIcon>
-                                                                                        {/* --- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ --- */}
                                                                                         <Link href={material.url} target="_blank" rel="noopener noreferrer" sx={{wordBreak: 'break-all'}}>
                                                                                             {material.name}
                                                                                         </Link>
@@ -240,7 +258,17 @@ function Courses({ allCourses, classrooms, allStudents, allTeachers, loading, db
                     <Button onClick={handleConfirmDelete} color="error">Διαγραφή</Button>
                 </DialogActions>
             </Dialog>
-
+            
+            {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Το component του Importer --- */}
+            <CourseImporter 
+                open={isImporting}
+                onClose={handleCloseImporter}
+                db={db}
+                appId={appId}
+                currentYear={selectedYear}
+                allAcademicYears={academicYears}
+                currentCourses={allCourses}
+            />
         </Container>
     );
 }

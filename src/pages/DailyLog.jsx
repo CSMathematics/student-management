@@ -1,6 +1,6 @@
 // src/pages/DailyLog.jsx
 import React, { useState, useMemo, useEffect } from 'react';
-import { Box, Paper, Typography, Button, TextField, Switch, FormControlLabel, CircularProgress, FormControl, InputLabel, Select, MenuItem, ListSubheader, Chip, Divider, Accordion, AccordionSummary, AccordionDetails, Grid } from '@mui/material';
+import { Box, Paper, Typography, Button, TextField, Switch, FormControlLabel, CircularProgress, FormControl, InputLabel, Select, MenuItem, ListSubheader, Chip, Divider, Accordion, AccordionSummary, AccordionDetails, Grid, Alert } from '@mui/material';
 import { Save as SaveIcon, Add as AddIcon, UploadFile as UploadFileIcon, Link as LinkIcon, Delete as DeleteIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { doc, getDoc, writeBatch, setDoc, collection } from 'firebase/firestore';
@@ -21,7 +21,6 @@ const assignmentTypeLabels = {
     oral: 'Προφορική Εξέταση'
 };
 
-// Helper component for a single student row
 const StudentGradingRow = ({ student, data, onDataChange, isAssignment = false, assignmentId = null }) => (
     <Paper key={student.id} variant="outlined" sx={{ p: 2, mb: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography sx={{ flexBasis: '25%', flexShrink: 0 }}>{student.lastName} {student.firstName}</Typography>
@@ -49,8 +48,7 @@ const StudentGradingRow = ({ student, data, onDataChange, isAssignment = false, 
     </Paper>
 );
 
-
-function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignments, allCourses, db, appId, teacherData }) {
+function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignments, allCourses = [], db, appId, teacherData, selectedYear }) {
     const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
     const [dailyData, setDailyData] = useState({});
     const [isSaving, setIsSaving] = useState(false);
@@ -60,6 +58,7 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
     const [notes, setNotes] = useState('');
     const [attachedFiles, setAttachedFiles] = useState([]);
     const [materialSelectorOpen, setMaterialSelectorOpen] = useState(false);
+    const [feedback, setFeedback] = useState({ type: '', message: '' });
 
     const studentsInClassroom = useMemo(() => {
         return allStudents.filter(s => s.enrolledClassrooms?.includes(classroom.id))
@@ -67,8 +66,16 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
     }, [classroom, allStudents]);
     
     const courseForClassroom = useMemo(() => {
-        if (!classroom || !allCourses) return null;
-        return allCourses.find(c => c.grade === classroom.grade && c.name === classroom.subject);
+        // --- ΔΙΟΡΘΩΣΗ 1: Προσθήκη ελέγχου για να διασφαλιστεί ότι το allCourses είναι πίνακας ---
+        if (!classroom || !Array.isArray(allCourses)) return null;
+        
+        // --- ΔΙΟΡΘΩΣΗ 2: Η σύγκριση γίνεται case-insensitive ---
+        const foundCourse = allCourses.find(c => 
+            c.grade === classroom.grade && 
+            c.name?.toLowerCase() === classroom.subject?.toLowerCase()
+        );
+        
+        return foundCourse;
     }, [classroom, allCourses]);
 
     const syllabusOptions = useMemo(() => {
@@ -104,7 +111,6 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
         if (allAssignments) {
             allAssignments.filter(a => a.classroomId === classroom.id).forEach(a => {
                 const isAllDayEvent = a.isAllDay !== false;
-
                 const event = {
                     id: a.id,
                     title: `📝 ${a.title}`,
@@ -112,7 +118,6 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                     color: '#f57c00',
                     extendedProps: { type: 'assignment', ...a }
                 };
-
                 if (isAllDayEvent) {
                     event.date = dayjs(a.dueDate.toDate()).format('YYYY-MM-DD');
                 } else {
@@ -130,7 +135,6 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
         return allAssignments.filter(a => a.classroomId === classroom.id && dayjs(a.dueDate.toDate()).isSame(selectedDate, 'day'));
     }, [selectedDate, allAssignments, classroom.id]);
 
-    // --- ΝΕΑ ΛΟΓΙΚΗ: Έλεγχος αν υπάρχει μάθημα την επιλεγμένη ημέρα ---
     const isLessonOnSelectedDate = useMemo(() => {
         if (!selectedDate || !classroom.schedule) return false;
         const dayOfWeek = dayjs(selectedDate).format('dddd');
@@ -140,25 +144,20 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
 
     useEffect(() => {
         const loadDailyData = async () => {
-            if (!selectedDate) return;
-
+            if (!selectedDate || !selectedYear) return;
             const logId = `${classroom.id}_${selectedDate}`;
-            const logRef = doc(db, `artifacts/${appId}/public/data/dailyLogs`, logId);
+            const logRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/dailyLogs`, logId);
             const logSnap = await getDoc(logRef);
             const logData = logSnap.exists() ? logSnap.data() : {};
-
             setTaughtSection(logData.taughtSection || '');
             setNotes(logData.notes || '');
             setAttachedFiles(logData.attachedFiles || []);
-
             const data = {};
             const dayStart = dayjs(selectedDate).startOf('day');
-            
             for (const student of studentsInClassroom) {
                 const absence = allAbsences.find(a => a.studentId === student.id && dayjs(a.date.toDate()).isSame(dayStart, 'day'));
                 const participationGrade = allGrades.find(g => g.logId === logId && g.studentId === student.id && g.type === 'participation');
                 const homeworkGrade = allGrades.find(g => g.logId === logId && g.studentId === student.id && g.type === 'homework');
-
                 const studentAssignmentsData = {};
                 for (const assignment of assignmentsForSelectedDate) {
                     const assignmentGrade = allGrades.find(g => g.assignmentId === assignment.id && g.studentId === student.id);
@@ -167,7 +166,6 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                         feedback: assignmentGrade?.feedback || ''
                     };
                 }
-
                 data[student.id] = {
                     attendance: absence ? 'absent' : 'present',
                     lesson: {
@@ -180,12 +178,11 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
             setDailyData(data);
         };
         loadDailyData();
-    }, [selectedDate, studentsInClassroom, allGrades, allAbsences, assignmentsForSelectedDate, db, appId, classroom.id]);
+    }, [selectedDate, studentsInClassroom, allGrades, allAbsences, assignmentsForSelectedDate, db, appId, classroom.id, selectedYear]);
 
     const handleDataChange = (studentId, field, value, assignmentId = null) => {
         setDailyData(prev => {
             const studentDataCopy = JSON.parse(JSON.stringify(prev[studentId] || { attendance: 'present', lesson: {}, assignments: {} }));
-            
             if (field === 'attendance') {
                 studentDataCopy.attendance = value;
             } else if (assignmentId) {
@@ -194,7 +191,6 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
             } else {
                 studentDataCopy.lesson[field] = value;
             }
-            
             return { ...prev, [studentId]: studentDataCopy };
         });
     };
@@ -203,55 +199,54 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
     const handleEventClick = (clickInfo) => setSelectedDate(dayjs(clickInfo.event.start).format('YYYY-MM-DD'));
 
     const handleSaveDay = async () => {
-        if (!selectedDate) return;
+        if (!selectedDate || !selectedYear) return;
         setIsSaving(true);
+        setFeedback({ type: '', message: '' });
         const logId = `${classroom.id}_${selectedDate}`;
         const batch = writeBatch(db);
-
-        const logRef = doc(db, `artifacts/${appId}/public/data/dailyLogs`, logId);
+        const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
+        const logRef = doc(db, `${yearPath}/dailyLogs`, logId);
         batch.set(logRef, { 
             classroomId: classroom.id, date: new Date(selectedDate), type: 'lesson',
             taughtSection, notes, attachedFiles
         }, { merge: true });
-
         for (const studentId in dailyData) {
             const studentData = dailyData[studentId];
-            
             if (studentData.lesson) {
                 if (studentData.lesson.participation) {
-                    const gradeRef = doc(db, `artifacts/${appId}/public/data/grades`, `${logId}_${studentId}_participation`);
+                    const gradeRef = doc(db, `${yearPath}/grades`, `${logId}_${studentId}_participation`);
                     batch.set(gradeRef, { studentId, classroomId: classroom.id, subject: classroom.subject, logId, date: new Date(selectedDate), type: 'participation', grade: parseFloat(String(studentData.lesson.participation).replace(',', '.')) || 0 }, { merge: true });
                 }
                 if (studentData.lesson.homework) {
-                    const gradeRef = doc(db, `artifacts/${appId}/public/data/grades`, `${logId}_${studentId}_homework`);
+                    const gradeRef = doc(db, `${yearPath}/grades`, `${logId}_${studentId}_homework`);
                     batch.set(gradeRef, { studentId, classroomId: classroom.id, subject: classroom.subject, logId, date: new Date(selectedDate), type: 'homework', grade: parseFloat(String(studentData.lesson.homework).replace(',', '.')) || 0 }, { merge: true });
                 }
             }
-
             if (studentData.assignments) {
                 for (const assignmentId in studentData.assignments) {
                     const assignmentData = studentData.assignments[assignmentId];
                     const assignmentDetails = assignmentsForSelectedDate.find(a => a.id === assignmentId);
                     if (assignmentData.grade && assignmentDetails) {
-                        const gradeRef = doc(db, `artifacts/${appId}/public/data/grades`, `${assignmentId}_${studentId}`);
+                        const gradeRef = doc(db, `${yearPath}/grades`, `${assignmentId}_${studentId}`);
                         batch.set(gradeRef, { studentId, classroomId: classroom.id, subject: classroom.subject, assignmentId, date: new Date(selectedDate), type: assignmentDetails.type, grade: parseFloat(String(assignmentData.grade).replace(',', '.')) || 0, feedback: assignmentData.feedback || '' }, { merge: true });
                     }
                 }
             }
         }
-
         try {
             await batch.commit();
-            alert("Η αποθήκευση ολοκληρώθηκε.");
+            setFeedback({ type: 'success', message: 'Η αποθήκευση ολοκληρώθηκε με επιτυχία!' });
         } catch (error) {
             console.error("Error saving daily log:", error);
+            setFeedback({ type: 'error', message: 'Προέκυψε σφάλμα κατά την αποθήκευση.' });
         } finally {
             setIsSaving(false);
         }
     };
     
     const handleSaveAssignment = async (assignmentData) => {
-        const collectionRef = collection(db, `artifacts/${appId}/public/data/assignments`);
+        if (!selectedYear) return;
+        const collectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/assignments`);
         const newDocRef = doc(collectionRef);
         try {
             await setDoc(newDocRef, { ...assignmentData, id: newDocRef.id });
@@ -268,17 +263,9 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
         <Box>
             <style>
                 {`
-                    .fc-daygrid-event {
-                        padding: 4px 6px;
-                        font-size: 0.9rem;
-                        font-weight: 500;
-                    }
-                    .fc-timegrid-event .fc-event-main {
-                        padding: 4px;
-                    }
-                    .fc-event {
-                        cursor: pointer;
-                    }
+                    .fc-daygrid-event { padding: 4px 6px; font-size: 0.9rem; font-weight: 500; }
+                    .fc-timegrid-event .fc-event-main { padding: 4px; }
+                    .fc-event { cursor: pointer; }
                 `}
             </style>
             <Button fullWidth variant="contained" startIcon={<AddIcon />} onClick={() => setAssignmentFormOpen(true)} sx={{ mb: 2 }}>
@@ -288,11 +275,7 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                 <FullCalendar
                     plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                     initialView="dayGridMonth"
-                    headerToolbar={{
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,timeGridWeek'
-                    }}
+                    headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' }}
                     events={calendarEvents}
                     locale="el"
                     height="50vh"
@@ -313,7 +296,16 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                         </Button>
                     </Box>
                     
-                    {/* --- ΑΛΛΑΓΗ: Accordion μαθήματος με έλεγχο εμφάνισης --- */}
+                    {feedback.message && (
+                        <Alert 
+                            severity={feedback.type} 
+                            sx={{ mb: 2 }}
+                            onClose={() => setFeedback({ type: '', message: '' })}
+                        >
+                            {feedback.message}
+                        </Alert>
+                    )}
+
                     {isLessonOnSelectedDate && (
                         <Accordion defaultExpanded>
                             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -359,7 +351,6 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                         </Accordion>
                     )}
 
-                    {/* --- ΑΛΛΑΓΗ: Αναίρεση του Grid Layout --- */}
                     <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {assignmentsForSelectedDate.map(assignment => (
                             <Accordion key={assignment.id} defaultExpanded>
@@ -386,7 +377,13 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                 </Paper>
             )}
 
-            <AssignmentForm open={assignmentFormOpen} onClose={() => setAssignmentFormOpen(false)} onSave={handleSaveAssignment} classroomId={classroom.id} classrooms={[classroom]} />
+            <AssignmentForm 
+                open={assignmentFormOpen} 
+                onClose={() => setAssignmentFormOpen(false)} 
+                onSave={handleSaveAssignment} 
+                classroomId={classroom.id} 
+                classrooms={[classroom]} 
+            />
             
             <MaterialSelector 
                 open={materialSelectorOpen} 

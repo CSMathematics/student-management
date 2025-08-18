@@ -38,7 +38,6 @@ const generateTimeSlots = (startHour, endHour) => {
 };
 
 const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherName, enrolledStudentsCount, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker, onAddMoreHours }) => {
-    // Show info icon for lessons of 1 hour (2 cells * 40px/cell) or less
     const isSmall = height <= 80;
 
     const tooltipContent = (
@@ -70,7 +69,7 @@ const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherNam
                     <IconButton
                         size="small"
                         sx={{ position: 'absolute', top: 2, right: 2, color: '#fff', padding: '2px', zIndex: 8 }}
-                        onMouseDown={(e) => e.stopPropagation()} // Prevent drag from starting when clicking icon
+                        onMouseDown={(e) => e.stopPropagation()}
                     >
                         <InfoOutlinedIcon sx={{ fontSize: '1rem' }} />
                     </IconButton>
@@ -95,7 +94,8 @@ const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherNam
     );
 };
 
-function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, appId }) {
+// --- ΔΙΟΡΘΩΣΗ 1: Προσθήκη του selectedYear στα props ---
+function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, appId, selectedYear }) {
     const navigate = useNavigate();
     const [calendarStartHour, setCalendarStartHour] = useState(8);
     const [calendarEndHour, setCalendarEndHour] = useState(22);
@@ -157,12 +157,15 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     }, [teacherColumns.length, visibleDays]);
 
     useEffect(() => {
-        if (!db || !appId) return;
-        const studentsCollectionRef = collection(db, `artifacts/${appId}/public/data/students`);
+        // --- ΔΙΟΡΘΩΣΗ 2: Έλεγχος για το selectedYear ---
+        if (!db || !appId || !selectedYear) return;
+        
+        // --- ΔΙΟΡΘΩΣΗ 3: Χρήση του selectedYear στη διαδρομή ---
+        const studentsCollectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`);
         getDocs(studentsCollectionRef).then(snapshot => {
             setAllStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         }).catch(error => console.error("Error fetching students:", error));
-    }, [db, appId]);
+    }, [db, appId, selectedYear]); // <-- Προσθήκη selectedYear στις εξαρτήσεις
 
     const enrichedClassrooms = useMemo(() => {
         if (!classrooms || !allStudents) return [];
@@ -409,7 +412,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                     const scheduleIndex = parseInt(originalBlock.id.split('-')[1], 10);
                     const updatedSchedule = [...originalBlock.fullClassroomData.schedule];
                     updatedSchedule[scheduleIndex] = { ...updatedSchedule[scheduleIndex], day: newDay, startTime: newStartTime, endTime: newEndTime };
-                    const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, originalBlock.fullClassroomData.id);
+                    const classroomDocRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, originalBlock.fullClassroomData.id);
                     await updateDoc(classroomDocRef, { schedule: updatedSchedule, teacherId: newTeacher.id, teacherName: `${newTeacher.firstName} ${newTeacher.lastName}` });
                 }
             }
@@ -435,7 +438,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                     const scheduleIndex = parseInt(originalBlock.id.split('-')[1], 10);
                     const updatedSchedule = [...originalBlock.fullClassroomData.schedule];
                     updatedSchedule[scheduleIndex] = { ...updatedSchedule[scheduleIndex], startTime: newStartTime, endTime: newEndTime };
-                    const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, originalBlock.fullClassroomData.id);
+                    const classroomDocRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, originalBlock.fullClassroomData.id);
                     await updateDoc(classroomDocRef, { schedule: updatedSchedule });
                 }
             }
@@ -447,7 +450,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
         setTempFloatingSelectionRect(null);
         setDraggedEvent(null);
         setResizedEvent(null);
-    }, [isDraggingNewSelection, startSelection, endSelection, draggedEvent, resizedEvent, getGridCoordinatesFromPixels, checkOverlap, navigate, db, appId, teacherColumns, TIME_SLOTS, calendarEndHour, addHoursMode, visibleDays]);
+    }, [isDraggingNewSelection, startSelection, endSelection, draggedEvent, resizedEvent, getGridCoordinatesFromPixels, checkOverlap, navigate, db, appId, teacherColumns, TIME_SLOTS, calendarEndHour, addHoursMode, visibleDays, selectedYear]);
 
     useEffect(() => {
         window.addEventListener('mousemove', handleGlobalMouseMove);
@@ -472,7 +475,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
         const existingSchedule = classroomToUpdate.schedule || [];
         const combinedSchedule = [...existingSchedule, ...accumulatedSelections];
         try {
-            const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToUpdate.id);
+            const classroomDocRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, classroomToUpdate.id);
             await updateDoc(classroomDocRef, { schedule: combinedSchedule });
             handleCancelAddHours();
         } catch (error) {
@@ -492,7 +495,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
         const classroom = classrooms.find(c => c.id === deleteInfo.classroomId);
         if (classroom) {
             const updatedSchedule = classroom.schedule.filter((_, index) => index !== deleteInfo.slotIndex);
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/classrooms`, deleteInfo.classroomId), { schedule: updatedSchedule });
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, deleteInfo.classroomId), { schedule: updatedSchedule });
         }
         setDeleteInfo(null);
     };
@@ -503,13 +506,13 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     };
     const handleSaveColor = async () => {
         if (!selectedClassroomForColor) return;
-        await updateDoc(doc(db, `artifacts/${appId}/public/data/classrooms`, selectedClassroomForColor.id), { color: tempColor });
+        await updateDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, selectedClassroomForColor.id), { color: tempColor });
         setOpenColorPickerDialog(false);
     };
     const handleClearSchedule = () => setOpenClearConfirmDialog(true);
     const handleConfirmClearSchedule = async () => {
         setOpenClearConfirmDialog(false);
-        const q = query(collection(db, `artifacts/${appId}/public/data/classrooms`));
+        const q = query(collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`));
         const snapshot = await getDocs(q);
         const deletePromises = snapshot.docs.map(docToDelete => deleteDoc(docToDelete.ref));
         await Promise.all(deletePromises);
@@ -623,11 +626,11 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                 
                 <Box sx={{ maxHeight: '75vh', overflow: 'auto' }}>
                     <Box sx={{ position: 'relative', minWidth: `${TIME_COLUMN_WIDTH_PX + (teacherColumns.length * visibleDays.length * 150)}px` }}>
-                        <Box sx={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white' }}>
+                        <Box sx={{ position: 'sticky', top: 0, zIndex: 10 }}>
                             <Box sx={{ display: 'flex', height: `${HEADER_ROW_HEIGHT_PX}px` }}>
-                                <Box sx={{ width: `${TIME_COLUMN_WIDTH_PX}px`, flexShrink: 0, borderBottom: '1px solid #e0e0e0' }} />
+                                <Box sx={{ width: `${TIME_COLUMN_WIDTH_PX}px`, flexShrink: 0 }} />
                                 {visibleDays.map(day => (
-                                    <Box key={day} sx={{ width: `${gridDimensions.dayWidth}px`, flexShrink: 0, textAlign: 'center', border: '1px solid #e0e0e0', borderTop: 'none', borderLeft: 'none', backgroundColor: '#1e86cc', color: '#fff' }}>
+                                    <Box key={day} sx={{ width: `${gridDimensions.dayWidth}px`, flexShrink: 0, textAlign: 'center', border: '0px solid #e0e0e0', borderTop: 'none', borderLeft: 'none', backgroundColor: '#1e86cc', color: '#fff' }}>
                                         <Typography variant="h6" sx={{p:1, height: '50%', boxSizing: 'border-box'}}>{day}</Typography>
                                         <Box sx={{ display: 'flex', borderTop: '1px solid rgba(255,255,255,0.2)', height: '50%'}}>
                                             {teacherColumns.map((teacher, index) => (
@@ -657,10 +660,10 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                         </Box>
                         
                         <Box sx={{ display: 'flex' }}>
-                            <Box sx={{ width: `${TIME_COLUMN_WIDTH_PX}px`, flexShrink: 0, position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 9, borderTop: '1px solid #e0e0e0' }}>
+                            <Box sx={{ width: `${TIME_COLUMN_WIDTH_PX}px`, flexShrink: 0, position: 'sticky', left: 0, zIndex: 9, borderTop: '1px solid #e0e0e0' }}>
                                 {TIME_SLOTS.map((time, index) => (
-                                    <Box key={time} sx={{ height: `${gridDimensions.cellHeight-1}px`, position: 'relative', borderBottom: index < TIME_SLOTS.length -1 ? '1px solid #e0e0e0' : 'none', boxSizing: 'content-box' }}>
-                                        <Typography variant="caption" sx={{ position: 'absolute', top: 0, right: '5px', transform: 'translateY(-50%)', backgroundColor: 'white', px: 0.5, zIndex: 1 }}>
+                                    <Box key={time} sx={{ height: `${gridDimensions.cellHeight-1}px`, position: 'relative', borderBottom: index < TIME_SLOTS.length -1 ? '1px solid transparent' : 'none', boxSizing: 'content-box' }}>
+                                        <Typography variant="caption" sx={{ position: 'absolute', top: 0, right: '5px', transform: 'translateY(-50%)', px: 0.5, zIndex: 1 }}>
                                             {time}
                                         </Typography>
                                     </Box>

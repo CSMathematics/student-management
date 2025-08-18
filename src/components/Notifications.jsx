@@ -1,7 +1,7 @@
 // src/components/Notifications.jsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Badge, IconButton, Menu, MenuItem, ListItemIcon, ListItemText, Typography, Divider, Box, Tooltip } from '@mui/material';
-import { Notifications as NotificationsIcon, Grade as GradeIcon, Campaign as CampaignIcon, Assignment as AssignmentIcon } from '@mui/icons-material';
+import { Notifications as NotificationsIcon, Grade as GradeIcon, Campaign as CampaignIcon, Assignment as AssignmentIcon, PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -10,11 +10,11 @@ import 'dayjs/locale/el';
 dayjs.extend(relativeTime);
 dayjs.locale('el');
 
-// Αντιστοίχιση τύπου ειδοποίησης με εικονίδιο
 const notificationIcons = {
     grade: <GradeIcon fontSize="small" color="secondary" />,
     announcement: <CampaignIcon fontSize="small" color="primary" />,
     assignment: <AssignmentIcon fontSize="small" color="info" />,
+    newUser: <PersonAddIcon fontSize="small" color="success" />,
     default: <NotificationsIcon fontSize="small" />
 };
 
@@ -36,21 +36,22 @@ function Notifications({ notifications, onMarkAsRead, onMarkAllAsRead }) {
     const handleNotificationClick = (notification) => {
         handleClose();
         if (!notification.read) {
-            onMarkAsRead(notification.id);
+            // --- ΔΙΟΡΘΩΣΗ: Περνάμε ολόκληρο το αντικείμενο της ειδοποίησης ---
+            onMarkAsRead(notification);
         }
         if (notification.link) {
             navigate(notification.link);
         }
     };
-    
+
     const handleMarkAllClick = (e) => {
         e.stopPropagation();
         onMarkAllAsRead();
-        handleClose();
-    }
-
-    // Ταξινόμηση ώστε οι νεότερες να είναι στην κορυφή
-    const sortedNotifications = [...notifications].sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
+    };
+    
+    const sortedNotifications = useMemo(() => {
+        return [...notifications].sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
+    }, [notifications]);
 
     return (
         <>
@@ -66,13 +67,10 @@ function Notifications({ notifications, onMarkAsRead, onMarkAllAsRead }) {
                 open={open}
                 onClose={handleClose}
                 PaperProps={{
-                    style: {
-                        maxHeight: 400,
-                        width: '380px',
-                    },
+                    sx: { width: 360, maxHeight: 400, overflow: 'auto' },
                 }}
             >
-                <Box sx={{ p: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
                     <Typography variant="h6">Ειδοποιήσεις</Typography>
                     {unreadCount > 0 && 
                         <Typography variant="body2" color="primary" sx={{cursor: 'pointer', '&:hover': {textDecoration: 'underline'}}} onClick={handleMarkAllClick}>

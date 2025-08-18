@@ -1,21 +1,35 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress, Paper, Typography, Container } from '@mui/material';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-// --- ΑΛΛΑΓΗ: Προσθήκη νέων imports ---
 import { getFirestore, onSnapshot, doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import './scss/main.scss';
 import AuthPage from './pages/Auth.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
+import { AcademicYearProvider } from './context/AcademicYearContext.jsx';
 import Layout from './components/Layout.jsx';
 
 import AdminPortal from './portals/AdminPortal.jsx';
 import TeacherPortal from './portals/TeacherPortal.jsx';
 import StudentPortal from './portals/StudentPortal.jsx';
 import ParentPortal from './portals/ParentPortal.jsx';
+import UsersManager from './pages/UsersManager.jsx';
+
+const PendingApprovalPage = () => (
+    <Container component="main" maxWidth="sm" sx={{ mt: 8 }}>
+        <Paper elevation={3} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Typography variant="h5" component="h1" gutterBottom>
+                Εν Αναμονή Έγκρισης
+            </Typography>
+            <Typography variant="body1" align="center">
+                Ο λογαριασμός σας δημιουργήθηκε με επιτυχία. Θα ειδοποιηθείτε μέσω email μόλις ο διαχειριστής τον ενεργοποιήσει.
+            </Typography>
+        </Paper>
+    </Container>
+);
 
 function App() {
     const [user, setUser] = useState(null);
@@ -25,77 +39,81 @@ function App() {
     const [db, setDb] = useState(null);
     const [auth, setAuth] = useState(null);
     const [appId, setAppId] = useState(null);
+    const [isFirebaseReady, setIsFirebaseReady] = useState(false);
 
     useEffect(() => {
         const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : import.meta.env.VITE_FIREBASE_CONFIG;
         const currentAppId = typeof __app_id !== 'undefined' ? __app_id : import.meta.env.VITE_APP_ID || 'default-local-app-id';
-        const parsedFirebaseConfig = firebaseConfigString ? JSON.parse(firebaseConfigString) : {};
         
-        if (parsedFirebaseConfig.apiKey) {
-            const app = initializeApp(parsedFirebaseConfig);
-            const firestoreDb = getFirestore(app);
-            const firebaseAuth = getAuth(app);
-            setDb(firestoreDb);
-            setAuth(firebaseAuth);
-            setAppId(currentAppId);
-
-            const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
-                if (user) {
-                    setUser(user);
-                    const userDocRef = doc(firestoreDb, `users/${user.uid}`);
-                    const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
-                        if (doc.exists()) {
-                            setUserProfile(doc.data());
-                        } else {
-                            console.log("No such user profile!");
-                            setUserProfile({ role: 'unknown' });
-                        }
-                        setAuthLoading(false);
-                    });
-                    return () => unsubscribeProfile();
-                } else {
-                    setUser(null);
-                    setUserProfile(null);
-                    setAuthLoading(false);
-                }
-            });
-            return () => unsubscribe();
-        } else {
-            setAuthLoading(false);
+        try {
+            const parsedFirebaseConfig = JSON.parse(firebaseConfigString);
+            if (parsedFirebaseConfig.apiKey) {
+                const app = initializeApp(parsedFirebaseConfig);
+                setDb(getFirestore(app));
+                setAuth(getAuth(app));
+                setAppId(currentAppId);
+                setIsFirebaseReady(true);
+            }
+        } catch (error) {
+            console.error("Firebase config error:", error);
+            setIsFirebaseReady(true);
         }
     }, []);
 
-    const handleSignUp = async (email, password, role) => {
+    useEffect(() => {
+        if (!auth) return;
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                setUser(user);
+                const userDocRef = doc(db, `users/${user.uid}`);
+                const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
+                    if (doc.exists()) {
+                        setUserProfile(doc.data());
+                    } else {
+                        setUserProfile({ role: 'unknown' });
+                    }
+                    setAuthLoading(false);
+                });
+                return () => unsubscribeProfile();
+            } else {
+                setUser(null);
+                setUserProfile(null);
+                setAuthLoading(false);
+            }
+        });
+        return () => unsubscribe();
+    }, [auth, db]);
+
+    const handleSignUp = async (email, password, role, firstName, lastName) => {
         setAuthLoading(true);
         setAuthError('');
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-            // Δημιουργία προφίλ χρήστη
             await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,
                 email: user.email,
-                role: role,
+                firstName: firstName,
+                lastName: lastName,
+                role: 'pending_approval', 
+                requestedRole: role, // --- ΑΛΛΑΓΗ: Αποθήκευση του αιτούμενου ρόλου ---
                 profileId: null,
                 createdAt: new Date(),
             });
 
-            // --- ΑΛΛΑΓΗ: Δημιουργία ειδοποίησης για τον admin ---
-            const notificationsRef = collection(db, `artifacts/${appId}/public/data/notifications`);
+            const notificationsRef = collection(db, `artifacts/${appId}/public/data/adminNotifications`);
             await addDoc(notificationsRef, {
-                recipientId: 'admin', // Ειδικό ID για όλους τους admins
+                recipientId: 'admin',
                 type: 'newUser',
-                message: `Νέος χρήστης (${email}) εγγράφηκε με ρόλο: ${role}.`,
-                link: role === 'student' ? '/students' : (role === 'teacher' ? '/teachers' : '/'),
+                message: `Ο χρήστης ${firstName} ${lastName} (${email}) έκανε εγγραφή ως ${role} και αναμένει έγκριση.`,
+                link: '/users-management',
                 readBy: [],
                 timestamp: serverTimestamp()
             });
 
         } catch (error) {
             if (error.code === 'auth/email-already-in-use') {
-                setAuthError('Αυτό το email χρησιμοποιείται ήδη.');
-            } else if (error.code === 'auth/weak-password') {
-                setAuthError('Ο κωδικός πρέπει να είναι τουλάχιστον 6 χαρακτήρες.');
+                setAuthError('Το email που δώσατε χρησιμοποιείται ήδη.');
             } else {
                 setAuthError('Προέκυψε ένα σφάλμα. Δοκιμάστε ξανά.');
             }
@@ -110,11 +128,7 @@ function App() {
         try {
             await signInWithEmailAndPassword(auth, email, password);
         } catch (error) {
-            if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-                setAuthError('Λάθος email ή κωδικός πρόσβασης.');
-            } else {
-                setAuthError('Προέκυψε ένα σφάλμα. Δοκιμάστε ξανά.');
-            }
+            setAuthError('Λάθος email ή κωδικός πρόσβασης.');
         } finally {
             setAuthLoading(false);
         }
@@ -139,34 +153,38 @@ function App() {
                 return <StudentPortal {...props} />;
             case 'parent':
                 return <ParentPortal {...props} />;
+            case 'pending_approval':
+                return <PendingApprovalPage />;
             default:
                 return <Box>Loading user profile...</Box>;
         }
     };
 
-    if (authLoading) {
+    if (!isFirebaseReady || authLoading) {
         return (<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>);
     }
 
     return (
         <ThemeProvider>
-            <BrowserRouter>
-                {user ? (
-                    <Layout 
-                        userProfile={userProfile} 
-                        handleLogout={handleLogout}
-                        db={db}
-                        appId={appId}
-                        user={user}
-                    >
-                        {renderPortal()}
-                    </Layout>
-                ) : (
-                    <Routes>
-                        <Route path="*" element={<AuthPage handleLogin={handleLogin} handleSignUp={handleSignUp} loading={authLoading} error={authError} />} />
-                    </Routes>
-                )}
-            </BrowserRouter>
+            <AcademicYearProvider db={db} appId={appId}>
+                <BrowserRouter>
+                    {user ? (
+                        <Layout 
+                            userProfile={userProfile} 
+                            handleLogout={handleLogout}
+                            db={db}
+                            appId={appId}
+                            user={user}
+                        >
+                            {renderPortal()}
+                        </Layout>
+                    ) : (
+                        <Routes>
+                            <Route path="*" element={<AuthPage handleLogin={handleLogin} handleSignUp={handleSignUp} loading={authLoading} error={authError} />} />
+                        </Routes>
+                    )}
+                </BrowserRouter>
+            </AcademicYearProvider>
         </ThemeProvider>
     );
 }

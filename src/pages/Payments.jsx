@@ -223,7 +223,7 @@ function Payments({ allStudents, allPayments, db, appId, loading }) {
                 date: dayjs(date).toDate(),
                 createdAt: new Date(),
             };
-            const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/payments`), paymentData);
+            const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/payments`), paymentData);
             generateReceipt(selectedStudent, { ...paymentData, id: docRef.id });
             setFeedback({ type: 'success', message: `Η πληρωμή των ${amount.toFixed(2)}€ για ${monthData.month} καταχωρήθηκε!` });
         } catch (error) {
@@ -255,7 +255,7 @@ function Payments({ allStudents, allPayments, db, appId, loading }) {
         try {
             const currentSchoolYearStartYear = getCurrentSchoolYearStartYear();
             const q = query(
-                collection(db, `artifacts/${appId}/public/data/payments`),
+                collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/payments`),
                 where('studentId', '==', selectedStudent.id),
                 where('notes', '==', `Δόση ${monthData.month}`)
             );
@@ -297,7 +297,7 @@ function Payments({ allStudents, allPayments, db, appId, loading }) {
         setMonthlyStatus(newStatus);
         
         try {
-            const studentRef = doc(db, `artifacts/${appId}/public/data/students`, selectedStudent.id);
+            const studentRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`, selectedStudent.id);
             await setDoc(studentRef, { monthlyStatus: newStatus }, { merge: true });
         } catch (error) {
             console.error("Error updating monthly status:", error);

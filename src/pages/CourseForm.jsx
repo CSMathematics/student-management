@@ -1,14 +1,15 @@
 // src/pages/CourseForm.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
     Container, Paper, Typography, TextField, Button, Box, IconButton, Divider,
-    CircularProgress, Alert, FormControl, InputLabel, Select, MenuItem, Grid, Chip, Tooltip, OutlinedInput
+    CircularProgress, Alert, FormControl, InputLabel, Select, MenuItem, Grid, Chip, Tooltip, OutlinedInput,
+    Autocomplete
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, Schedule as ScheduleIcon, UploadFile as UploadFileIcon } from '@mui/icons-material';
 import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { SUBJECTS_BY_GRADE_AND_CLASS } from '../data/subjects.js';
+import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
 
 // Helper function to generate a random ID
 const generateFirestoreId = () => {
@@ -20,15 +21,18 @@ const generateFirestoreId = () => {
   return autoId;
 };
 
-function CourseForm({ db, appId, allCourses, allTeachers }) {
+function CourseForm({ db, appId, allCourses, allTeachers, selectedYear }) {
     const navigate = useNavigate();
     const { courseId } = useParams();
+    const location = useLocation(); // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
     const isEditMode = Boolean(courseId);
 
     const [tempId] = useState(() => isEditMode ? null : generateFirestoreId());
 
     const [courseName, setCourseName] = useState('');
-    const [grade, setGrade] = useState('');
+    // --- ΑΛΛΑΓΗ: Προ-συμπλήρωση της τάξης από την προηγούμενη σελίδα ---
+    const [grade, setGrade] = useState(() => location.state?.initialGrade || '');
+    const [specialization, setSpecialization] = useState('');
     const [assignedTeacherIds, setAssignedTeacherIds] = useState([]);
     const [syllabus, setSyllabus] = useState([{ id: Date.now(), title: '', sections: [{ id: Date.now() + 1, text: '', hours: '', materials: [] }] }]);
     const [loading, setLoading] = useState(false);
@@ -41,6 +45,7 @@ function CourseForm({ db, appId, allCourses, allTeachers }) {
             if (courseToEdit) {
                 setCourseName(courseToEdit.name || '');
                 setGrade(courseToEdit.grade || '');
+                setSpecialization(courseToEdit.specialization || '');
                 setAssignedTeacherIds(courseToEdit.assignedTeacherIds || []);
                 const syllabusWithIds = (courseToEdit.syllabus || []).map(ch => ({
                     ...ch,
@@ -51,6 +56,12 @@ function CourseForm({ db, appId, allCourses, allTeachers }) {
             }
         }
     }, [courseId, allCourses, isEditMode]);
+    
+    const availableSubjectsForGrade = useMemo(() => {
+        if (!grade) return [];
+        return getSubjects(grade, specialization);
+    }, [grade, specialization]);
+
 
     const handleAddChapter = () => setSyllabus([...syllabus, { id: Date.now(), title: '', sections: [{ id: Date.now() + 1, text: '', hours: '', materials: [] }] }]);
     const handleChapterChange = (chapterId, newTitle) => setSyllabus(syllabus.map(ch => ch.id === chapterId ? { ...ch, title: newTitle } : ch));
@@ -70,8 +81,8 @@ function CourseForm({ db, appId, allCourses, allTeachers }) {
     };
 
     const handleFileUpload = async (chapterId, sectionId, file) => {
-        if (!file) return;
-        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        if (!file || !selectedYear) return;
+        if (file.size > 5 * 1024 * 1024) {
             setFeedback({ type: 'error', message: 'Το αρχείο είναι πολύ μεγάλο. Το όριο είναι 5MB.' });
             return;
         }
@@ -79,7 +90,7 @@ function CourseForm({ db, appId, allCourses, allTeachers }) {
         setFeedback({ type: '', message: '' });
 
         const storage = getStorage(db.app);
-        const storagePath = `course_materials/${courseId || tempId}/${Date.now()}_${file.name}`;
+        const storagePath = `artifacts/${appId}/academicYears/${selectedYear}/course_materials/${courseId || tempId}/${Date.now()}_${file.name}`;
         const storageRef = ref(storage, storagePath);
 
         try {
@@ -106,7 +117,6 @@ function CourseForm({ db, appId, allCourses, allTeachers }) {
     };
 
     const handleDeleteMaterial = async (chapterId, sectionId, materialToDelete) => {
-        // Remove from UI first for responsiveness
         setSyllabus(prevSyllabus => prevSyllabus.map(ch => 
             ch.id === chapterId ? { 
                 ...ch, 
@@ -116,8 +126,6 @@ function CourseForm({ db, appId, allCourses, allTeachers }) {
             } : ch
         ));
 
-        // --- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ ---
-        // Delete from Firebase Storage ONLY if it has a path (i.e., it's not a Base64 file)
         if (materialToDelete.path) {
             try {
                 const storage = getStorage(db.app);
@@ -135,6 +143,10 @@ function CourseForm({ db, appId, allCourses, allTeachers }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!selectedYear) {
+            setFeedback({ type: 'error', message: 'Δεν έχει επιλεγεί ακαδημαϊκό έτος.' });
+            return;
+        }
         if (!courseName || !grade) {
             setFeedback({ type: 'error', message: 'Παρακαλώ συμπληρώστε το όνομα και την τάξη.' });
             return;
@@ -146,6 +158,7 @@ function CourseForm({ db, appId, allCourses, allTeachers }) {
             const courseData = {
                 name: courseName,
                 grade: grade,
+                specialization: specialization,
                 assignedTeacherIds: assignedTeacherIds,
                 totalHours: totalCourseHours,
                 syllabus: syllabus.map(chapter => ({
@@ -158,12 +171,14 @@ function CourseForm({ db, appId, allCourses, allTeachers }) {
                 })).filter(c => c.title.trim() !== ''),
             };
             
+            const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
+
             if (isEditMode) {
-                const courseDocRef = doc(db, `artifacts/${appId}/public/data/courses`, courseId);
+                const courseDocRef = doc(db, `${yearPath}/courses`, courseId);
                 await updateDoc(courseDocRef, courseData);
                 setFeedback({ type: 'success', message: 'Το μάθημα ενημερώθηκε!' });
             } else {
-                const newCourseRef = doc(db, `artifacts/${appId}/public/data/courses`, tempId);
+                const newCourseRef = doc(db, `${yearPath}/courses`, tempId);
                 courseData.createdAt = new Date();
                 await setDoc(newCourseRef, courseData);
                 setFeedback({ type: 'success', message: 'Το μάθημα αποθηκεύτηκε!' });
@@ -182,6 +197,8 @@ function CourseForm({ db, appId, allCourses, allTeachers }) {
         setAssignedTeacherIds(typeof value === 'string' ? value.split(',') : value);
     };
 
+    const availableSpecializations = getSpecializations(grade);
+
     return (
         <Container maxWidth="md" sx={{ mt: 4 }}>
             <Paper component="form" onSubmit={handleSubmit} elevation={3} sx={{ p: 3, borderRadius: '12px' }}>
@@ -190,14 +207,42 @@ function CourseForm({ db, appId, allCourses, allTeachers }) {
                 </Typography>
 
                 <Grid container spacing={2} sx={{ my: 2 }}>
-                    <Grid item xs={12} sm={6}><TextField fullWidth label="Όνομα Μαθήματος" value={courseName} onChange={(e) => setCourseName(e.target.value)} variant="outlined" required /></Grid>
                     <Grid item xs={12} sm={6}>
                         <FormControl fullWidth>
                             <InputLabel>Τάξη</InputLabel>
-                            <Select value={grade} label="Τάξη" onChange={(e) => setGrade(e.target.value)} required>
+                            <Select value={grade} label="Τάξη" onChange={(e) => { setGrade(e.target.value); setCourseName(''); setSpecialization(''); }} required>
                                 {Object.keys(SUBJECTS_BY_GRADE_AND_CLASS).map(g => (<MenuItem key={g} value={g}>{g}</MenuItem>))}
                             </Select>
                         </FormControl>
+                    </Grid>
+                    {availableSpecializations.length > 0 && (
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>Κατεύθυνση</InputLabel>
+                                <Select value={specialization} label="Κατεύθυνση" onChange={(e) => setSpecialization(e.target.value)} required>
+                                    {availableSpecializations.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    )}
+                    <Grid item xs={12} sm={6}>
+                        <Autocomplete
+                            freeSolo
+                            options={availableSubjectsForGrade}
+                            value={courseName}
+                            onInputChange={(event, newInputValue) => {
+                                setCourseName(newInputValue);
+                            }}
+                            disabled={!grade}
+                            renderInput={(params) => (
+                                <TextField 
+                                    {...params} 
+                                    label="Όνομα Μαθήματος" 
+                                    variant="outlined" 
+                                    required 
+                                />
+                            )}
+                        />
                     </Grid>
                     <Grid item xs={12}>
                         <FormControl fullWidth>

@@ -29,8 +29,8 @@ const generateTimeSlots = (startHour, endHour) => {
 const DAYS_OF_WEEK = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο'];
 const TIME_SLOTS = generateTimeSlots(8, 22);
 
-// --- ΑΛΛΑΓΗ: Προσθήκη onCancel και onSaveSuccess στα props ---
-function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allTeachers, onCancel, onSaveSuccess }) {
+// --- ΔΙΟΡΘΩΣΗ 1: Προσθήκη του selectedYear στα props ---
+function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allTeachers, onCancel, onSaveSuccess, selectedYear }) {
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -174,8 +174,9 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allT
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!db || !appId) {
-            setAlertMessage("Σφάλμα: Η βάση δεδομένων δεν είναι έτοιμη.");
+        // --- ΔΙΟΡΘΩΣΗ 2: Έλεγχος ύπαρξης του selectedYear ---
+        if (!db || !appId || !selectedYear) {
+            setAlertMessage("Σφάλμα: Δεν έχει επιλεγεί ακαδημαϊκό έτος.");
             setOpenAlertDialog(true);
             return;
         }
@@ -186,18 +187,21 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allT
         }
         const dataToSave = { ...formData, totalDuration: totalScheduleDuration };
         try {
+            const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
             if (classroomToEdit && classroomToEdit.id) {
-                const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToEdit.id);
+                // --- ΔΙΟΡΘΩΣΗ 3: Χρήση του yearPath ---
+                const classroomDocRef = doc(db, `${yearPath}/classrooms`, classroomToEdit.id);
                 await updateDoc(classroomDocRef, dataToSave);
             } else {
-                const classroomsCollectionRef = collection(db, `artifacts/${appId}/public/data/classrooms`);
+                // --- ΔΙΟΡΘΩΣΗ 3: Χρήση του yearPath ---
+                const classroomsCollectionRef = collection(db, `${yearPath}/classrooms`);
                 await addDoc(classroomsCollectionRef, dataToSave);
             }
             
             if (onSaveSuccess) {
-                onSaveSuccess(); // Κλείνει το modal αν υπάρχει
+                onSaveSuccess();
             } else {
-                navigate('/classrooms'); // Πλοηγείται πίσω αν είναι σελίδα
+                navigate('/classrooms');
             }
 
         } catch (error) {
@@ -207,12 +211,11 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allT
         }
     };
 
-    // --- ΑΛΛΑΓΗ: Νέα συνάρτηση για το κουμπί "Ακύρωση" ---
     const handleCancel = () => {
         if (onCancel) {
-            onCancel(); // Αν υπάρχει η onCancel (δηλαδή είναι σε modal), την καλεί
+            onCancel();
         } else {
-            navigate(-1); // Αλλιώς, πηγαίνει πίσω
+            navigate(-1);
         }
     };
 
@@ -282,8 +285,8 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allT
                             </FormControl>
                         </Grid>
 
-                        <Grid item xs={12} sm={4}><TextField fullWidth label="Μέγ. Μαθητές" name="maxStudents" type="number" value={formData.maxStudents} onChange={(e) => setFormData({...formData, maxStudents: e.target.value})} required size="small" /></Grid>
-                        <Grid item xs={12} sm={2}><FormControl fullWidth><InputLabel shrink sx={{position: 'absolute', top: -18, left: -12, fontSize: '0.9rem'}}>Χρώμα</InputLabel><input type="color" value={formData.color} onChange={(e) => setFormData({...formData, color: e.target.value})} style={{width: '100%', height: '40px', border: '1px solid #ccc', borderRadius: '4px', padding: '2px', boxSizing: 'border-box', cursor: 'pointer'}}/></FormControl></Grid>
+                        <Grid item xs={12} sm={5}><TextField fullWidth label="Μέγ. Μαθητές" name="maxStudents" type="number" value={formData.maxStudents} onChange={(e) => setFormData({...formData, maxStudents: e.target.value})} required size="small" /></Grid>
+                        <Grid item xs={12} sm={1}><FormControl fullWidth><InputLabel shrink sx={{position: 'absolute', top: -8, left: -12, fontSize: '0.9rem'}}>Χρώμα</InputLabel><input type="color" value={formData.color} onChange={(e) => setFormData({...formData, color: e.target.value})} style={{width: '100%', height: '40px', borderRadius: '4px', padding: '0px', boxSizing: 'border-box', cursor: 'pointer'}}/></FormControl></Grid>
                     </Grid>
                 </Paper>
                 <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', mb: 4 }}>
@@ -308,7 +311,6 @@ function NewClassroomForm({ classroomToEdit, db, userId, appId, classrooms, allT
                     )}
                 </Paper>
                 <Box sx={{ mt: 3, textAlign: 'right', display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                    {/* --- ΑΛΛΑΓΗ: Χρήση της νέας συνάρτησης --- */}
                     <Button variant="outlined" color="secondary" onClick={handleCancel}>Ακύρωση</Button>
                     <Button type="submit" variant="contained" color="primary">{classroomToEdit ? 'Ενημέρωση' : 'Αποθήκευση'}</Button>
                 </Box>

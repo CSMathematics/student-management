@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, useParams } from 'react-router-dom';
 import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { Box, CircularProgress, Typography } from '@mui/material';
+import { useAcademicYear } from '../context/AcademicYearContext.jsx';
 
 // Pages
 import TeacherDashboard from './teacher/TeacherDashboard.jsx';
@@ -16,8 +17,8 @@ import Classrooms from '../pages/Classrooms.jsx';
 import StudentReport from '../pages/StudentReport.jsx';
 import TeacherProfile from './teacher/TeacherProfile.jsx';
 import MyLibrary from './teacher/MyLibrary.jsx';
-import MyCourses from './teacher/MyCourses.jsx'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
-import CourseForm from '../pages/CourseForm.jsx'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
+import MyCourses from './teacher/MyCourses.jsx';
+import CourseForm from '../pages/CourseForm.jsx';
 
 // Wrapper for editing a course
 const CourseFormWrapper = (props) => {
@@ -26,6 +27,7 @@ const CourseFormWrapper = (props) => {
 };
 
 function TeacherPortal({ db, appId, user, userProfile }) {
+    const { selectedYear, loadingYears } = useAcademicYear();
     const [teacherData, setTeacherData] = useState(null);
     const [assignedClassrooms, setAssignedClassrooms] = useState([]);
     const [studentsInClassrooms, setStudentsInClassrooms] = useState([]);
@@ -42,59 +44,77 @@ function TeacherPortal({ db, appId, user, userProfile }) {
     const teacherId = userProfile?.profileId;
 
     useEffect(() => {
-        // ... (η λογική φόρτωσης παραμένει ίδια)
-        if (!db || !appId || !teacherId) {
-            setLoading(false);
+        if (!db || !appId || !teacherId || !selectedYear) {
+            if (!loadingYears) setLoading(false);
             return;
         }
+
         const unsubscribes = [];
         setLoading(true);
-        const teacherRef = doc(db, `artifacts/${appId}/public/data/teachers`, teacherId);
+        let isMounted = true;
+
+        // Fetch teacher's own data (this is not year-specific)
+        const teacherRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`, teacherId);
         unsubscribes.push(onSnapshot(teacherRef, (doc) => {
-            if (doc.exists()) setTeacherData({ id: doc.id, ...doc.data() });
+            if (doc.exists() && isMounted) setTeacherData({ id: doc.id, ...doc.data() });
         }));
         
         const usersRef = collection(db, 'users');
         unsubscribes.push(onSnapshot(usersRef, (snapshot) => {
-            setAllUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            if (isMounted) setAllUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         }));
 
-        const queries = {
-            announcements: query(collection(db, `artifacts/${appId}/public/data/announcements`)),
-            assignments: query(collection(db, `artifacts/${appId}/public/data/assignments`)),
-            courses: query(collection(db, `artifacts/${appId}/public/data/courses`)),
-            grades: query(collection(db, `artifacts/${appId}/public/data/grades`)),
-            absences: query(collection(db, `artifacts/${appId}/public/data/absences`)),
-            teachers: query(collection(db, `artifacts/${appId}/public/data/teachers`)),
-            payments: query(collection(db, `artifacts/${appId}/public/data/payments`)),
+        // Base path for year-specific data
+        const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
+
+        const collectionsToFetch = {
+            announcements: setAnnouncements,
+            assignments: setAllAssignments,
+            courses: setAllCourses,
+            grades: setAllGrades,
+            absences: setAllAbsences,
+            teachers: setAllTeachers,
+            payments: setAllPayments,
         };
-        const setters = {
-            announcements: setAnnouncements, assignments: setAllAssignments,
-            courses: setAllCourses, grades: setAllGrades, absences: setAllAbsences,
-            teachers: setAllTeachers, payments: setAllPayments,
-        };
-        for (const [key, q] of Object.entries(queries)) {
-            unsubscribes.push(onSnapshot(q, (snapshot) => {
-                setters[key](snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+
+        for (const [name, setter] of Object.entries(collectionsToFetch)) {
+            const ref = collection(db, `${yearPath}/${name}`);
+            unsubscribes.push(onSnapshot(query(ref), (snapshot) => {
+                if (isMounted) setter(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
             }));
         }
-        const classroomsQuery = query(collection(db, `artifacts/${appId}/public/data/classrooms`), where("teacherId", "==", teacherId));
+
+        const classroomsQuery = query(collection(db, `${yearPath}/classrooms`), where("teacherId", "==", teacherId));
         unsubscribes.push(onSnapshot(classroomsQuery, (snapshot) => {
+            if (!isMounted) return;
             const classroomsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setAssignedClassrooms(classroomsData);
+
             if (classroomsData.length > 0) {
-                const studentIds = classroomsData.flatMap(c => c.enrolledStudents || []);
+                const studentIds = [...new Set(classroomsData.flatMap(c => c.enrolledStudents || []))];
                 if (studentIds.length > 0) {
-                    const studentsQuery = query(collection(db, `artifacts/${appId}/public/data/students`), where('__name__', 'in', [...new Set(studentIds)]));
+                    const studentsQuery = query(collection(db, `${yearPath}/students`), where('__name__', 'in', studentIds));
                     unsubscribes.push(onSnapshot(studentsQuery, (studentSnapshot) => {
-                        setStudentsInClassrooms(studentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                        setLoading(false);
+                        if (isMounted) {
+                            setStudentsInClassrooms(studentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                            setLoading(false);
+                        }
                     }));
-                } else { setLoading(false); }
-            } else { setLoading(false); }
+                } else {
+                    setStudentsInClassrooms([]);
+                    setLoading(false);
+                }
+            } else {
+                setStudentsInClassrooms([]);
+                setLoading(false);
+            }
         }));
-        return () => unsubscribes.forEach(unsub => unsub());
-    }, [db, appId, teacherId]);
+
+        return () => {
+            isMounted = false;
+            unsubscribes.forEach(unsub => unsub());
+        };
+    }, [db, appId, teacherId, selectedYear, loadingYears]);
 
     const teacherAssignments = useMemo(() => {
         if (!allAssignments || !assignedClassrooms) return [];
@@ -102,7 +122,7 @@ function TeacherPortal({ db, appId, user, userProfile }) {
         return allAssignments.filter(a => classroomIds.includes(a.classroomId));
     }, [allAssignments, assignedClassrooms]);
 
-    if (loading) {
+    if (loading || loadingYears) {
         return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}><CircularProgress /></Box>;
     }
     if (!teacherId || !teacherData) {
@@ -138,8 +158,8 @@ function TeacherPortal({ db, appId, user, userProfile }) {
             <Route path="/" element={<TeacherDashboard {...commonProps} />} />
             <Route path="/my-profile" element={<TeacherProfile {...commonProps} />} />
             <Route path="/my-library" element={<MyLibrary {...commonProps} />} />
-            <Route path="/my-courses" element={<MyCourses {...commonProps} />} /> {/* <-- ΝΕΑ ΔΙΑΔΡΟΜΗ */}
-            <Route path="/course/edit/:courseId" element={<CourseFormWrapper {...commonProps} />} /> {/* <-- ΝΕΑ ΔΙΑΔΡΟΜΗ */}
+            <Route path="/my-courses" element={<MyCourses {...commonProps} />} />
+            <Route path="/course/edit/:courseId" element={<CourseFormWrapper {...commonProps} />} />
             <Route path="/my-classrooms" element={<Classrooms {...commonProps} />} />
             <Route path="/my-schedule" element={<WeeklyScheduleCalendar {...commonProps} />} />
             <Route path="/my-gradebook" element={<MyGradebook {...commonProps} />} />

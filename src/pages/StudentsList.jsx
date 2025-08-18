@@ -9,14 +9,16 @@ import {
 } from '@mui/material';
 import { 
     Edit, Delete, Payment as PaymentIcon, Save as SaveIcon, Add as AddIcon, UploadFile, 
-    Download, DeleteForever, KeyboardArrowDown, KeyboardArrowUp, PeopleAlt, Clear, Assessment as ReportIcon, Link as LinkIcon
+    Download, DeleteForever, KeyboardArrowDown, KeyboardArrowUp, PeopleAlt, Clear, Assessment as ReportIcon, Link as LinkIcon,
+    GetApp as ImportIcon
 } from '@mui/icons-material';
-import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, collection, onSnapshot } from 'firebase/firestore';
+import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, collection, onSnapshot, writeBatch } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import dayjs from 'dayjs';
 import StudentProgressChart from './StudentProgressChart.jsx';
+import StudentImporter from '../components/StudentImporter.jsx';
+import { useAcademicYear } from '../context/AcademicYearContext.jsx';
 
-// --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Αντιστοίχιση τύπων βαθμολογίας ---
 const gradeTypeLabels = {
     participation: 'Συμμετοχή',
     homework: 'Εργασία Σπιτιού',
@@ -26,7 +28,6 @@ const gradeTypeLabels = {
     assignment: 'Αξιολόγηση',
 };
 
-// Helper component για την εμφάνιση λεπτομερειών
 const DetailItem = ({ label, value }) => (
     <Box sx={{ mb: 2 }}>
         <Typography variant="body2" color="text.secondary" display="block" sx={{ fontWeight: 500 }}>
@@ -60,7 +61,8 @@ const schoolYearMonths = [
     { name: 'Νοέμβριος', number: 11 }, { name: 'Δεκέμβριος', number: 12 },
     { name: 'Ιανουάριος', number: 1 }, { name: 'Φεβρουάριος', number: 2 },
     { name: 'Μάρτιος', number: 3 }, { name: 'Απρίλιος', number: 4 },
-    { name: 'Μάιος', number: 5 }, { name: 'Ιούνιος', number: 6 }
+    { name: 'Μάιος', number: 5 }, { name: 'Ιούνιος', number: 6 },
+    { name: 'Ιούλιος', number: 7 }, { name: 'Αύγουστος', number: 8 }
 ];
 
 const formatSchedule = (schedule) => {
@@ -92,18 +94,17 @@ const FilterTextField = ({ name, filters, handleFilterChange, handleClearFilter,
             ) : null,
         }}
         sx={{
-            '& .MuiInput-underline:before': { borderBottomColor: 'rgba(0, 0, 0, 0.2)' },
-            '& .MuiInput-underline:hover:not(.Mui-disabled):before': { borderBottomColor: 'rgba(0, 0, 0, 0.42)' },
             '& .MuiInput-underline:after': { borderBottomColor: 'primary.main' },
-            '& .MuiInputBase-input::placeholder': { color: 'rgba(0, 0, 0, 0.54)', opacity: 1 }
+            '& .MuiInputBase-input::placeholder': { opacity: 0.7 }
         }}
         {...props}
     />
 );
 
 
-function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classrooms, loading, db, appId }) {
+function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classrooms, loading, db, appId, selectedYear }) {
     const navigate = useNavigate();
+    const { academicYears } = useAcademicYear();
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [page, setPage] = useState(0);
     const [selectedStudent, setSelectedStudent] = useState(null);
@@ -112,6 +113,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
     const [studentToDelete, setStudentToDelete] = useState(null);
     const [activeTab, setActiveTab] = useState(0);
+    const [isImporting, setIsImporting] = useState(false);
 
     const [allUsers, setAllUsers] = useState([]);
     const [openLinkDialog, setOpenLinkDialog] = useState({ open: false, type: null });
@@ -236,7 +238,6 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
         return grades.sort((a, b) => getDateFromFirestoreTimestamp(b.date) - getDateFromFirestoreTimestamp(a.date));
     }, [selectedStudent, allGrades, startDate, endDate, selectedSubject, selectedGradeType]);
 
-    // --- ΝΕΑ ΛΟΓΙΚΗ: Ομαδοποίηση βαθμών ανά ημερομηνία ---
     const groupedStudentGrades = useMemo(() => {
         if (!studentGrades) return [];
         const groups = studentGrades.reduce((acc, grade) => {
@@ -285,9 +286,15 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     const averageGrade = useMemo(() => {
         if (!selectedStudent || !allGrades) return null;
         const gradesForStudent = allGrades.filter(grade => grade.studentId === selectedStudent.id);
-        if (gradesForStudent.length === 0) return null;
-        const sum = gradesForStudent.reduce((acc, curr) => acc + parseFloat(curr.grade), 0);
-        return (sum / gradesForStudent.length).toFixed(2);
+        
+        const validGrades = gradesForStudent
+            .map(g => parseFloat(g.grade))
+            .filter(g => !isNaN(g));
+
+        if (validGrades.length === 0) return null;
+        
+        const sum = validGrades.reduce((acc, curr) => acc + curr, 0);
+        return (sum / validGrades.length).toFixed(2);
     }, [selectedStudent, allGrades]);
 
     const studentFinancials = useMemo(() => {
@@ -381,21 +388,38 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     const handleReportClick = (student) => navigate(`/student/report/${student.id}`);
     const handleDeleteClick = (student) => { setStudentToDelete(student); setOpenDeleteConfirm(true); };
     const handleCloseDeleteConfirm = () => { setOpenDeleteConfirm(false); setStudentToDelete(null); };
+    
     const handleConfirmDelete = async () => {
-        if (!db || !appId || !studentToDelete) return;
+        if (!db || !appId || !studentToDelete || !selectedYear) return;
         try {
-            await deleteDoc(doc(db, `artifacts/${appId}/public/data/students`, studentToDelete.id));
+            const batch = writeBatch(db);
+            const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
+
+            const studentRef = doc(db, `${yearPath}/students`, studentToDelete.id);
+            batch.delete(studentRef);
+
+            if (studentToDelete.enrolledClassrooms && studentToDelete.enrolledClassrooms.length > 0) {
+                studentToDelete.enrolledClassrooms.forEach(classroomId => {
+                    const classroomRef = doc(db, `${yearPath}/classrooms`, classroomId);
+                    batch.update(classroomRef, { enrolledStudents: arrayRemove(studentToDelete.id) });
+                });
+            }
+            
+            await batch.commit();
             setSelectedStudent(null);
-        } catch (error) { console.error("Error deleting student:", error); } 
-        finally { handleCloseDeleteConfirm(); }
+        } catch (error) { 
+            console.error("Error deleting student and updating classrooms:", error); 
+        } finally { 
+            handleCloseDeleteConfirm(); 
+        }
     };
 
     const handleSaveNotes = async () => {
-        if (!selectedStudent || !db) return;
+        if (!selectedStudent || !db || !selectedYear) return;
         setIsSavingNotes(true);
         setNotesFeedback({ type: '', message: '' });
         try {
-            const studentRef = doc(db, `artifacts/${appId}/public/data/students`, selectedStudent.id);
+            const studentRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`, selectedStudent.id);
             await updateDoc(studentRef, { notes: studentNotes });
             setSelectedStudent(prev => ({...prev, notes: studentNotes}));
             setNotesFeedback({ type: 'success', message: 'Οι σημειώσεις αποθηκεύτηκαν!' });
@@ -408,11 +432,11 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     };
 
     const handleSaveCommunication = async () => {
-        if (!selectedStudent || !db || !newCommunicationEntry.summary) return;
+        if (!selectedStudent || !db || !newCommunicationEntry.summary || !selectedYear) return;
         setIsSavingCommunication(true);
         const entryToSave = { ...newCommunicationEntry, id: Date.now(), date: dayjs(newCommunicationEntry.date).toDate() };
         try {
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, selectedStudent.id), { communicationLog: arrayUnion(entryToSave) });
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`, selectedStudent.id), { communicationLog: arrayUnion(entryToSave) });
             setSelectedStudent(prev => ({ ...prev, communicationLog: [...(prev.communicationLog || []), entryToSave] }));
             setOpenCommunicationDialog(false);
             setNewCommunicationEntry({ date: dayjs().format('YYYY-MM-DD'), type: 'Τηλεφώνημα', summary: '' });
@@ -422,14 +446,14 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
-        if (!file || !selectedStudent) return;
+        if (!file || !selectedStudent || !selectedYear) return;
         setIsUploading(true);
         const storage = getStorage(db.app);
-        const storageRef = ref(storage, `artifacts/${appId}/student_documents/${selectedStudent.id}/${Date.now()}_${file.name}`);
+        const storageRef = ref(storage, `artifacts/${appId}/academicYears/${selectedYear}/student_documents/${selectedStudent.id}/${Date.now()}_${file.name}`);
         try {
             const snapshot = await uploadBytes(storageRef, file);
             const fileData = { name: file.name, path: snapshot.ref.fullPath, uploadedAt: new Date() };
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, selectedStudent.id), { documents: arrayUnion(fileData) });
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`, selectedStudent.id), { documents: arrayUnion(fileData) });
             setSelectedStudent(prev => ({ ...prev, documents: [...(prev.documents || []), fileData] }));
         } catch (error) { console.error("Error uploading file:", error); } 
         finally { setIsUploading(false); }
@@ -444,15 +468,22 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     };
 
     const handleConfirmDocDelete = async () => {
-        if (!documentToDelete || !selectedStudent) return;
+        if (!documentToDelete || !selectedStudent || !selectedYear) return;
         const storage = getStorage(db.app);
         const fileRef = ref(storage, documentToDelete.path);
         try {
             await deleteObject(fileRef);
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, selectedStudent.id), { documents: arrayRemove(documentToDelete) });
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`, selectedStudent.id), { documents: arrayRemove(documentToDelete) });
             setSelectedStudent(prev => ({ ...prev, documents: prev.documents.filter(d => d.path !== documentToDelete.path) }));
         } catch (error) { console.error("Error deleting document:", error); } 
         finally { setOpenDocDeleteConfirm(false); setDocumentToDelete(null); }
+    };
+    
+    const handleCloseImporter = (didImport) => {
+        setIsImporting(false);
+        if (didImport) {
+            // You can add a success message here
+        }
     };
 
     const paginatedStudents = filteredAndSortedStudents.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
@@ -469,6 +500,10 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                     <Typography variant="h6">{filteredAndSortedStudents.length} Μαθητές</Typography>
                     <Typography variant="body2" color="text.secondary">Εμφανίζονται {filteredAndSortedStudents.length} από {allStudents.length} σύνολο</Typography>
                 </Box>
+                <Box sx={{ flexGrow: 1 }} />
+                <Button variant="outlined" startIcon={<ImportIcon />} onClick={() => setIsImporting(true)}>
+                    Εισαγωγή από Έτος
+                </Button>
             </Paper>
             <TableContainer component={Paper} elevation={3} sx={{ borderRadius: '5px' }}>
                 <Table>
@@ -517,7 +552,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                         <TableCell sx={{ padding: 0, border: 'none' }} colSpan={10}>
                                             <Collapse in={isSelected} timeout="auto" unmountOnExit>
                                                 {selectedStudent && (
-                                                    <Box sx={{ margin: 1 }}>
+                                                   <Box sx={{ margin: 1 }}>
                                                         <Paper elevation={0} sx={{ minHeight: '300px' }}>
                                                             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                                                                 <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
@@ -579,7 +614,6 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                                     <Button size="small" onClick={() => { setStartDate(''); setEndDate(''); setSelectedSubject(''); setSelectedGradeType(''); }}>Καθαρισμός</Button>
                                                                 </Box>
                                                                 {subjectAverage && <Typography variant="subtitle1" sx={{mb: 2}}>Μέσος όρος στο μάθημα <strong>{selectedSubject}</strong>: <strong>{subjectAverage}</strong></Typography>}
-                                                                {/* --- ΑΛΛΑΓΗ: Νέα λογική εμφάνισης βαθμών --- */}
                                                                 {groupedStudentGrades.length > 0 ? (
                                                                     <>
                                                                         <TableContainer>
@@ -660,6 +694,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                 </Table>
             </TableContainer>
             <TablePagination rowsPerPageOptions={[5, 10, 20, 50]} component="div" count={filteredAndSortedStudents.length} rowsPerPage={rowsPerPage} page={page} onPageChange={handlePageChange} onRowsPerPageChange={handleRowsPerPageChange} />
+            
             <Dialog open={openDeleteConfirm} onClose={handleCloseDeleteConfirm}><DialogTitle>Επιβεβαίωση Διαγραφής</DialogTitle><DialogContent><DialogContentText>Είστε σίγουροι ότι θέλετε να διαγράψετε τον μαθητή {studentToDelete?.firstName} {studentToDelete?.lastName};</DialogContentText></DialogContent><DialogActions><Button onClick={handleCloseDeleteConfirm}>Ακύρωση</Button><Button onClick={handleConfirmDelete} color="error">Διαγραφή</Button></DialogActions></Dialog>
             <Dialog open={openCommunicationDialog} onClose={() => setOpenCommunicationDialog(false)} fullWidth maxWidth="sm"><DialogTitle>Νέα Καταχώρηση Επικοινωνίας</DialogTitle><DialogContent><Grid container spacing={2} sx={{pt: 1}}><Grid item xs={12} sm={6}><TextField label="Ημερομηνία" type="date" value={newCommunicationEntry.date} onChange={(e) => setNewCommunicationEntry(prev => ({ ...prev, date: e.target.value }))} fullWidth InputLabelProps={{ shrink: true }}/></Grid><Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>Τύπος</InputLabel><Select value={newCommunicationEntry.type} label="Τύπος" onChange={(e) => setNewCommunicationEntry(prev => ({ ...prev, type: e.target.value }))}><MenuItem value="Τηλεφώνημα">Τηλεφώνημα</MenuItem><MenuItem value="Email">Email</MenuItem><MenuItem value="Συνάντηση">Συνάντηση</MenuItem></Select></FormControl></Grid><Grid item xs={12}><TextField label="Περίληψη" multiline rows={4} fullWidth value={newCommunicationEntry.summary} onChange={(e) => setNewCommunicationEntry(prev => ({ ...prev, summary: e.target.value }))}/></Grid></Grid></DialogContent><DialogActions><Button onClick={() => setOpenCommunicationDialog(false)}>Ακύρωση</Button><Button onClick={handleSaveCommunication} variant="contained" disabled={isSavingCommunication}>{isSavingCommunication ? <CircularProgress size={24} /> : 'Αποθήκευση'}</Button></DialogActions></Dialog>
             <Dialog open={openDocDeleteConfirm} onClose={() => setOpenDocDeleteConfirm(false)}><DialogTitle>Επιβεβαίωση Διαγραφής Εγγράφου</DialogTitle><DialogContent><DialogContentText>Είστε σίγουροι ότι θέλετε να διαγράψετε το έγγραφο "{documentToDelete?.name}"; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</DialogContentText></DialogContent><DialogActions><Button onClick={() => setOpenDocDeleteConfirm(false)}>Ακύρωση</Button><Button onClick={handleConfirmDocDelete} color="error">Διαγραφή</Button></DialogActions></Dialog>
@@ -687,6 +722,16 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                     </>
                 )}
             </Dialog>
+
+            <StudentImporter
+                open={isImporting}
+                onClose={handleCloseImporter}
+                db={db}
+                appId={appId}
+                currentYear={selectedYear}
+                allAcademicYears={academicYears}
+                currentStudents={allStudents}
+            />
         </Container>
     );
 }

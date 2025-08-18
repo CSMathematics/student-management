@@ -5,6 +5,7 @@ import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divide
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 
+
 const drawerWidth = 280;
 
 // --- ΝΕΑ ΔΟΜΗ: Μενού ανά ρόλο ---
@@ -12,6 +13,7 @@ const navItemsByRole = {
     admin: [
         { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
         { text: "Πρόγραμμα", icon: "fas fa-calendar-alt", path: "/calendar" },
+        { type: 'divider' },
         {
             text: "Μαθητές", icon: "fas fa-user", isParent: true,
             subItems: [
@@ -26,10 +28,11 @@ const navItemsByRole = {
                 { text: "Τμήματα", icon: "fas fa-door-open", path: "/classrooms" },
             ]
         },
-        { text: "Μαθήματα", icon: "fas fa-book", isParent: true,
+        {
+            text: "Μαθήματα", icon: "fas fa-book", isParent: true,
             subItems: [
                 { text: "Νέο μάθημα", icon: "fas fa-plus", path: "/course/new" },
-                { text: "Λίστα μαθημάτων", icon: "fas fa-list", path: "/courses/list" },           
+                { text: "Λίστα μαθημάτων", icon: "fas fa-list", path: "/courses/list" },
             ]
         },
         {
@@ -39,20 +42,28 @@ const navItemsByRole = {
                 { text: "Λίστα καθηγητών", icon: "fas fa-chalkboard-user", path: "/teachers" },
             ]
         },
+        { text: "Διαγωνίσματα - Εργασίες", icon: "fas fa-file-alt", path: "assignments" },
+        { text: "Βαθμολογίες", icon: "fas fa-chart-bar", path: "/grades-summary" },
+        { text: "Βιβλιοθήκη", icon: "fas fa-file", path: "#" },
+        { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", path: "/phonebook" },
+        { type: 'divider' },
+        { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
         { text: "Πληρωμές", icon: "fas fa-money-bill", path: "/payments" },
-
-        { text: "Διαγωνίσματα - Εργασίες", icon: "fas fa-file-alt", path: "assignments" },
-        { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", path: "/phonebook" },
         { text: "Έξοδα", icon: "fas fa-file-invoice-dollar", path: "/expenses" },
-        { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
-        { text: "Βαθμολογίες", icon: "fas fa-chart-bar", path: "/grades-summary" },
+
         { text: "Απουσίες", icon: "fas fa-times", path: "#" },
         { text: "Εργασίες υποχρεώσεις", icon: "fas fa-tasks", path: "#" },
-        { text: "Βιβλιοθήκη", icon: "fas fa-file", path: "#" },
-        { text: "Apprenticeships & Thesis", icon: "fas fa-briefcase", path: "#" },
-        { text: "Transportation", icon: "fas fa-bus", path: "#" },
-        { text: "Βασικές Ρυθμίσεις", icon: "fas fa-cog", path: "#" },
+        { type: 'divider' },
+        {
+            text: "Ρυθμίσεις", icon: "fas fa-cog", isParent: true,
+            subItems: [
+                { text: "Βασικές Ρυθμίσεις", icon: "fas fa-cog", path: "#" },
+                { text: "Ακαδημαϊκή χρονιά", icon: "fas fa-calendar-alt", path: "/academicYear" },
+                { text: "Διαχείριση Χρηστών", icon: "fas fa-users-cog", path: "/users-management" }
+            ]
+        },
+
         { text: "Ρυθμίσεις μαθητών", icon: "fas fa-cogs", path: "#" },
         { text: "Εμφάνιση", icon: "fas fa-sliders-h", path: "#" }
 
@@ -81,19 +92,19 @@ const navItemsByRole = {
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
     ],
     parent: [
-       { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
-       { text: "Το Προφίλ μου", icon: "fas fa-user-cog", path: "/my-profile" }, // <-- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ
-       { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
-       { text: "Ημερολόγιο Παιδιού", icon: "fas fa-calendar-alt", path: "/child-schedule" },
-       { text: "Εργασίες Παιδιού", icon: "fas fa-file-alt", path: "/child-assignments" },
-       { text: "Υλικό Μαθημάτων", icon: "fas fa-book-open", path: "/child-materials" },
-       { text: "Βαθμολογία & Απουσίες", icon: "fas fa-chart-bar", path: "/child-grades-absences" },
-       { text: "Καθηγητές & Αναφορές", icon: "fas fa-chalkboard-user", path: "/child-teachers-report" }, // <-- Η ΝΕΑ ΠΡΟΣΘΗΚΗ
-       { text: "Οικονομικά", icon: "fas fa-money-bill", path: "/payments" },
-       { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
+        { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
+        { text: "Το Προφίλ μου", icon: "fas fa-user-cog", path: "/my-profile" }, // <-- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ
+        { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
+        { text: "Ημερολόγιο Παιδιού", icon: "fas fa-calendar-alt", path: "/child-schedule" },
+        { text: "Εργασίες Παιδιού", icon: "fas fa-file-alt", path: "/child-assignments" },
+        { text: "Υλικό Μαθημάτων", icon: "fas fa-book-open", path: "/child-materials" },
+        { text: "Βαθμολογία & Απουσίες", icon: "fas fa-chart-bar", path: "/child-grades-absences" },
+        { text: "Καθηγητές & Αναφορές", icon: "fas fa-chalkboard-user", path: "/child-teachers-report" }, // <-- Η ΝΕΑ ΠΡΟΣΘΗΚΗ
+        { text: "Οικονομικά", icon: "fas fa-money-bill", path: "/payments" },
+        { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
     ],
     unknown: [
-         { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
+        { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
     ]
 };
 
@@ -102,7 +113,6 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRole }) {
     const location = useLocation();
     const [openSubmenus, setOpenSubmenus] = useState({});
 
-    // Επιλογή του σωστού μενού με βάση τον ρόλο
     const navItems = navItemsByRole[userRole] || navItemsByRole.unknown;
 
     useEffect(() => {
@@ -122,7 +132,7 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRole }) {
 
     const renderListItemButton = (item, isSubItem = false) => {
         const isSelected = location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
-        
+
         const commonProps = {
             component: (item.path && item.path !== "#") ? Link : 'div',
             to: item.path,
@@ -135,7 +145,8 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRole }) {
                 }
             },
             selected: isSelected,
-            sx: isSubItem ? { pl: 4 } : {},
+            // --- ΑΛΛΑΓΗ: Προσαρμογή της εσοχής ---
+            className: isSubItem ? 'sub-item' : ''
         };
 
         return (
@@ -161,7 +172,7 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRole }) {
                     <React.Fragment key={index}>
                         <ListItem disablePadding>{renderListItemButton(item)}</ListItem>
                         {item.isParent && (
-                             <Collapse in={openSubmenus[item.text]} timeout="auto" unmountOnExit>
+                            <Collapse in={openSubmenus[item.text]} timeout="auto" unmountOnExit>
                                 <List component="div" disablePadding>
                                     {item.subItems.map((subItem, subIndex) => (
                                         <ListItem key={subIndex} disablePadding>{renderListItemButton(subItem, true)}</ListItem>
@@ -177,10 +188,10 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRole }) {
 
     return (
         <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
-            <Drawer variant="temporary" open={mobileOpen} onClose={handleDrawerToggle} ModalProps={{ keepMounted: true }} sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth }}}>
+            <Drawer variant="temporary" open={mobileOpen} onClose={handleDrawerToggle} ModalProps={{ keepMounted: true }} sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth } }}>
                 {drawerContent}
             </Drawer>
-            <Drawer variant="permanent" sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth }}} open>
+            <Drawer variant="permanent" sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth } }} open>
                 {drawerContent}
             </Drawer>
         </Box>

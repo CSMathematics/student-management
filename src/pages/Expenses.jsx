@@ -159,11 +159,11 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
                 description: formData.description, updatedAt: serverTimestamp()
             };
             if (isEditMode) {
-                const docRef = doc(db, `artifacts/${appId}/public/data/expenses`, formData.id);
+                const docRef = doc(db, `artifacts/${appId}/academicYears/${selectedYear}/expenses`, formData.id);
                 await setDoc(docRef, dataToSave, { merge: true });
             } else {
                 dataToSave.createdAt = serverTimestamp();
-                const collectionRef = collection(db, `artifacts/${appId}/public/data/expenses`);
+                const collectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/expenses`);
                 await addDoc(collectionRef, dataToSave);
             }
             setFeedback({ type: 'success', message: `Το έξοδο ${isEditMode ? 'ενημερώθηκε' : 'αποθηκεύτηκε'}.` });
@@ -179,7 +179,7 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
     const confirmDelete = async () => {
         if (!expenseToDelete) return;
         try {
-            await deleteDoc(doc(db, `artifacts/${appId}/public/data/expenses`, expenseToDelete.id));
+            await deleteDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/expenses`, expenseToDelete.id));
             setFeedback({ type: 'success', message: 'Το έξοδο διαγράφηκε.' });
         } catch (error) {
             console.error("Error deleting expense: ", error);

@@ -46,7 +46,7 @@ function MyProfile({ studentData, db, appId, user }) {
         setIsSaving(true);
         setFeedback({ type: '', message: '' });
         try {
-            const studentRef = doc(db, `artifacts/${appId}/public/data/students`, studentData.id);
+            const studentRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`, studentData.id);
             await updateDoc(studentRef, {
                 studentPhone: formData.studentPhone,
                 email: formData.email,

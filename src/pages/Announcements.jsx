@@ -9,15 +9,6 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/ico
 import { doc, setDoc, deleteDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import dayjs from 'dayjs';
 
-const generateFirestoreId = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let autoId = '';
-  for (let i = 0; i < 20; i++) {
-    autoId += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return autoId;
-};
-
 const AnnouncementForm = ({ open, onClose, onSave, announcement }) => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -74,7 +65,7 @@ const AnnouncementForm = ({ open, onClose, onSave, announcement }) => {
 };
 
 
-function Announcements({ allAnnouncements, loading, db, appId }) {
+function Announcements({ allAnnouncements, loading, db, appId, selectedYear }) {
     const [openForm, setOpenForm] = useState(false);
     const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
     const [announcementToDelete, setAnnouncementToDelete] = useState(null);
@@ -92,13 +83,22 @@ function Announcements({ allAnnouncements, loading, db, appId }) {
     };
 
     const handleSave = async (data) => {
+        // --- ΔΙΟΡΘΩΣΗ: Έλεγχος για το selectedYear ---
+        if (!selectedYear) {
+            setFeedback({ type: 'error', message: 'Δεν έχει επιλεγεί ακαδημαϊκό έτος.' });
+            return;
+        }
         setIsSaving(true);
         setFeedback({ type: '', message: '' });
-        const id = data.id || generateFirestoreId();
-        const docRef = doc(db, `artifacts/${appId}/public/data/announcements`, id);
+        
+        // --- ΔΙΟΡΘΩΣΗ: Χρήση του selectedYear στη διαδρομή ---
+        const basePath = `artifacts/${appId}/public/data/academicYears/${selectedYear}/announcements`;
+        const id = data.id || doc(collection(db, basePath)).id;
+        const docRef = doc(db, basePath, id);
         
         try {
             const dataToSave = {
+                id,
                 title: data.title,
                 content: data.content,
                 updatedAt: serverTimestamp(),
@@ -109,13 +109,14 @@ function Announcements({ allAnnouncements, loading, db, appId }) {
             await setDoc(docRef, dataToSave, { merge: true });
 
             if (!data.id) {
-                const notificationsRef = collection(db, `artifacts/${appId}/public/data/notifications`);
+                // --- ΔΙΟΡΘΩΣΗ: Χρήση του selectedYear και για τις ειδοποιήσεις ---
+                const notificationsRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/notifications`);
                 await addDoc(notificationsRef, {
                     recipientId: 'global',
                     type: 'announcement',
                     message: `Νέα ανακοίνωση: "${data.title}"`,
                     link: '/announcements',
-                    readBy: [], // <-- ΑΛΛΑΓΗ: Χρήση readBy array
+                    readBy: [],
                     timestamp: serverTimestamp()
                 });
             }
@@ -135,9 +136,11 @@ function Announcements({ allAnnouncements, loading, db, appId }) {
     };
 
     const confirmDelete = async () => {
-        if (!announcementToDelete) return;
+        if (!announcementToDelete || !selectedYear) return;
         try {
-            await deleteDoc(doc(db, `artifacts/${appId}/public/data/announcements`, announcementToDelete.id));
+            // --- ΔΙΟΡΘΩΣΗ: Χρήση του selectedYear στη διαδρομή διαγραφής ---
+            const docRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/announcements`, announcementToDelete.id);
+            await deleteDoc(docRef);
             setFeedback({ type: 'success', message: 'Η ανακοίνωση διαγράφηκε.' });
         } catch (error) {
             console.error("Error deleting announcement: ", error);

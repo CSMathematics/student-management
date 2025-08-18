@@ -72,7 +72,7 @@ function TeachersList({ allTeachers, loading, db, appId }) {
     const handleConfirmDelete = async () => {
         if (!teacherToDelete) return;
         try {
-            await deleteDoc(doc(db, `artifacts/${appId}/public/data/teachers`, teacherToDelete.id));
+            await deleteDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`, teacherToDelete.id));
             setTeacherToDelete(null);
         } catch (error) {
             console.error("Error deleting teacher:", error);

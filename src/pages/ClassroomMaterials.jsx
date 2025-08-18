@@ -38,7 +38,7 @@ function ClassroomMaterials({ classroom, db, appId }) {
                 uploadedAt: new Date(),
             };
 
-            const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroom.id);
+            const classroomRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, classroom.id);
             await updateDoc(classroomRef, {
                 materials: arrayUnion(materialData)
             });
@@ -65,7 +65,7 @@ function ClassroomMaterials({ classroom, db, appId }) {
             await deleteObject(fileRef);
 
             // Remove file metadata from Firestore
-            const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroom.id);
+            const classroomRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, classroom.id);
             await updateDoc(classroomRef, {
                 materials: arrayRemove(fileToDelete)
             });

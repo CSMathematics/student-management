@@ -48,7 +48,7 @@ function SyllabusTracker({ classroom, allCourses, db, appId }) {
         setIsSaving(true);
 
         try {
-            const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroom.id);
+            const classroomRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, classroom.id);
             await updateDoc(classroomRef, {
                 coveredSyllabusSections: Array.from(newCoveredSections)
             });

@@ -45,11 +45,11 @@ function MyAssignmentsManager({ db, appId, classrooms, allAssignments }) {
 
         try {
             if (isEditMode) {
-                const docRef = doc(db, `artifacts/${appId}/public/data/assignments`, assignmentToEdit.id);
+                const docRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/assignments`, assignmentToEdit.id);
                 delete dataToSave.createdAt;
                 await setDoc(docRef, dataToSave, { merge: true });
             } else {
-                const collectionRef = collection(db, `artifacts/${appId}/public/data/assignments`);
+                const collectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/assignments`);
                 const newDocRef = doc(collectionRef);
                 dataToSave.id = newDocRef.id;
                 dataToSave.createdAt = serverTimestamp();
@@ -70,7 +70,7 @@ function MyAssignmentsManager({ db, appId, classrooms, allAssignments }) {
     const handleConfirmDelete = async () => {
         if (!assignmentToDelete) return;
         try {
-            await deleteDoc(doc(db, `artifacts/${appId}/public/data/assignments`, assignmentToDelete.id));
+            await deleteDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/assignments`, assignmentToDelete.id));
         } catch (error) {
             console.error("Error deleting assignment:", error);
         } finally {

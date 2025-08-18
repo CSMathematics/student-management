@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { Box, CircularProgress, Typography, Paper, FormControl, Select, MenuItem, Avatar } from '@mui/material';
+import { useAcademicYear } from '../context/AcademicYearContext.jsx';
 
 // Pages
 import Communication from '../pages/Communication.jsx';
@@ -11,7 +12,7 @@ import ParentDashboard from './parent/ParentDashboard.jsx';
 import ParentFinancials from './parent/ParentFinancials.jsx';
 import ViewAnnouncements from './parent/ViewAnnouncements.jsx';
 import TeachersAndReport from './parent/TeachersAndReport.jsx';
-import ParentProfile from './parent/ParentProfile.jsx'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
+import ParentProfile from './parent/ParentProfile.jsx';
 // Reusable Student Components
 import StudentCalendar from './student/StudentCalendar.jsx';
 import MyGradesAndAbsences from './student/MyGradesAndAbsences.jsx';
@@ -19,6 +20,7 @@ import MyAssignments from './student/MyAssignments.jsx';
 import MyMaterials from './student/MyMaterials.jsx';
 
 function ParentPortal({ db, appId, user, userProfile }) {
+    const { selectedYear, loadingYears } = useAcademicYear();
     const [childrenData, setChildrenData] = useState([]);
     const [selectedChildId, setSelectedChildId] = useState('');
     
@@ -36,49 +38,60 @@ function ParentPortal({ db, appId, user, userProfile }) {
     const childIds = userProfile?.childIds || [];
 
     useEffect(() => {
-        if (!db || !appId || childIds.length === 0) {
-            setLoading(false);
+        if (!db || !appId || childIds.length === 0 || !selectedYear) {
+            if (!loadingYears) setLoading(false);
             return;
         }
 
         const unsubscribes = [];
         setLoading(true);
+        let isMounted = true;
+        const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
 
-        const childrenQuery = query(collection(db, `artifacts/${appId}/public/data/students`), where('__name__', 'in', childIds));
+        const childrenQuery = query(collection(db, `${yearPath}/students`), where('__name__', 'in', childIds));
         unsubscribes.push(onSnapshot(childrenQuery, (snapshot) => {
-            const kidsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setChildrenData(kidsData);
-            if (!selectedChildId && kidsData.length > 0) {
-                setSelectedChildId(kidsData[0].id);
+            if (isMounted) {
+                const kidsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setChildrenData(kidsData);
+                if (!selectedChildId && kidsData.length > 0) {
+                    setSelectedChildId(kidsData[0].id);
+                } else if (kidsData.length > 0 && !kidsData.some(k => k.id === selectedChildId)) {
+                    // If the previously selected child is not in the new year's data, select the first one
+                    setSelectedChildId(kidsData[0].id);
+                } else if (kidsData.length === 0) {
+                    setSelectedChildId('');
+                }
             }
         }));
 
         const queries = {
-            grades: query(collection(db, `artifacts/${appId}/public/data/grades`), where("studentId", "in", childIds)),
-            absences: query(collection(db, `artifacts/${appId}/public/data/absences`), where("studentId", "in", childIds)),
-            payments: query(collection(db, `artifacts/${appId}/public/data/payments`), where("studentId", "in", childIds)),
-            announcements: query(collection(db, `artifacts/${appId}/public/data/announcements`)),
-            assignments: query(collection(db, `artifacts/${appId}/public/data/assignments`)),
-            dailyLogs: query(collection(db, `artifacts/${appId}/public/data/dailyLogs`)),
-            courses: query(collection(db, `artifacts/${appId}/public/data/courses`)),
-            teachers: query(collection(db, `artifacts/${appId}/public/data/teachers`))
+            grades: query(collection(db, `${yearPath}/grades`), where("studentId", "in", childIds)),
+            absences: query(collection(db, `${yearPath}/absences`), where("studentId", "in", childIds)),
+            payments: query(collection(db, `${yearPath}/payments`), where("studentId", "in", childIds)),
+            assignments: query(collection(db, `${yearPath}/assignments`)),
+            dailyLogs: query(collection(db, `${yearPath}/dailyLogs`)),
+            courses: query(collection(db, `${yearPath}/courses`)),
         };
-
         const setters = {
             grades: setGrades, absences: setAbsences, payments: setPayments,
-            announcements: setAnnouncements, assignments: setAllAssignments,
-            dailyLogs: setAllDailyLogs, courses: setAllCourses,
-            teachers: setAllTeachers
+            assignments: setAllAssignments, dailyLogs: setAllDailyLogs, courses: setAllCourses,
         };
-        
         for (const [key, q] of Object.entries(queries)) {
             unsubscribes.push(onSnapshot(q, (snapshot) => {
-                setters[key](snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+                if (isMounted) setters[key](snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
             }));
         }
 
-        return () => unsubscribes.forEach(unsub => unsub());
-    }, [db, appId, userProfile]);
+        unsubscribes.push(onSnapshot(query(collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`)), (snapshot) => {
+            if(isMounted) setAllTeachers(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        }));
+        unsubscribes.push(onSnapshot(query(collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/announcements`)), (snapshot) => {
+            if(isMounted) setAnnouncements(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        }));
+
+
+        return () => { isMounted = false; unsubscribes.forEach(unsub => unsub()); };
+    }, [db, appId, userProfile, selectedYear, loadingYears, selectedChildId]);
 
     useEffect(() => {
         if (childrenData.length === 0) {
@@ -90,19 +103,23 @@ function ParentPortal({ db, appId, user, userProfile }) {
             setLoading(false);
             return;
         }
-        const classroomsQuery = query(collection(db, `artifacts/${appId}/public/data/classrooms`), where('__name__', 'in', allEnrolledClassroomIds));
+        const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
+        const classroomsQuery = query(collection(db, `${yearPath}/classrooms`), where('__name__', 'in', allEnrolledClassroomIds));
         const unsubClassrooms = onSnapshot(classroomsQuery, (snapshot) => {
             setEnrolledClassrooms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             setLoading(false);
         });
         return () => unsubClassrooms();
-    }, [db, appId, childrenData]);
+    }, [db, appId, childrenData, selectedYear]);
 
 
     const selectedChildData = useMemo(() => childrenData.find(c => c.id === selectedChildId), [childrenData, selectedChildId]);
     
     const dataForSelectedChild = useMemo(() => {
-        if (!selectedChildData) return {};
+        if (!selectedChildData) return {
+            childData: null, grades: [], absences: [], payments: [],
+            enrolledClassrooms: [], assignments: []
+        };
         const childEnrolledClassroomIds = selectedChildData.enrolledClassrooms || [];
         return {
             childData: selectedChildData,
@@ -115,7 +132,7 @@ function ParentPortal({ db, appId, user, userProfile }) {
     }, [selectedChildId, selectedChildData, grades, absences, payments, enrolledClassrooms, allAssignments]);
 
 
-    if (loading) {
+    if (loading || loadingYears) {
         return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}><CircularProgress /></Box>;
     }
     
@@ -164,26 +181,30 @@ function ParentPortal({ db, appId, user, userProfile }) {
             )}
 
             <Box key={selectedChildId}>
-                <Routes>
-                    <Route path="/" element={<ParentDashboard {...commonProps} />} />
-                    <Route path="/my-profile" element={<ParentProfile {...commonProps} />} /> {/* <-- ΝΕΑ ΔΙΑΔΡΟΜΗ */}
-                    <Route path="/child-schedule" element={<StudentCalendar {...commonProps} />} />
-                    <Route path="/child-assignments" element={<MyAssignments {...commonProps} />} />
-                    <Route path="/child-materials" element={<MyMaterials {...commonProps} />} />
-                    <Route path="/child-grades-absences" element={<MyGradesAndAbsences {...commonProps} />} />
-                    <Route path="/payments" element={<ParentFinancials {...commonProps} />} />
-                    <Route path="/announcements" element={<ViewAnnouncements announcements={announcements} loading={loading} />} />
-                    <Route path="/child-teachers-report" element={<TeachersAndReport {...commonProps} />} />
-                    <Route path="/student/report/:studentId" element={<StudentReport {...commonProps} allStudents={childrenData} />} />
-                    <Route path="/communication" element={
-                        <Communication 
-                            db={db} appId={appId} userId={user.uid}
-                            allStudents={childrenData} 
-                            classrooms={enrolledClassrooms}
-                            allTeachers={allTeachers}
-                        />
-                    } />
-                </Routes>
+                {selectedChildData ? (
+                    <Routes>
+                        <Route path="/" element={<ParentDashboard {...commonProps} />} />
+                        <Route path="/my-profile" element={<ParentProfile {...commonProps} />} />
+                        <Route path="/child-schedule" element={<StudentCalendar {...commonProps} />} />
+                        <Route path="/child-assignments" element={<MyAssignments {...commonProps} />} />
+                        <Route path="/child-materials" element={<MyMaterials {...commonProps} />} />
+                        <Route path="/child-grades-absences" element={<MyGradesAndAbsences {...commonProps} />} />
+                        <Route path="/payments" element={<ParentFinancials {...commonProps} />} />
+                        <Route path="/announcements" element={<ViewAnnouncements announcements={announcements} loading={loading} />} />
+                        <Route path="/child-teachers-report" element={<TeachersAndReport {...commonProps} />} />
+                        <Route path="/student/report/:studentId" element={<StudentReport {...commonProps} allStudents={childrenData} />} />
+                        <Route path="/communication" element={
+                            <Communication 
+                                db={db} appId={appId} userId={user.uid}
+                                allStudents={childrenData} 
+                                classrooms={enrolledClassrooms}
+                                allTeachers={allTeachers}
+                            />
+                        } />
+                    </Routes>
+                ) : (
+                    <Typography sx={{mt: 3}}>Δεν βρέθηκαν δεδομένα για το παιδί σας για τη σχολική χρονιά {selectedYear}.</Typography>
+                )}
             </Box>
         </>
     );

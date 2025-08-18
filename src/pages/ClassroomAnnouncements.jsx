@@ -18,7 +18,8 @@ import { AddComment as AddCommentIcon, Delete as DeleteIcon } from '@mui/icons-m
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import dayjs from 'dayjs';
 
-function ClassroomAnnouncements({ classroom, db, appId }) {
+// --- ΔΙΟΡΘΩΣΗ 1: Προσθήκη του selectedYear στα props ---
+function ClassroomAnnouncements({ classroom, db, appId, selectedYear }) {
     const [newAnnouncement, setNewAnnouncement] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
@@ -29,18 +30,18 @@ function ClassroomAnnouncements({ classroom, db, appId }) {
     }, [classroom]);
 
     const handleAddAnnouncement = async () => {
-        if (!newAnnouncement.trim()) return;
+        if (!newAnnouncement.trim() || !selectedYear) return;
 
         setIsSaving(true);
         const announcementData = {
             id: Date.now(),
             text: newAnnouncement,
             createdAt: new Date(),
-            // You could add authorId or authorName here if needed
         };
 
         try {
-            const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroom.id);
+            // --- ΔΙΟΡΘΩΣΗ 2: Χρήση του selectedYear στη διαδρομή ---
+            const classroomRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, classroom.id);
             await updateDoc(classroomRef, {
                 announcements: arrayUnion(announcementData)
             });
@@ -53,8 +54,10 @@ function ClassroomAnnouncements({ classroom, db, appId }) {
     };
 
     const handleDeleteAnnouncement = async (announcementToDelete) => {
+        if (!selectedYear) return;
         try {
-            const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroom.id);
+            // --- ΔΙΟΡΘΩΣΗ 2: Χρήση του selectedYear στη διαδρομή ---
+            const classroomRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, classroom.id);
             await updateDoc(classroomRef, {
                 announcements: arrayRemove(announcementToDelete)
             });

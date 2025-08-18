@@ -1,11 +1,12 @@
 // src/components/Layout.jsx
 import React, { useState, useEffect } from 'react';
-import { Box, Toolbar, AppBar, IconButton, Button, Tooltip } from '@mui/material';
+import { Box, Toolbar, AppBar, IconButton, Tooltip, FormControl, Select, MenuItem, CircularProgress, Typography } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import Sidebar from '../pages/Sidebar.jsx';
 import Notifications from './Notifications.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { useAcademicYear } from '../context/AcademicYearContext.jsx';
 import { collection, query, where, onSnapshot, doc, updateDoc, writeBatch, orderBy, limit, arrayUnion } from 'firebase/firestore';
 import { Brightness7, Brightness2 } from '@mui/icons-material';
 
@@ -15,47 +16,103 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const { mode, toggleTheme } = useTheme();
     const [notifications, setNotifications] = useState([]);
+    
+    const { academicYears, selectedYear, setSelectedYear, loadingYears } = useAcademicYear();
+
+    // --- ΔΙΟΡΘΩΣΗ 1: Νέο useEffect για άμεσο καθαρισμό των ειδοποιήσεων έτους ---
+    useEffect(() => {
+        // Όταν αλλάζει το έτος, αφαιρούμε αμέσως τις παλιές ειδοποιήσεις για να αποφύγουμε σφάλματα
+        setNotifications(prev => prev.filter(n => n.source !== 'year'));
+    }, [selectedYear]);
+
 
     useEffect(() => {
         if (!db || !user?.uid) return;
 
-        const recipientIds = ['global', user.uid];
-        // --- ΑΛΛΑΓΗ: Προσθήκη ελέγχου για τον ρόλο του admin ---
+        const unsubscribes = [];
+
+        // --- LISTENER 1: Για τις ειδοποιήσεις του Ακαδημαϊκού Έτους ---
+        if (selectedYear) {
+            const recipientIds = ['global', user.uid];
+            if (userProfile?.role === 'parent' && userProfile.childIds) {
+                recipientIds.push(...userProfile.childIds);
+            }
+
+            const yearNotificationsQuery = query(
+                collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/notifications`),
+                where('recipientId', 'in', recipientIds),
+                orderBy('timestamp', 'desc'),
+                limit(50)
+            );
+
+            const yearUnsubscribe = onSnapshot(yearNotificationsQuery, (snapshot) => {
+                const yearNotifications = snapshot.docs.map(d => ({
+                    id: d.id,
+                    ...d.data(),
+                    read: d.data().readBy?.includes(user.uid) || false,
+                    source: 'year',
+                    yearId: selectedYear 
+                }));
+                
+                setNotifications(prev => [
+                    ...prev.filter(n => n.source !== 'year'), 
+                    ...yearNotifications
+                ]);
+
+            }, (error) => {
+                console.error("Error fetching yearly notifications:", error);
+            });
+            unsubscribes.push(yearUnsubscribe);
+        }
+
+        // --- LISTENER 2: Μόνο για τον Admin, για τις καθολικές ειδοποιήσεις ---
         if (userProfile?.role === 'admin') {
-            recipientIds.push('admin');
+            const adminNotificationsQuery = query(
+                collection(db, `artifacts/${appId}/public/data/adminNotifications`),
+                 where('recipientId', '==', 'admin'),
+                orderBy('timestamp', 'desc'),
+                limit(20)
+            );
+
+            const adminUnsubscribe = onSnapshot(adminNotificationsQuery, (snapshot) => {
+                const adminNotifications = snapshot.docs.map(d => ({
+                    id: d.id,
+                    ...d.data(),
+                    read: d.data().readBy?.includes(user.uid) || false,
+                    source: 'admin'
+                }));
+
+                setNotifications(prev => [
+                    ...prev.filter(n => n.source !== 'admin'), 
+                    ...adminNotifications
+                ]);
+
+            }, (error) => {
+                console.error("Error fetching admin notifications:", error);
+            });
+            unsubscribes.push(adminUnsubscribe);
         }
-        if (userProfile?.role === 'parent' && userProfile.childIds) {
-            recipientIds.push(...userProfile.childIds);
-        }
 
-        const notificationsQuery = query(
-            collection(db, `artifacts/${appId}/public/data/notifications`),
-            where('recipientId', 'in', recipientIds),
-            orderBy('timestamp', 'desc'),
-            limit(50)
-        );
-
-        const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
-            const notificationsData = snapshot.docs.map(d => ({
-                id: d.id,
-                ...d.data(),
-                read: d.data().readBy?.includes(user.uid) || false
-            }));
-            setNotifications(notificationsData);
-        }, (error) => {
-            console.error("Error fetching notifications:", error);
-        });
-
-        return () => unsubscribe();
-    }, [db, appId, user, userProfile]);
+        return () => unsubscribes.forEach(unsub => unsub());
+    }, [db, appId, user, userProfile, selectedYear]);
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
     };
     
-    const handleMarkAsRead = async (notificationId) => {
+    const handleMarkAsRead = async (notification) => {
+        let collectionPath;
+        if (notification.source === 'admin') {
+            collectionPath = `artifacts/${appId}/public/data/adminNotifications`;
+        } else if (notification.source === 'year' && notification.yearId) {
+            collectionPath = `artifacts/${appId}/public/data/academicYears/${notification.yearId}/notifications`;
+        } else {
+            console.error("Cannot mark notification as read: unknown source or missing yearId", notification);
+            return;
+        }
+
         try {
-            const notifRef = doc(db, `artifacts/${appId}/public/data/notifications`, notificationId);
+            const notifRef = doc(db, collectionPath, notification.id);
             await updateDoc(notifRef, { readBy: arrayUnion(user.uid) });
         } catch (error) {
             console.error("Error marking notification as read:", error);
@@ -69,7 +126,15 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
         try {
             const batch = writeBatch(db);
             unread.forEach(n => {
-                const notifRef = doc(db, `artifacts/${appId}/public/data/notifications`, n.id);
+                let collectionPath;
+                if (n.source === 'admin') {
+                    collectionPath = `artifacts/${appId}/public/data/adminNotifications`;
+                } else if (n.source === 'year' && n.yearId) {
+                    collectionPath = `artifacts/${appId}/public/data/academicYears/${n.yearId}/notifications`;
+                } else {
+                    return; 
+                }
+                const notifRef = doc(db, collectionPath, n.id);
                 batch.update(notifRef, { readBy: arrayUnion(user.uid) });
             });
             await batch.commit();
@@ -114,6 +179,28 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
                         >
                             <MenuIcon />
                         </IconButton>
+                        
+                        <Typography sx={{pr: 2}}>Ακαδημαϊκό Έτος</Typography>
+                        {loadingYears ? <CircularProgress size={20} /> : (
+                            <FormControl size="small" variant="outlined" sx={{ minWidth: 150, mr: 2 }}>
+                                <Select
+                                    value={selectedYear}
+                                    onChange={(e) => setSelectedYear(e.target.value)}
+                                    displayEmpty
+                                    sx={{
+                                        color: 'white', border: '1px solid white', 
+                                        "& .MuiSvgIcon-root": {
+                                            color: 'white'
+                                        },
+                                    }}
+                                >
+                                    {academicYears.map(year => (
+                                        <MenuItem key={year.id} value={year.id}>{year.id}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        )}
+
                         <Box sx={{ flexGrow: 1 }} />
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Notifications 

@@ -37,7 +37,7 @@ function AttendanceSheet({ db, appId, allStudents, classroom }) {
                 const endOfDay = dayjs(attendanceDate).endOf('day').toDate();
 
                 const absencesQuery = query(
-                    collection(db, `artifacts/${appId}/public/data/absences`),
+                    collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/absences`),
                     where('classroomId', '==', classroom.id),
                     where('date', '>=', startOfDay),
                     where('date', '<=', endOfDay)
@@ -81,7 +81,7 @@ function AttendanceSheet({ db, appId, allStudents, classroom }) {
 
         try {
             const batch = writeBatch(db);
-            const absencesCollectionRef = collection(db, `artifacts/${appId}/public/data/absences`);
+            const absencesCollectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/absences`);
             const date = dayjs(attendanceDate).toDate();
 
             for (const studentId in attendance) {

@@ -19,7 +19,7 @@ function Gradebook({ db, appId, allStudents, classroom, assignment }) {
             setLoading(true);
             try {
                 const q = query(
-                    collection(db, `artifacts/${appId}/public/data/grades`),
+                    collection(db, `artifacts/${appId}/academicYears/${selectedYear}/grades`),
                     where('assignmentId', '==', assignment.id)
                 );
                 const snapshot = await getDocs(q);

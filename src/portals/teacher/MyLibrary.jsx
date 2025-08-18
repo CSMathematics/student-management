@@ -44,7 +44,7 @@ function MyLibrary({ teacherData, db, appId }) {
                 uploadedAt: new Date(),
             };
 
-            const teacherRef = doc(db, `artifacts/${appId}/public/data/teachers`, teacherData.id);
+            const teacherRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`, teacherData.id);
             await updateDoc(teacherRef, {
                 library: arrayUnion(materialData)
             });
@@ -68,7 +68,7 @@ function MyLibrary({ teacherData, db, appId }) {
 
         try {
             await deleteObject(fileRef);
-            const teacherRef = doc(db, `artifacts/${appId}/public/data/teachers`, teacherData.id);
+            const teacherRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`, teacherData.id);
             await updateDoc(teacherRef, {
                 library: arrayRemove(fileToDelete)
             });

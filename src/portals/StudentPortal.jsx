@@ -1,10 +1,11 @@
 // src/portals/StudentPortal.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import { React, useState, useEffect, useMemo } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { Box, CircularProgress, Typography, Grid, Paper, List, ListItem, ListItemIcon, ListItemText, Button } from '@mui/material';
 import { Event as EventIcon, Grade as GradeIcon, Campaign as CampaignIcon, Assignment as AssignmentIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
+import { useAcademicYear } from '../context/AcademicYearContext.jsx';
 
 // Εισαγωγή των σελίδων του μαθητή
 import Communication from '../pages/Communication.jsx';
@@ -12,9 +13,8 @@ import MyGradesAndAbsences from './student/MyGradesAndAbsences.jsx';
 import MyAssignments from './student/MyAssignments.jsx';
 import MyMaterials from './student/MyMaterials.jsx';
 import MyProfile from './student/MyProfile.jsx';
-import StudentCalendar from './student/StudentCalendar.jsx'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
+import StudentCalendar from './student/StudentCalendar.jsx';
 
-// --- Το Dashboard του Μαθητή παραμένει το ίδιο ---
 const StudentDashboard = ({ studentData, enrolledClassrooms, grades, announcements, assignments }) => {
     const navigate = useNavigate();
 
@@ -129,6 +129,7 @@ const StudentDashboard = ({ studentData, enrolledClassrooms, grades, announcemen
 
 
 function StudentPortal({ db, appId, user, userProfile }) {
+    const { selectedYear, loadingYears } = useAcademicYear();
     const [studentData, setStudentData] = useState(null);
     const [enrolledClassrooms, setEnrolledClassrooms] = useState([]);
     const [grades, setGrades] = useState([]);
@@ -141,6 +142,70 @@ function StudentPortal({ db, appId, user, userProfile }) {
 
     const studentId = userProfile?.profileId;
 
+    useEffect(() => {
+        if (!db || !appId || !studentId || !selectedYear) {
+            if (!loadingYears) setLoading(false);
+            return;
+        }
+
+        const unsubscribes = [];
+        setLoading(true);
+        let isMounted = true;
+
+        const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
+
+        const studentRef = doc(db, `${yearPath}/students`, studentId);
+        unsubscribes.push(onSnapshot(studentRef, (doc) => { 
+            if (isMounted && doc.exists()) setStudentData({ id: doc.id, ...doc.data() }); 
+        }));
+
+        const gradesQuery = query(collection(db, `${yearPath}/grades`), where("studentId", "==", studentId));
+        unsubscribes.push(onSnapshot(gradesQuery, (snapshot) => {
+            if (isMounted) setGrades(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        }));
+
+        const absencesQuery = query(collection(db, `${yearPath}/absences`), where("studentId", "==", studentId));
+        unsubscribes.push(onSnapshot(absencesQuery, (snapshot) => {
+            if (isMounted) setAbsences(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        }));
+        
+        const announcementsQuery = query(collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/announcements`));
+        unsubscribes.push(onSnapshot(announcementsQuery, (snapshot) => {
+            if (isMounted) setAnnouncements(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        }));
+
+        const assignmentsQuery = query(collection(db, `${yearPath}/assignments`));
+        unsubscribes.push(onSnapshot(assignmentsQuery, (snapshot) => {
+            if (isMounted) setAllAssignments(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        }));
+        
+        const dailyLogsQuery = query(collection(db, `${yearPath}/dailyLogs`));
+        unsubscribes.push(onSnapshot(dailyLogsQuery, (snapshot) => {
+            if (isMounted) setAllDailyLogs(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        }));
+
+        const coursesQuery = query(collection(db, `${yearPath}/courses`));
+        unsubscribes.push(onSnapshot(coursesQuery, (snapshot) => {
+            if (isMounted) setAllCourses(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        }));
+
+        return () => { isMounted = false; unsubscribes.forEach(unsub => unsub()); };
+    }, [db, appId, studentId, selectedYear, loadingYears]);
+
+    useEffect(() => {
+        if (!studentData?.enrolledClassrooms || studentData.enrolledClassrooms.length === 0) {
+            if(studentData) setLoading(false);
+            return;
+        }
+        const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
+        const classroomsQuery = query(collection(db, `${yearPath}/classrooms`), where('__name__', 'in', studentData.enrolledClassrooms));
+        const unsubClassrooms = onSnapshot(classroomsQuery, (snapshot) => {
+            setEnrolledClassrooms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            setLoading(false);
+        });
+        return () => unsubClassrooms();
+    }, [db, appId, studentData, selectedYear]);
+    
     const studentAssignments = useMemo(() => {
         if (!studentData || !allAssignments) return [];
         const enrolledIds = studentData.enrolledClassrooms || [];
@@ -148,55 +213,7 @@ function StudentPortal({ db, appId, user, userProfile }) {
     }, [studentData, allAssignments]);
 
 
-    useEffect(() => {
-        if (!db || !appId || !studentId) {
-            setLoading(false);
-            return;
-        }
-
-        const unsubscribes = [];
-        setLoading(true);
-
-        const studentRef = doc(db, `artifacts/${appId}/public/data/students`, studentId);
-        unsubscribes.push(onSnapshot(studentRef, (doc) => { if (doc.exists()) setStudentData({ id: doc.id, ...doc.data() }); }));
-
-        const gradesQuery = query(collection(db, `artifacts/${appId}/public/data/grades`), where("studentId", "==", studentId));
-        unsubscribes.push(onSnapshot(gradesQuery, (snapshot) => setGrades(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))));
-
-        const absencesQuery = query(collection(db, `artifacts/${appId}/public/data/absences`), where("studentId", "==", studentId));
-        unsubscribes.push(onSnapshot(absencesQuery, (snapshot) => setAbsences(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))));
-        
-        const announcementsQuery = query(collection(db, `artifacts/${appId}/public/data/announcements`));
-        unsubscribes.push(onSnapshot(announcementsQuery, (snapshot) => setAnnouncements(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))));
-
-        const assignmentsQuery = query(collection(db, `artifacts/${appId}/public/data/assignments`));
-        unsubscribes.push(onSnapshot(assignmentsQuery, (snapshot) => setAllAssignments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))));
-        
-        const dailyLogsQuery = query(collection(db, `artifacts/${appId}/public/data/dailyLogs`));
-        unsubscribes.push(onSnapshot(dailyLogsQuery, (snapshot) => setAllDailyLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))));
-
-        const coursesQuery = query(collection(db, `artifacts/${appId}/public/data/courses`));
-        unsubscribes.push(onSnapshot(coursesQuery, (snapshot) => setAllCourses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))));
-
-
-        return () => unsubscribes.forEach(unsub => unsub());
-    }, [db, appId, studentId]);
-
-    useEffect(() => {
-        if (!studentData?.enrolledClassrooms || studentData.enrolledClassrooms.length === 0) {
-            if(studentData) setLoading(false);
-            return;
-        }
-        const classroomsQuery = query(collection(db, `artifacts/${appId}/public/data/classrooms`), where('__name__', 'in', studentData.enrolledClassrooms));
-        const unsubClassrooms = onSnapshot(classroomsQuery, (snapshot) => {
-            setEnrolledClassrooms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            setLoading(false);
-        });
-        return () => unsubClassrooms();
-    }, [db, appId, studentData]);
-
-
-    if (loading) {
+    if (loading || loadingYears) {
         return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}><CircularProgress /></Box>;
     }
     
@@ -212,7 +229,7 @@ function StudentPortal({ db, appId, user, userProfile }) {
     const commonProps = { 
         db, appId, user,
         studentData, enrolledClassrooms, grades, absences, announcements,
-        allAssignments: studentAssignments,
+        assignments: studentAssignments,
         allDailyLogs,
         allCourses
     };
@@ -220,7 +237,7 @@ function StudentPortal({ db, appId, user, userProfile }) {
     return (
         <Routes>
             <Route path="/" element={<StudentDashboard {...commonProps} />} />
-            <Route path="/my-schedule" element={<StudentCalendar {...commonProps} />} /> {/* <-- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ */}
+            <Route path="/my-schedule" element={<StudentCalendar {...commonProps} />} />
             <Route path="/my-grades" element={<MyGradesAndAbsences {...commonProps} type="grades" />} />
             <Route path="/my-absences" element={<MyGradesAndAbsences {...commonProps} type="absences" />} />
             <Route path="/my-assignments" element={<MyAssignments {...commonProps} />} />

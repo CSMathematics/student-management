@@ -11,7 +11,7 @@ const Chair = ({ student, isOccupied, onChairClick, onChairContextMenu }) => (
             onContextMenu={onChairContextMenu}
             sx={{
                 width: '60px', height: '60px',
-                backgroundColor: isOccupied ? '#1976d2' : '#a7d9f7',
+                backgroundColor: isOccupied ? '#499ab9ff' : '#a7d9f7',
                 borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 textAlign: 'center', fontSize: '1rem', fontWeight: 'bold', color: '#fff',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0, p: 0.5,
@@ -149,7 +149,7 @@ function ClassroomTableVisual({ classroom, db, appId, allStudents, classrooms, o
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', gap: '20px' }}>
                                 {chairLayout.sideChairs.length > 0 && <Chair {...chairLayout.sideChairs[0]} onChairClick={() => handleChairClick(chairLayout.sideChairs[0].isOccupied, chairLayout.sideChairs[0].student)} onChairContextMenu={(e) => handleContextMenu(e, chairLayout.sideChairs[0].student)} />}
-                                <Box sx={{ width: '70%', maxWidth: '400px', height: '150px', backgroundColor: '#87ceeb', borderRadius: '75px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2, boxShadow: '0 4px 8px rgba(0,0,0,0.2)', textAlign: 'center', color: '#fff', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
+                                <Box sx={{ width: '70%', maxWidth: '400px', height: '150px', backgroundColor: '#499ab9ff', borderRadius: '75px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2, boxShadow: '0 4px 8px rgba(0,0,0,0.2)', textAlign: 'center', color: '#fff', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
                                     <Typography variant="body2" sx={{ color: '#fff' }}>Μάθημα: {classroom.subject}</Typography>
                                     <Typography variant="body2" sx={{ color: '#fff' }}>Τάξη: {classroom.grade} ({classroom.specialization || 'Γενικό'})</Typography>
                                     <Typography variant="body2" sx={{ color: '#fff' }}>Μαθητές: {enrolledStudents.length} / {classroom.maxStudents}</Typography>

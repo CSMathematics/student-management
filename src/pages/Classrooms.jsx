@@ -31,7 +31,8 @@ const DetailItem = ({ label, value }) => (
     </Box>
 );
 
-function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeachers, allGrades, allAssignments, loading, db, appId }) { 
+// --- ΔΙΟΡΘΩΣΗ 1: Προσθήκη του selectedYear στα props ---
+function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeachers, allGrades, allAssignments, loading, db, appId, selectedYear }) { 
     const navigate = useNavigate();
     const location = useLocation();
     
@@ -107,12 +108,13 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
     }, [selectedClassroom, allStudents]);
 
     const handleAssignStudent = async (studentId, classroomId) => {
-        if (!db || !appId) return;
+        if (!db || !appId || !selectedYear) return;
         try {
             const batch = writeBatch(db);
-            const studentRef = doc(db, `artifacts/${appId}/public/data/students`, studentId);
+            const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
+            const studentRef = doc(db, `${yearPath}/students`, studentId);
             batch.update(studentRef, { enrolledClassrooms: arrayUnion(classroomId) });
-            const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
+            const classroomRef = doc(db, `${yearPath}/classrooms`, classroomId);
             batch.update(classroomRef, { enrolledStudents: arrayUnion(studentId) });
             await batch.commit();
         } catch (error) {
@@ -121,12 +123,13 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
     };
 
     const handleRemoveStudent = async (student, fromClassroom) => {
-        if (!student || !fromClassroom) return;
+        if (!student || !fromClassroom || !selectedYear) return;
         try {
             const batch = writeBatch(db);
-            const studentRef = doc(db, `artifacts/${appId}/public/data/students`, student.id);
+            const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
+            const studentRef = doc(db, `${yearPath}/students`, student.id);
             batch.update(studentRef, { enrolledClassrooms: arrayRemove(fromClassroom.id) });
-            const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, fromClassroom.id);
+            const classroomRef = doc(db, `${yearPath}/classrooms`, fromClassroom.id);
             batch.update(classroomRef, { enrolledStudents: arrayRemove(student.id) });
             await batch.commit();
         } catch (error) {
@@ -137,7 +140,7 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
     const handleMoveStudent = async () => {
         const { student, fromClassroom } = moveStudentData;
         const toClassroomId = targetClassroomId;
-        if (!student || !fromClassroom || !toClassroomId) return;
+        if (!student || !fromClassroom || !toClassroomId || !selectedYear) return;
 
         const targetClassroom = classrooms.find(c => c.id === toClassroomId);
         const targetEnrolledCount = allStudents.filter(s => s.enrolledClassrooms?.includes(toClassroomId)).length;
@@ -151,14 +154,15 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
 
         try {
             const batch = writeBatch(db);
-            const studentRef = doc(db, `artifacts/${appId}/public/data/students`, student.id);
+            const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
+            const studentRef = doc(db, `${yearPath}/students`, student.id);
             batch.update(studentRef, { enrolledClassrooms: arrayRemove(fromClassroom.id) });
             batch.update(studentRef, { enrolledClassrooms: arrayUnion(toClassroomId) });
 
-            const fromClassroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, fromClassroom.id);
+            const fromClassroomRef = doc(db, `${yearPath}/classrooms`, fromClassroom.id);
             batch.update(fromClassroomRef, { enrolledStudents: arrayRemove(student.id) });
 
-            const toClassroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, toClassroomId);
+            const toClassroomRef = doc(db, `${yearPath}/classrooms`, toClassroomId);
             batch.update(toClassroomRef, { enrolledStudents: arrayUnion(student.id) });
 
             await batch.commit();
@@ -173,24 +177,25 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
     const handleSwapStudents = async () => {
         const { student1, classroom1, student2 } = swapStudentData;
         const classroom2Id = targetClassroomId;
-        if (!student1 || !classroom1 || !student2 || !classroom2Id) return;
+        if (!student1 || !classroom1 || !student2 || !classroom2Id || !selectedYear) return;
 
         try {
             const batch = writeBatch(db);
+            const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
 
-            const student1Ref = doc(db, `artifacts/${appId}/public/data/students`, student1.id);
+            const student1Ref = doc(db, `${yearPath}/students`, student1.id);
             batch.update(student1Ref, { enrolledClassrooms: arrayRemove(classroom1.id) });
             batch.update(student1Ref, { enrolledClassrooms: arrayUnion(classroom2Id) });
 
-            const student2Ref = doc(db, `artifacts/${appId}/public/data/students`, student2.id);
+            const student2Ref = doc(db, `${yearPath}/students`, student2.id);
             batch.update(student2Ref, { enrolledClassrooms: arrayRemove(classroom2Id) });
             batch.update(student2Ref, { enrolledClassrooms: arrayUnion(classroom1.id) });
 
-            const classroom1Ref = doc(db, `artifacts/${appId}/public/data/classrooms`, classroom1.id);
+            const classroom1Ref = doc(db, `${yearPath}/classrooms`, classroom1.id);
             batch.update(classroom1Ref, { enrolledStudents: arrayRemove(student1.id) });
             batch.update(classroom1Ref, { enrolledStudents: arrayUnion(student2.id) });
 
-            const classroom2Ref = doc(db, `artifacts/${appId}/public/data/classrooms`, classroom2Id);
+            const classroom2Ref = doc(db, `${yearPath}/classrooms`, classroom2Id);
             batch.update(classroom2Ref, { enrolledStudents: arrayRemove(student2.id) });
             batch.update(classroom2Ref, { enrolledStudents: arrayUnion(student1.id) });
 
@@ -208,9 +213,9 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
     const handleDeleteClick = (classroom) => { setClassroomToDelete(classroom); setOpenDeleteConfirm(true); };
     const handleCloseDeleteConfirm = () => { setOpenDeleteConfirm(false); setClassroomToDelete(null); };
     const handleConfirmDelete = async () => {
-        if (!db || !appId || !classroomToDelete) return;
+        if (!db || !appId || !classroomToDelete || !selectedYear) return;
         try {
-            await deleteDoc(doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToDelete.id));
+            await deleteDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, classroomToDelete.id));
             setSelectedClassroomId('');
         } catch (error) {
             console.error("Error deleting classroom:", error);
@@ -271,8 +276,8 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                             classroom={selectedClassroom} 
                             db={db} appId={appId} 
                             allStudents={allStudents} 
-                            // --- ΑΛΛΑΓΗ: Προσθήκη του `classrooms` prop ---
                             classrooms={classrooms}
+                            selectedYear={selectedYear}
                             onAssignStudent={handleAssignStudent}
                             onRemoveStudent={handleRemoveStudent}
                             onMoveStudent={(student, fromClassroom) => setMoveStudentData({ student, fromClassroom })}
@@ -280,10 +285,23 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                             otherClassrooms={otherClassroomsOfSameSubject}
                         />
                     </TabPanel>
-                    <TabPanel value={activeTab} index={1}><DailyLog classroom={selectedClassroom} allStudents={allStudents} allGrades={allGrades} allAbsences={allAbsences} allAssignments={allAssignments} allCourses={allCourses} db={db} appId={appId} /></TabPanel>
-                    <TabPanel value={activeTab} index={2}><SyllabusTracker classroom={selectedClassroom} allCourses={allCourses} db={db} appId={appId} /></TabPanel>
-                    <TabPanel value={activeTab} index={3}><ClassroomAnnouncements classroom={selectedClassroom} db={db} appId={appId} /></TabPanel>
-                    <TabPanel value={activeTab} index={4}><ClassroomMaterials classroom={selectedClassroom} db={db} appId={appId} /></TabPanel>
+                    {/* --- ΔΙΟΡΘΩΣΗ 2: Πέρασμα του selectedYear στο DailyLog --- */}
+                    <TabPanel value={activeTab} index={1}>
+                        <DailyLog 
+                            classroom={selectedClassroom} 
+                            allStudents={allStudents} 
+                            allGrades={allGrades} 
+                            allAbsences={allAbsences} 
+                            allAssignments={allAssignments} 
+                            allCourses={allCourses} 
+                            db={db} 
+                            appId={appId} 
+                            selectedYear={selectedYear} 
+                        />
+                    </TabPanel>
+                    <TabPanel value={activeTab} index={2}><SyllabusTracker classroom={selectedClassroom} allCourses={allCourses} db={db} appId={appId} selectedYear={selectedYear} /></TabPanel>
+                    <TabPanel value={activeTab} index={3}><ClassroomAnnouncements classroom={selectedClassroom} db={db} appId={appId} selectedYear={selectedYear} /></TabPanel>
+                    <TabPanel value={activeTab} index={4}><ClassroomMaterials classroom={selectedClassroom} db={db} appId={appId} selectedYear={selectedYear} /></TabPanel>
                     <TabPanel value={activeTab} index={5}><ClassroomStats selectedClassroom={selectedClassroom} allStudents={allStudents} allGrades={allGrades} allAbsences={allAbsences} classrooms={classrooms} /></TabPanel>
                 </Paper>
             )}

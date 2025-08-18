@@ -46,7 +46,7 @@ function TeacherProfile({ teacherData, db, appId, user }) {
         setIsSaving(true);
         setFeedback({ type: '', message: '' });
         try {
-            const teacherRef = doc(db, `artifacts/${appId}/public/data/teachers`, teacherData.id);
+            const teacherRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`, teacherData.id);
             await updateDoc(teacherRef, {
                 phone: formData.phone,
                 email: formData.email,

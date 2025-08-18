@@ -20,10 +20,19 @@ const schoolYearMonths = [
 
 const writtenTypes = ['test', 'project', 'homework', 'oral'];
 
+// --- ΔΙΟΡΘΩΣΗ: Πιο ανθεκτική συνάρτηση υπολογισμού μέσου όρου ---
 const calculateAverage = (grades) => {
     if (!grades || grades.length === 0) return '-';
-    const sum = grades.reduce((acc, g) => acc + parseFloat(g.grade), 0);
-    return (sum / grades.length).toFixed(2);
+    
+    // Φιλτράρουμε μόνο τους βαθμούς που είναι έγκυροι αριθμοί
+    const validGrades = grades
+        .map(g => parseFloat(String(g.grade).replace(',', '.'))) // Υποστήριξη για κόμμα και τελεία
+        .filter(g => !isNaN(g));
+
+    if (validGrades.length === 0) return '-';
+    
+    const sum = validGrades.reduce((acc, g) => acc + g, 0);
+    return (sum / validGrades.length).toFixed(2);
 };
 
 let robotoFontBytes = null;
@@ -92,7 +101,6 @@ function GradeSummary({ allStudents, allGrades, classrooms, loading }) {
             const studentSubjectsArray = Array.from(student.subjects).sort();
 
             studentSubjectsArray.forEach(subject => {
-                // --- ΔΙΟΡΘΩΣΗ 1: Ο υπολογισμός του Μ.Ο. έτους γίνεται μόνο με τους βαθμούς του συγκεκριμένου μαθήματος ---
                 const gradesForSubject = allGradesForStudentInSchoolYear.filter(g => g.subject === subject);
                 const avg = calculateAverage(gradesForSubject);
                 subjectAverages[subject] = avg;
@@ -178,7 +186,6 @@ function GradeSummary({ allStudents, allGrades, classrooms, loading }) {
                 return row;
             });
             
-            // --- ΔΙΟΡΘΩΣΗ 2: Χρήση του foot property για τη γραμμή του γενικού Μ.Ο. ---
             const foot = [
                 [
                     { content: 'Γενικός Μέσος Όρος', colSpan: schoolYearMonths.length * 2 + 1, styles: { halign: 'right', fontStyle: 'bold' } },

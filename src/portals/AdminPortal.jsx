@@ -1,9 +1,10 @@
 // src/portals/AdminPortal.jsx
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useParams } from 'react-router-dom';
-import { collection, query, onSnapshot, getFirestore } from 'firebase/firestore';
-import { Box, Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
+import { collection, query, onSnapshot } from 'firebase/firestore';
+import { Box, Dialog, DialogContent, DialogTitle, IconButton, CircularProgress } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { useAcademicYear } from '../context/AcademicYearContext.jsx';
 
 // Εισαγωγή όλων των σελίδων που χρειάζεται ο Admin
 import DashboardContent from '../pages/DashboardContent.jsx';
@@ -23,9 +24,11 @@ import Phonebook from '../pages/Phonebook.jsx';
 import Expenses from '../pages/Expenses.jsx';
 import Communication from '../pages/Communication.jsx';
 import GradeSummary from '../pages/GradeSummary.jsx';
-import MyAssignmentsManager from '../portals/teacher/MyAssignmentsManager.jsx'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
+import MyAssignmentsManager from '../portals/teacher/MyAssignmentsManager.jsx';
+import AcademicYearManager from '../pages/AcademicYearsManager.jsx';
+import UsersManager from '../pages/UsersManager.jsx';
 
-// Wrappers
+// Wrappers για την επεξεργασία συγκεκριμένων εγγραφών
 const StudentFormWrapper = (props) => {
     const { studentId } = useParams();
     const studentToEdit = props.allStudents.find(s => s.id === studentId);
@@ -47,53 +50,74 @@ const TeacherFormWrapper = (props) => {
 
 
 function AdminPortal({ db, appId, user }) {
-    const [classrooms, setClassrooms] = useState([]);
-    const [allStudents, setAllStudents] = useState([]);
-    const [allGrades, setAllGrades] = useState([]);
-    const [allAbsences, setAllAbsences] = useState([]);
-    const [allPayments, setAllPayments] = useState([]);
-    const [allCourses, setAllCourses] = useState([]);
-    const [allTeachers, setAllTeachers] = useState([]);
-    const [allAnnouncements, setAllAnnouncements] = useState([]);
-    const [allAssignments, setAllAssignments] = useState([]);
-    const [allExpenses, setAllExpenses] = useState([]);
+    const { selectedYear, loadingYears } = useAcademicYear();
+
+    const [allData, setAllData] = useState({
+        classrooms: [], students: [], grades: [], absences: [],
+        payments: [], courses: [], teachers: [], announcements: [],
+        assignments: [], expenses: []
+    });
     const [loading, setLoading] = useState(true);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalData, setModalData] = useState(null);
 
     useEffect(() => {
+        if (!db || !appId || !selectedYear) {
+            if (!loadingYears) setLoading(false);
+            return;
+        }
+
         let isMounted = true;
+        setLoading(true);
         const unsubscribes = [];
         
-        const collections = {
-            classrooms: setClassrooms, students: setAllStudents, grades: setAllGrades,
-            absences: setAllAbsences, payments: setAllPayments, courses: setAllCourses,
-            teachers: setAllTeachers, announcements: setAllAnnouncements, assignments: setAllAssignments,
-            expenses: setAllExpenses,
-        };
+        const collectionsToFetch = [
+            'classrooms', 'students', 'grades', 'absences', 'payments', 
+            'courses', 'teachers', 'announcements', 'assignments', 'expenses'
+        ];
 
-        for (const [name, setter] of Object.entries(collections)) {
-            const ref = collection(db, `artifacts/${appId}/public/data/${name}`);
+        for (const name of collectionsToFetch) {
+            const path = `artifacts/${appId}/public/data/academicYears/${selectedYear}/${name}`;
+            const ref = collection(db, path);
+            
             const unsubscribe = onSnapshot(query(ref), snapshot => { 
                 if (isMounted) { 
                     const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    setter(data);
+                    setAllData(prevData => ({ ...prevData, [name]: data }));
                 } 
             }, (error) => {
-                console.error(`Error fetching ${name}:`, error.message);
+                console.error(`Error fetching ${name} from ${path}:`, error.message);
+                if (isMounted) setAllData(prevData => ({ ...prevData, [name]: [] }));
             });
             unsubscribes.push(unsubscribe);
         }
         setLoading(false);
 
         return () => { isMounted = false; unsubscribes.forEach(unsub => unsub()); };
-    }, [db, appId]);
+    }, [db, appId, selectedYear, loadingYears]);
 
     const openModalWithData = (data) => { setModalData(data); setIsModalOpen(true); };
     const closeModal = () => { setIsModalOpen(false); setModalData(null); };
 
-    const commonProps = { db, appId, classrooms, allStudents, allGrades, allAbsences, allPayments, allCourses, allTeachers, allAnnouncements, allAssignments, allExpenses, loading, userId: user.uid };
+    if (loading || loadingYears) {
+        return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}><CircularProgress /></Box>;
+    }
+
+    const commonProps = { 
+        db, appId, userId: user.uid, selectedYear,
+        classrooms: allData.classrooms, 
+        allStudents: allData.students, 
+        allGrades: allData.grades, 
+        allAbsences: allData.absences, 
+        allPayments: allData.payments, 
+        allCourses: allData.courses, 
+        allTeachers: allData.teachers, 
+        allAnnouncements: allData.announcements, 
+        allAssignments: allData.assignments, 
+        allExpenses: allData.expenses, 
+        loading 
+    };
 
     return (
         <>
@@ -119,12 +143,26 @@ function AdminPortal({ db, appId, user }) {
                 <Route path="/expenses" element={<Expenses {...commonProps} />} />
                 <Route path="/communication" element={<Communication {...commonProps} />} />
                 <Route path="/grades-summary" element={<GradeSummary {...commonProps} />} />
-                <Route path="/assignments" element={<MyAssignmentsManager {...commonProps} />} /> {/* <-- ΝΕΑ ΔΙΑΔΡΟΜΗ */}
+                <Route path="/assignments" element={<MyAssignmentsManager {...commonProps} />} />
+                <Route path="/academicYear" element={<AcademicYearManager {...commonProps} />} />
+                <Route path="/users-management" element={<UsersManager {...commonProps} />} />
             </Routes>
 
             <Dialog open={isModalOpen} onClose={closeModal} maxWidth="md" fullWidth>
-                <DialogTitle>Δημιουργία Νέου Τμήματος<IconButton onClick={closeModal} sx={{ position: 'absolute', right: 8, top: 8 }}><CloseIcon /></IconButton></DialogTitle>
-                <DialogContent dividers><NewClassroomForm classroomToEdit={modalData} onSaveSuccess={closeModal} onCancel={closeModal} {...commonProps} /></DialogContent>
+                <DialogTitle>
+                    Δημιουργία Νέου Τμήματος
+                    <IconButton onClick={closeModal} sx={{ position: 'absolute', right: 8, top: 8 }}>
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent dividers>
+                    <NewClassroomForm 
+                        classroomToEdit={modalData} 
+                        onSaveSuccess={closeModal} 
+                        onCancel={closeModal} 
+                        {...commonProps} 
+                    />
+                </DialogContent>
             </Dialog>
         </>
     );

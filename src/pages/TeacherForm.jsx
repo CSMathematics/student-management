@@ -18,8 +18,8 @@ const generateFirestoreId = () => {
   return autoId;
 };
 
-
-function TeacherForm({ db, appId }) {
+// --- ΔΙΟΡΘΩΣΗ 1: Προσθήκη του selectedYear στα props ---
+function TeacherForm({ db, appId, selectedYear }) {
     const navigate = useNavigate();
     const { teacherId } = useParams();
     const isEditMode = Boolean(teacherId);
@@ -35,11 +35,11 @@ function TeacherForm({ db, appId }) {
     const [feedback, setFeedback] = useState({ type: '', message: '' });
 
     useEffect(() => {
-        if (isEditMode) {
+        if (isEditMode && selectedYear) { // Wait for selectedYear
             const fetchTeacher = async () => {
                 setLoading(true);
                 try {
-                    const teacherDocRef = doc(db, `artifacts/${appId}/public/data/teachers`, teacherId);
+                    const teacherDocRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`, teacherId);
                     const docSnap = await getDoc(teacherDocRef);
                     if (docSnap.exists()) {
                         setFormData(docSnap.data());
@@ -54,7 +54,7 @@ function TeacherForm({ db, appId }) {
             };
             fetchTeacher();
         }
-    }, [isEditMode, teacherId, db, appId]);
+    }, [isEditMode, teacherId, db, appId, selectedYear]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -63,12 +63,19 @@ function TeacherForm({ db, appId }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // --- ΔΙΟΡΘΩΣΗ 2: Έλεγχος ύπαρξης του selectedYear ---
+        if (!selectedYear) {
+            setFeedback({ type: 'error', message: 'Δεν έχει επιλεγεί ακαδημαϊκό έτος.' });
+            return;
+        }
+
         setLoading(true);
         setFeedback({ type: '', message: '' });
 
         try {
             const idToSave = isEditMode ? teacherId : generateFirestoreId();
-            const teacherDocRef = doc(db, `artifacts/${appId}/public/data/teachers`, idToSave);
+            // --- ΔΙΟΡΘΩΣΗ 3: Χρήση του selectedYear στη διαδρομή της βάσης δεδομένων ---
+            const teacherDocRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`, idToSave);
             
             const dataToSave = { ...formData };
             if (!isEditMode) {

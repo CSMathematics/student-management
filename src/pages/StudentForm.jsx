@@ -10,34 +10,41 @@ import { doc, updateDoc, collection, writeBatch, arrayUnion, arrayRemove, addDoc
 import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
 import { useNavigate } from 'react-router-dom';
 
-// Helper function to format the schedule display
 const formatSchedule = (schedule) => {
     if (!schedule || schedule.length === 0) return 'Χωρίς πρόγραμμα';
     const dayMapping = { 'Δευτέρα': 'Δε', 'Τρίτη': 'Τρ', 'Τετάρτη': 'Τε', 'Πέμπτη': 'Πε', 'Παρασκευή': 'Πα', 'Σάββατο': 'Σα' };
     return schedule.map(slot => `${dayMapping[slot.day] || slot.day.substring(0, 2)} ${slot.startTime}-${slot.endTime}`).join(', ');
 };
 
-function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, initialData = null }) {
+function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, initialData = null, selectedYear }) {
     const navigate = useNavigate();
     const isEditMode = Boolean(initialData && initialData.id);
 
-    const [formData, setFormData] = useState(null);
+    const [formData, setFormData] = useState(() => {
+        const defaultParent = { id: Date.now(), name: '', phones: [], relationship: 'Άλλο' };
+        if (isEditMode) {
+            return {
+                ...initialData,
+                parents: initialData.parents && initialData.parents.length > 0
+                    ? initialData.parents.map(p => ({ ...p, id: p.id || Date.now() + Math.random(), relationship: p.relationship || 'Άλλο' }))
+                    : [defaultParent]
+            };
+        }
+        return {
+            firstName: '', lastName: '', dob: '', studentPhone: '', address: '', email: '',
+            gender: 'Άρρεν',
+            parents: [defaultParent],
+            grade: '', specialization: '', payment: '', debt: ''
+        };
+    });
+
     const [selectedSubjects, setSelectedSubjects] = useState([]);
     const [selectedClassrooms, setSelectedClassrooms] = useState({});
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
 
     useEffect(() => {
-        const defaultParent = { id: Date.now(), name: '', phones: [], relationship: 'Άλλο' };
         if (isEditMode) {
-            const studentData = {
-                ...initialData,
-                parents: initialData.parents && initialData.parents.length > 0
-                    ? initialData.parents.map(p => ({ ...p, id: p.id || Date.now() + Math.random(), relationship: p.relationship || 'Άλλο' }))
-                    : [defaultParent]
-            };
-            setFormData(studentData);
-
             const initialSubjects = new Set();
             const initialClassrooms = {};
 
@@ -52,17 +59,9 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
 
             setSelectedSubjects(Array.from(initialSubjects));
             setSelectedClassrooms(initialClassrooms);
-        } else {
-            setFormData({
-                firstName: '', lastName: '', dob: '', studentPhone: '', address: '', email: '',
-                gender: 'Άρρεν', // --- ΑΛΛΑΓΗ: Προεπιλεγμένη τιμή ---
-                parents: [defaultParent],
-                grade: '', specialization: '', payment: '', debt: ''
-            });
-            setSelectedSubjects([]);
-            setSelectedClassrooms({});
         }
     }, [initialData, isEditMode, classrooms]);
+
 
     const classroomEnrollmentCounts = useMemo(() => {
         const counts = new Map();
@@ -159,7 +158,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!db || !appId) {
+        if (!db || !appId || !selectedYear) {
             setFeedback({ type: 'error', message: 'Η σύνδεση με τη βάση δεδομένων απέτυχε.' });
             return;
         }
@@ -184,7 +183,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
         const cleanedParents = formData.parents.map(parent => ({
             name: parent.name,
             phones: parent.phones.filter(Boolean),
-            relationship: parent.relationship // --- ΑΛΛΑΓΗ: Αποθήκευση της σχέσης ---
+            relationship: parent.relationship
         })).filter(parent => parent.name);
 
         const studentData = { ...formData, parents: cleanedParents, enrolledClassrooms: finalEnrolledClassrooms };
@@ -192,9 +191,10 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
 
         try {
             const batch = writeBatch(db);
+            const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
 
             if (isEditMode) {
-                const studentRef = doc(db, `artifacts/${appId}/public/data/students`, initialData.id);
+                const studentRef = doc(db, `${yearPath}/students`, initialData.id);
                 batch.update(studentRef, studentData);
 
                 const originalClassroomIds = new Set(initialData.enrolledClassrooms || []);
@@ -204,11 +204,11 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                 const classroomsToRemove = [...originalClassroomIds].filter(id => !newClassroomIds.has(id));
 
                 classroomsToAdd.forEach(classroomId => {
-                    const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
+                    const classroomRef = doc(db, `${yearPath}/classrooms`, classroomId);
                     batch.update(classroomRef, { enrolledStudents: arrayUnion(initialData.id) });
                 });
                 classroomsToRemove.forEach(classroomId => {
-                    const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
+                    const classroomRef = doc(db, `${yearPath}/classrooms`, classroomId);
                     batch.update(classroomRef, { enrolledStudents: arrayRemove(initialData.id) });
                 });
 
@@ -217,11 +217,11 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
 
             } else {
                 studentData.createdAt = new Date();
-                const newStudentRef = doc(collection(db, `artifacts/${appId}/public/data/students`));
+                const newStudentRef = doc(collection(db, `${yearPath}/students`));
                 batch.set(newStudentRef, studentData);
 
                 finalEnrolledClassrooms.forEach(classroomId => {
-                    const classroomDocRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
+                    const classroomDocRef = doc(db, `${yearPath}/classrooms`, classroomId);
                     batch.update(classroomDocRef, { enrolledStudents: arrayUnion(newStudentRef.id) });
                 });
 
@@ -253,7 +253,6 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                     <Grid container spacing={3}>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Όνομα" name="firstName" value={formData.firstName} onChange={handleInputChange} required size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Επώνυμο" name="lastName" value={formData.lastName} onChange={handleInputChange} required size="small" /></Grid>
-                        {/* --- ΑΛΛΑΓΗ: Προσθήκη πεδίου φύλου --- */}
                         <Grid item xs={12}>
                             <FormControl component="fieldset">
                                 <FormLabel component="legend">Φύλο</FormLabel>
@@ -280,7 +279,6 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                                 {parentIndex > 0 && <Button color="error" startIcon={<Delete />} onClick={removeSecondParent}>Αφαίρεση Γονέα</Button>}
                             </Box>
                             <Grid container spacing={3}>
-                                {/* --- ΑΛΛΑΓΗ: Προσθήκη dropdown σχέσης --- */}
                                 <Grid item xs={12} sm={7}><TextField fullWidth label="Ονοματεπώνυμο Γονέα" value={parent.name} onChange={(e) => handleParentChange(parentIndex, 'name', e.target.value)} size="small" /></Grid>
                                 <Grid item xs={12} sm={5}>
                                     <FormControl fullWidth size="small">
@@ -314,7 +312,6 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                 </Paper>
 
                 <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-                    {/* --- ΑΛΛΑΓΗ: Αλλαγή τίτλου --- */}
                     <Typography variant="h5" component="h3" sx={{ mb: 3 }}>Τάξη και μαθήματα</Typography>
                     <Grid container spacing={3}>
                         <Grid item xs={12} sm={6}>
@@ -341,7 +338,20 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                                 {availableSubjects.length > 0 ? (
                                     <FormGroup>
                                         {availableSubjects.map(subject => {
-                                            const matching = classrooms.filter(c => c.grade === formData.grade && (c.specialization || '') === (formData.specialization || '') && c.subject === subject);
+                                            // --- ΔΙΟΡΘΩΣΗ: Νέα λογική φιλτραρίσματος ---
+                                            const matching = classrooms.filter(c => {
+                                                const gradeMatch = c.grade === formData.grade;
+                                                const subjectMatch = c.subject === subject;
+                                                
+                                                // Για Β' και Γ' Λυκείου, αγνοούμε την κατεύθυνση
+                                                if (formData.grade === "Β' Λυκείου" || formData.grade === "Γ' Λυκείου") {
+                                                    return gradeMatch && subjectMatch;
+                                                }
+                                                // Για τις υπόλοιπες τάξεις, ελέγχουμε και την κατεύθυνση
+                                                const specializationMatch = (c.specialization || '') === (formData.specialization || '');
+                                                return gradeMatch && subjectMatch && specializationMatch;
+                                            });
+
                                             const isSubjectSelected = selectedSubjects.includes(subject);
                                             return (
                                                 <Box key={subject} sx={{ mb: 1, p: 1, borderLeft: '4px solid', borderColor: isSubjectSelected ? 'primary.main' : 'transparent' }}>
