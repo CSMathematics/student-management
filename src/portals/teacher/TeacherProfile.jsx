@@ -8,7 +8,8 @@ import { Save as SaveIcon, LockReset as LockResetIcon } from '@mui/icons-materia
 import { doc, updateDoc } from 'firebase/firestore';
 import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 
-function TeacherProfile({ teacherData, db, appId, user }) {
+// --- ΔΙΟΡΘΩΣΗ: Προσθήκη του selectedYear στα props ---
+function TeacherProfile({ teacherData, db, appId, user, selectedYear }) {
     const [formData, setFormData] = useState({
         phone: '',
         email: '',
@@ -43,9 +44,15 @@ function TeacherProfile({ teacherData, db, appId, user }) {
     };
 
     const handleSaveChanges = async () => {
+        // --- ΔΙΟΡΘΩΣΗ: Έλεγχος για το selectedYear ---
+        if (!selectedYear) {
+            setFeedback({ type: 'error', message: 'Δεν έχει επιλεγεί ακαδημαϊκό έτος.' });
+            return;
+        }
         setIsSaving(true);
         setFeedback({ type: '', message: '' });
         try {
+            // --- ΔΙΟΡΘΩΣΗ: Χρήση του selectedYear στη διαδρομή ---
             const teacherRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`, teacherData.id);
             await updateDoc(teacherRef, {
                 phone: formData.phone,

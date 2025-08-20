@@ -14,7 +14,8 @@ const assignmentTypeLabels = {
     homework: 'Εργασία', test: 'Διαγώνισμα', project: 'Project', oral: 'Προφορική Εξέταση'
 };
 
-function MyAssignmentsManager({ db, appId, classrooms, allAssignments }) {
+// --- ΔΙΟΡΘΩΣΗ: Προσθήκη του userId στα props ---
+function MyAssignmentsManager({ db, appId, classrooms, allAssignments, selectedYear, userId }) {
     const [filterClassroomId, setFilterClassroomId] = useState('all');
     const [formOpen, setFormOpen] = useState(false);
     const [assignmentToEdit, setAssignmentToEdit] = useState(null);
@@ -40,16 +41,21 @@ function MyAssignmentsManager({ db, appId, classrooms, allAssignments }) {
     };
 
     const handleSaveAssignment = async (formData) => {
+        if (!selectedYear) {
+            console.error("No academic year selected.");
+            return;
+        }
         const isEditMode = Boolean(assignmentToEdit && assignmentToEdit.id);
         const dataToSave = { ...formData };
 
         try {
+            const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}/assignments`;
             if (isEditMode) {
-                const docRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/assignments`, assignmentToEdit.id);
+                const docRef = doc(db, yearPath, assignmentToEdit.id);
                 delete dataToSave.createdAt;
                 await setDoc(docRef, dataToSave, { merge: true });
             } else {
-                const collectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/assignments`);
+                const collectionRef = collection(db, yearPath);
                 const newDocRef = doc(collectionRef);
                 dataToSave.id = newDocRef.id;
                 dataToSave.createdAt = serverTimestamp();
@@ -62,13 +68,12 @@ function MyAssignmentsManager({ db, appId, classrooms, allAssignments }) {
         }
     };
     
-    // --- ΝΕΑ ΛΟΓΙΚΗ: Διαχείριση διαγραφής ---
     const handleDeleteClick = (assignment) => {
         setAssignmentToDelete(assignment);
     };
 
     const handleConfirmDelete = async () => {
-        if (!assignmentToDelete) return;
+        if (!assignmentToDelete || !selectedYear) return;
         try {
             await deleteDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/assignments`, assignmentToDelete.id));
         } catch (error) {
@@ -116,7 +121,6 @@ function MyAssignmentsManager({ db, appId, classrooms, allAssignments }) {
                                             <Tooltip title="Επεξεργασία">
                                                 <IconButton edge="end" onClick={() => handleOpenForm(item)}><EditIcon /></IconButton>
                                             </Tooltip>
-                                            {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Κουμπί διαγραφής --- */}
                                             <Tooltip title="Διαγραφή">
                                                 <IconButton edge="end" onClick={() => handleDeleteClick(item)}><DeleteIcon /></IconButton>
                                             </Tooltip>
@@ -141,9 +145,12 @@ function MyAssignmentsManager({ db, appId, classrooms, allAssignments }) {
                 onSave={handleSaveAssignment}
                 initialData={assignmentToEdit}
                 classrooms={classrooms}
+                db={db}
+                appId={appId}
+                selectedYear={selectedYear}
+                userId={userId} // <-- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ
             />
             
-            {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Παράθυρο επιβεβαίωσης διαγραφής --- */}
             <Dialog open={Boolean(assignmentToDelete)} onClose={() => setAssignmentToDelete(null)}>
                 <DialogTitle>Επιβεβαίωση Διαγραφής</DialogTitle>
                 <DialogContent>

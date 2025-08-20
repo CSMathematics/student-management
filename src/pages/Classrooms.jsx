@@ -31,8 +31,8 @@ const DetailItem = ({ label, value }) => (
     </Box>
 );
 
-// --- ΔΙΟΡΘΩΣΗ 1: Προσθήκη του selectedYear στα props ---
-function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeachers, allGrades, allAssignments, loading, db, appId, selectedYear }) { 
+// --- ΔΙΟΡΘΩΣΗ: Προσθήκη του userId στα props ---
+function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeachers, allGrades, allAssignments, loading, db, appId, selectedYear, userId }) { 
     const navigate = useNavigate();
     const location = useLocation();
     
@@ -133,7 +133,7 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
             batch.update(classroomRef, { enrolledStudents: arrayRemove(student.id) });
             await batch.commit();
         } catch (error) {
-            console.error("Error removing student:", error);
+            console.error("Error removing student from classroom:", error);
         }
     };
 
@@ -285,7 +285,6 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                             otherClassrooms={otherClassroomsOfSameSubject}
                         />
                     </TabPanel>
-                    {/* --- ΔΙΟΡΘΩΣΗ 2: Πέρασμα του selectedYear στο DailyLog --- */}
                     <TabPanel value={activeTab} index={1}>
                         <DailyLog 
                             classroom={selectedClassroom} 
@@ -296,12 +295,21 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                             allCourses={allCourses} 
                             db={db} 
                             appId={appId} 
-                            selectedYear={selectedYear} 
+                            selectedYear={selectedYear}
+                            userId={userId} // <-- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ
                         />
                     </TabPanel>
                     <TabPanel value={activeTab} index={2}><SyllabusTracker classroom={selectedClassroom} allCourses={allCourses} db={db} appId={appId} selectedYear={selectedYear} /></TabPanel>
                     <TabPanel value={activeTab} index={3}><ClassroomAnnouncements classroom={selectedClassroom} db={db} appId={appId} selectedYear={selectedYear} /></TabPanel>
-                    <TabPanel value={activeTab} index={4}><ClassroomMaterials classroom={selectedClassroom} db={db} appId={appId} selectedYear={selectedYear} /></TabPanel>
+                    <TabPanel value={activeTab} index={4}>
+                        <ClassroomMaterials 
+                            classroom={selectedClassroom} 
+                            db={db} 
+                            appId={appId} 
+                            selectedYear={selectedYear}
+                            userId={userId} // <-- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ
+                        />
+                    </TabPanel>
                     <TabPanel value={activeTab} index={5}><ClassroomStats selectedClassroom={selectedClassroom} allStudents={allStudents} allGrades={allGrades} allAbsences={allAbsences} classrooms={classrooms} /></TabPanel>
                 </Paper>
             )}

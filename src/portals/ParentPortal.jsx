@@ -146,7 +146,7 @@ function ParentPortal({ db, appId, user, userProfile }) {
     }
     
     const commonProps = { 
-        db, appId, user, 
+        db, appId, user, selectedYear,
         announcements, allDailyLogs, allCourses, allTeachers,
         ...dataForSelectedChild
     };

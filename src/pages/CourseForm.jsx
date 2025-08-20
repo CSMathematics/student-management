@@ -7,11 +7,11 @@ import {
     Autocomplete
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, Schedule as ScheduleIcon, UploadFile as UploadFileIcon } from '@mui/icons-material';
-import { doc, updateDoc, setDoc } from 'firebase/firestore';
+// --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
+import { doc, updateDoc, setDoc, addDoc, collection } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
 
-// Helper function to generate a random ID
 const generateFirestoreId = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let autoId = '';
@@ -21,20 +21,28 @@ const generateFirestoreId = () => {
   return autoId;
 };
 
-function CourseForm({ db, appId, allCourses, allTeachers, selectedYear }) {
+// --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Τύποι εγγράφων ---
+const documentTypes = [
+    { key: 'notes', label: 'Σημειώσεις' },
+    { key: 'book', label: 'Βιβλίο' },
+    { key: 'exercises', label: 'Ασκήσεις' },
+];
+
+// --- ΕΝΗΜΕΡΩΣΗ: Προσθήκη userId στα props ---
+function CourseForm({ db, appId, allCourses, allTeachers, selectedYear, userId }) {
     const navigate = useNavigate();
     const { courseId } = useParams();
-    const location = useLocation(); // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
+    const location = useLocation();
     const isEditMode = Boolean(courseId);
 
     const [tempId] = useState(() => isEditMode ? null : generateFirestoreId());
+    const finalCourseId = isEditMode ? courseId : tempId;
 
     const [courseName, setCourseName] = useState('');
-    // --- ΑΛΛΑΓΗ: Προ-συμπλήρωση της τάξης από την προηγούμενη σελίδα ---
     const [grade, setGrade] = useState(() => location.state?.initialGrade || '');
     const [specialization, setSpecialization] = useState('');
     const [assignedTeacherIds, setAssignedTeacherIds] = useState([]);
-    const [syllabus, setSyllabus] = useState([{ id: Date.now(), title: '', sections: [{ id: Date.now() + 1, text: '', hours: '', materials: [] }] }]);
+    const [syllabus, setSyllabus] = useState([{ id: Date.now(), title: '', sections: [{ id: Date.now() + 1, text: '', hours: '', materials: [], documentType: 'notes' }] }]);
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
     const [uploading, setUploading] = useState({ active: false, sectionId: null });
@@ -50,9 +58,9 @@ function CourseForm({ db, appId, allCourses, allTeachers, selectedYear }) {
                 const syllabusWithIds = (courseToEdit.syllabus || []).map(ch => ({
                     ...ch,
                     id: Date.now() + Math.random(),
-                    sections: (ch.sections || []).map(s => ({ ...s, id: Date.now() + Math.random(), materials: s.materials || [] }))
+                    sections: (ch.sections || []).map(s => ({ ...s, id: Date.now() + Math.random(), materials: s.materials || [], documentType: 'notes' }))
                 }));
-                setSyllabus(syllabusWithIds.length > 0 ? syllabusWithIds : [{ id: Date.now(), title: '', sections: [{ id: Date.now() + 1, text: '', hours: '', materials: [] }] }]);
+                setSyllabus(syllabusWithIds.length > 0 ? syllabusWithIds : [{ id: Date.now(), title: '', sections: [{ id: Date.now() + 1, text: '', hours: '', materials: [], documentType: 'notes' }] }]);
             }
         }
     }, [courseId, allCourses, isEditMode]);
@@ -63,12 +71,12 @@ function CourseForm({ db, appId, allCourses, allTeachers, selectedYear }) {
     }, [grade, specialization]);
 
 
-    const handleAddChapter = () => setSyllabus([...syllabus, { id: Date.now(), title: '', sections: [{ id: Date.now() + 1, text: '', hours: '', materials: [] }] }]);
+    const handleAddChapter = () => setSyllabus([...syllabus, { id: Date.now(), title: '', sections: [{ id: Date.now() + 1, text: '', hours: '', materials: [], documentType: 'notes' }] }]);
     const handleChapterChange = (chapterId, newTitle) => setSyllabus(syllabus.map(ch => ch.id === chapterId ? { ...ch, title: newTitle } : ch));
     const handleRemoveChapter = (chapterId) => setSyllabus(syllabus.filter(ch => ch.id !== chapterId));
 
     const handleAddSection = (chapterId) => {
-        setSyllabus(syllabus.map(ch => ch.id === chapterId ? { ...ch, sections: [...ch.sections, { id: Date.now(), text: '', hours: '', materials: [] }] } : ch));
+        setSyllabus(syllabus.map(ch => ch.id === chapterId ? { ...ch, sections: [...ch.sections, { id: Date.now(), text: '', hours: '', materials: [], documentType: 'notes' }] } : ch));
     };
 
     const handleSectionChange = (chapterId, sectionId, field, value) => {
@@ -80,8 +88,9 @@ function CourseForm({ db, appId, allCourses, allTeachers, selectedYear }) {
         setSyllabus(syllabus.map(ch => ch.id === chapterId ? { ...ch, sections: ch.sections.filter(s => s.id !== sectionId) } : ch));
     };
 
-    const handleFileUpload = async (chapterId, sectionId, file) => {
-        if (!file || !selectedYear) return;
+    // --- ΕΝΗΜΕΡΩΜΕΝΗ ΣΥΝΑΡΤΗΣΗ ΜΕΤΑΦΟΡΤΩΣΗΣ ---
+    const handleFileUpload = async (chapterId, sectionId, file, documentType) => {
+        if (!file || !selectedYear || !userId) return;
         if (file.size > 5 * 1024 * 1024) {
             setFeedback({ type: 'error', message: 'Το αρχείο είναι πολύ μεγάλο. Το όριο είναι 5MB.' });
             return;
@@ -90,7 +99,7 @@ function CourseForm({ db, appId, allCourses, allTeachers, selectedYear }) {
         setFeedback({ type: '', message: '' });
 
         const storage = getStorage(db.app);
-        const storagePath = `artifacts/${appId}/academicYears/${selectedYear}/course_materials/${courseId || tempId}/${Date.now()}_${file.name}`;
+        const storagePath = `artifacts/${appId}/academicYears/${selectedYear}/course_materials/${finalCourseId}/${Date.now()}_${file.name}`;
         const storageRef = ref(storage, storagePath);
 
         try {
@@ -107,6 +116,28 @@ function CourseForm({ db, appId, allCourses, allTeachers, selectedYear }) {
                     ) 
                 } : ch
             ));
+
+            // --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Δημιουργία εγγραφής στη βιβλιοθήκη ---
+            const fileMetadata = {
+                fileName: file.name,
+                fileURL: downloadURL,
+                storagePath: storagePath,
+                fileType: file.type,
+                size: file.size,
+                uploadedAt: new Date(),
+                uploaderId: userId,
+                source: 'courseForm',
+                documentType: documentType,
+                grade: grade,
+                subject: courseName,
+                courseId: finalCourseId,
+                visibility: 'course',
+                visibleTo: [finalCourseId]
+            };
+            const filesCollectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/files`);
+            await addDoc(filesCollectionRef, fileMetadata);
+            // --- ΤΕΛΟΣ ΝΕΑΣ ΠΡΟΣΘΗΚΗΣ ---
+
             setFeedback({ type: 'success', message: `Το αρχείο ${file.name} προστέθηκε.` });
         } catch (error) {
             console.error("File Upload Error:", error);
@@ -293,9 +324,20 @@ function CourseForm({ db, appId, allCourses, allTeachers, selectedYear }) {
                                     {section.materials.map(material => (
                                         <Chip key={material.path || material.url} label={material.name} onDelete={() => handleDeleteMaterial(chapter.id, section.id, material)} size="small" sx={{ mr: 1, mb: 1 }} />
                                     ))}
+                                    {/* --- ΕΝΗΜΕΡΩΣΗ: Προσθήκη επιλογής τύπου εγγράφου --- */}
+                                    <FormControl size="small" sx={{ minWidth: 150, mr: 1 }}>
+                                        <InputLabel>Τύπος</InputLabel>
+                                        <Select
+                                            value={section.documentType}
+                                            label="Τύπος"
+                                            onChange={(e) => handleSectionChange(chapter.id, section.id, 'documentType', e.target.value)}
+                                        >
+                                            {documentTypes.map(t => <MenuItem key={t.key} value={t.key}>{t.label}</MenuItem>)}
+                                        </Select>
+                                    </FormControl>
                                     <Button component="label" size="small" startIcon={uploading.active && uploading.sectionId === section.id ? <CircularProgress size={16} /> : <UploadFileIcon />} disabled={uploading.active}>
                                         Προσθήκη Υλικού
-                                        <input type="file" hidden onChange={(e) => handleFileUpload(chapter.id, section.id, e.target.files[0])} />
+                                        <input type="file" hidden onChange={(e) => handleFileUpload(chapter.id, section.id, e.target.files[0], section.documentType)} />
                                     </Button>
                                 </Box>
                             </Box>

@@ -27,6 +27,7 @@ import GradeSummary from '../pages/GradeSummary.jsx';
 import MyAssignmentsManager from '../portals/teacher/MyAssignmentsManager.jsx';
 import AcademicYearManager from '../pages/AcademicYearsManager.jsx';
 import UsersManager from '../pages/UsersManager.jsx';
+import Library from '../pages/Library.jsx'; // Προσθήκη import
 
 // Wrappers για την επεξεργασία συγκεκριμένων εγγραφών
 const StudentFormWrapper = (props) => {
@@ -57,6 +58,7 @@ function AdminPortal({ db, appId, user }) {
         payments: [], courses: [], teachers: [], announcements: [],
         assignments: [], expenses: []
     });
+    const [allUsers, setAllUsers] = useState([]); // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
     const [loading, setLoading] = useState(true);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,6 +74,15 @@ function AdminPortal({ db, appId, user }) {
         setLoading(true);
         const unsubscribes = [];
         
+        // --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Ανάκτηση χρηστών ---
+        const usersRef = collection(db, 'users');
+        unsubscribes.push(onSnapshot(usersRef, (snapshot) => {
+            if (isMounted) {
+                setAllUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            }
+        }));
+        // --- ΤΕΛΟΣ ΝΕΑΣ ΠΡΟΣΘΗΚΗΣ ---
+
         const collectionsToFetch = [
             'classrooms', 'students', 'grades', 'absences', 'payments', 
             'courses', 'teachers', 'announcements', 'assignments', 'expenses'
@@ -116,6 +127,7 @@ function AdminPortal({ db, appId, user }) {
         allAnnouncements: allData.announcements, 
         allAssignments: allData.assignments, 
         allExpenses: allData.expenses, 
+        allUsers: allUsers, // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
         loading 
     };
 
@@ -143,6 +155,7 @@ function AdminPortal({ db, appId, user }) {
                 <Route path="/expenses" element={<Expenses {...commonProps} />} />
                 <Route path="/communication" element={<Communication {...commonProps} />} />
                 <Route path="/grades-summary" element={<GradeSummary {...commonProps} />} />
+                <Route path="/library" element={<Library {...commonProps} />} />
                 <Route path="/assignments" element={<MyAssignmentsManager {...commonProps} />} />
                 <Route path="/academicYear" element={<AcademicYearManager {...commonProps} />} />
                 <Route path="/users-management" element={<UsersManager {...commonProps} />} />

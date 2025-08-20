@@ -17,7 +17,8 @@ import {
 import { doc, updateDoc } from 'firebase/firestore';
 import { CheckCircleOutline, RadioButtonUnchecked } from '@mui/icons-material';
 
-function SyllabusTracker({ classroom, allCourses, db, appId }) {
+// --- ΔΙΟΡΘΩΣΗ: Προσθήκη του selectedYear στα props ---
+function SyllabusTracker({ classroom, allCourses, db, appId, selectedYear }) {
     const [coveredSections, setCoveredSections] = useState(new Set());
     const [isSaving, setIsSaving] = useState(false);
 
@@ -37,6 +38,12 @@ function SyllabusTracker({ classroom, allCourses, db, appId }) {
     }, [classroom]);
 
     const handleToggleSection = async (sectionId) => {
+        // --- ΔΙΟΡΘΩΣΗ: Έλεγχος για το selectedYear ---
+        if (!selectedYear) {
+            console.error("Cannot update syllabus, no academic year selected.");
+            return;
+        }
+
         const newCoveredSections = new Set(coveredSections);
         if (newCoveredSections.has(sectionId)) {
             newCoveredSections.delete(sectionId);
@@ -48,6 +55,7 @@ function SyllabusTracker({ classroom, allCourses, db, appId }) {
         setIsSaving(true);
 
         try {
+            // --- ΔΙΟΡΘΩΣΗ: Χρήση του selectedYear στη διαδρομή ---
             const classroomRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, classroom.id);
             await updateDoc(classroomRef, {
                 coveredSyllabusSections: Array.from(newCoveredSections)
@@ -93,7 +101,6 @@ function SyllabusTracker({ classroom, allCourses, db, appId }) {
                 {course.syllabus.map((chapter, chapterIndex) => (
                     <li key={`chapter-${chapterIndex}`}>
                         <ul>
-                            {/* --- ΑΛΛΑΓΗ: Χρήση χρώματος από το θέμα --- */}
                             <ListSubheader sx={{ bgcolor: 'action.hover', fontWeight: 'bold' }}>
                                 {`Κεφάλαιο ${chapterIndex + 1}: ${chapter.title}`}
                             </ListSubheader>

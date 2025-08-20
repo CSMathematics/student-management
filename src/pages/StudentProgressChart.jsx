@@ -4,9 +4,11 @@ import { Box, Typography, ToggleButtonGroup, ToggleButton, Tooltip } from '@mui/
 import { ShowChart as ShowChartIcon, BarChart as BarChartIcon } from '@mui/icons-material';
 import Plot from 'react-plotly.js';
 import dayjs from 'dayjs';
+import { useTheme, lightPalette, darkPalette } from '../context/ThemeContext.jsx'; // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
 
 function StudentProgressChart({ studentGrades, startDate, endDate }) {
     const [chartType, setChartType] = useState('line');
+    const { mode } = useTheme(); // --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Ανάκτηση του τρέχοντος θέματος ---
 
     const handleChartTypeChange = (event, newType) => {
         if (newType !== null) {
@@ -52,33 +54,43 @@ function StudentProgressChart({ studentGrades, startDate, endDate }) {
 
     }, [studentGrades, chartType]);
 
+    // --- ΕΝΗΜΕΡΩΣΗ: Το layout του γραφήματος προσαρμόζεται πλέον στο θέμα ---
     const chartLayout = useMemo(() => {
+        const currentPalette = mode === 'light' ? lightPalette : darkPalette;
+
         const baseLayout = {
             autosize: true,
             margin: { l: 40, r: 20, b: 40, t: 40 },
             yaxis: {
                 title: 'Βαθμός',
                 range: [0, 21],
-                dtick: 2
+                dtick: 2,
+                gridcolor: currentPalette.chartGridColor,
+                color: currentPalette.chartFontColor
             },
             legend: {
                 orientation: 'h',
                 yanchor: 'bottom',
                 y: 1.02,
                 xanchor: 'right',
-                x: 1
-            }
+                x: 1,
+                font: { color: currentPalette.chartFontColor }
+            },
+            paper_bgcolor: currentPalette.chartPaperBg,
+            plot_bgcolor: currentPalette.chartPlotBg,
+            font: { color: currentPalette.chartFontColor }
         };
 
         const xaxisLayout = {
             title: 'Ημερομηνία',
             type: 'date',
             tickformat: '%d/%m/%Y',
-            // --- ΔΙΟΡΘΩΣΗ: Ορίζουμε την απόσταση των ετικετών σε μία ημέρα ---
-            dtick: 86400000, // 86,400,000 milliseconds = 1 day
+            dtick: 86400000, 
             tickfont: {
                 weight: 'bold'
-            }
+            },
+            gridcolor: currentPalette.chartGridColor,
+            color: currentPalette.chartFontColor
         };
 
         if (startDate && endDate) {
@@ -91,7 +103,7 @@ function StudentProgressChart({ studentGrades, startDate, endDate }) {
 
         return { ...baseLayout, xaxis: xaxisLayout };
 
-    }, [startDate, endDate, chartType]);
+    }, [startDate, endDate, chartType, mode]);
 
 
     if (plotData.length === 0) {

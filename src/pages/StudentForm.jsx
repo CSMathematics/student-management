@@ -3,12 +3,15 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
     Box, Button, Container, Grid, Paper, Typography, TextField,
     FormControl, InputLabel, Select, MenuItem, FormGroup, FormControlLabel,
-    Checkbox, IconButton, CircularProgress, Alert, ListItemText, RadioGroup, Radio, Divider, FormLabel
+    Checkbox, IconButton, CircularProgress, Alert, ListItemText, RadioGroup, Radio, Divider, FormLabel,
+    List, ListItem, Link, Tooltip
 } from '@mui/material';
-import { Delete, Add } from '@mui/icons-material';
+import { Delete, Add, UploadFile, Download, DeleteForever } from '@mui/icons-material';
 import { doc, updateDoc, collection, writeBatch, arrayUnion, arrayRemove, addDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
 import { useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
 
 const formatSchedule = (schedule) => {
     if (!schedule || schedule.length === 0) return 'Χωρίς πρόγραμμα';
@@ -16,7 +19,13 @@ const formatSchedule = (schedule) => {
     return schedule.map(slot => `${dayMapping[slot.day] || slot.day.substring(0, 2)} ${slot.startTime}-${slot.endTime}`).join(', ');
 };
 
-function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, initialData = null, selectedYear }) {
+const documentTypes = [
+    { key: 'certificate', label: 'Πιστοποιητικό' },
+    { key: 'report', label: 'Αναφορά' },
+    { key: 'other', label: 'Άλλο' },
+];
+
+function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, initialData = null, selectedYear, userId }) {
     const navigate = useNavigate();
     const isEditMode = Boolean(initialData && initialData.id);
 
@@ -34,7 +43,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
             firstName: '', lastName: '', dob: '', studentPhone: '', address: '', email: '',
             gender: 'Άρρεν',
             parents: [defaultParent],
-            grade: '', specialization: '', payment: '', debt: ''
+            grade: '', specialization: '', payment: '', debt: '', documents: []
         };
     });
 
@@ -42,6 +51,8 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
     const [selectedClassrooms, setSelectedClassrooms] = useState({});
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
+    const [isUploading, setIsUploading] = useState(false);
+    const [documentType, setDocumentType] = useState('certificate');
 
     useEffect(() => {
         if (isEditMode) {
@@ -154,6 +165,47 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
             subject: subject
         };
         openModalWithData(prefilledData);
+    };
+
+    const handleFileUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file || !isEditMode || !selectedYear || !userId) return;
+        setIsUploading(true);
+        const storage = getStorage(db.app);
+        const storageRef = ref(storage, `artifacts/${appId}/academicYears/${selectedYear}/student_documents/${initialData.id}/${Date.now()}_${file.name}`);
+        try {
+            const snapshot = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+            const fileData = { name: file.name, path: snapshot.ref.fullPath, url: downloadURL, uploadedAt: new Date() };
+
+            const studentRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`, initialData.id);
+            await updateDoc(studentRef, { documents: arrayUnion(fileData) });
+            setFormData(prev => ({ ...prev, documents: [...(prev.documents || []), fileData] }));
+
+            const fileMetadata = {
+                fileName: file.name,
+                fileURL: downloadURL,
+                storagePath: storageRef.fullPath,
+                fileType: file.type,
+                size: file.size,
+                uploadedAt: new Date(),
+                uploaderId: userId,
+                source: 'studentForm',
+                documentType: documentType,
+                grade: formData.grade,
+                subject: 'all',
+                studentId: initialData.id,
+                visibility: 'student',
+                visibleTo: [initialData.id]
+            };
+            const filesCollectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/files`);
+            await addDoc(filesCollectionRef, fileMetadata);
+
+        } catch (error) {
+            console.error("Error uploading file:", error);
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -338,16 +390,13 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                                 {availableSubjects.length > 0 ? (
                                     <FormGroup>
                                         {availableSubjects.map(subject => {
-                                            // --- ΔΙΟΡΘΩΣΗ: Νέα λογική φιλτραρίσματος ---
                                             const matching = classrooms.filter(c => {
                                                 const gradeMatch = c.grade === formData.grade;
                                                 const subjectMatch = c.subject === subject;
                                                 
-                                                // Για Β' και Γ' Λυκείου, αγνοούμε την κατεύθυνση
                                                 if (formData.grade === "Β' Λυκείου" || formData.grade === "Γ' Λυκείου") {
                                                     return gradeMatch && subjectMatch;
                                                 }
-                                                // Για τις υπόλοιπες τάξεις, ελέγχουμε και την κατεύθυνση
                                                 const specializationMatch = (c.specialization || '') === (formData.specialization || '');
                                                 return gradeMatch && subjectMatch && specializationMatch;
                                             });
@@ -397,6 +446,45 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Έκπτωση (%)" name="debt" type="number" value={formData.debt || ''} onChange={handleInputChange} size="small" /></Grid>
                     </Grid>
                 </Paper>
+
+                {isEditMode && (
+                    <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+                        <Typography variant="h5" component="h3" sx={{ mb: 2 }}>Έγγραφα Μαθητή</Typography>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
+                            <FormControl size="small" sx={{ minWidth: 180 }}>
+                                <InputLabel>Τύπος Εγγράφου</InputLabel>
+                                <Select value={documentType} label="Τύπος Εγγράφου" onChange={(e) => setDocumentType(e.target.value)}>
+                                    {documentTypes.map(t => <MenuItem key={t.key} value={t.key}>{t.label}</MenuItem>)}
+                                </Select>
+                            </FormControl>
+                            <Button
+                                variant="contained"
+                                component="label"
+                                startIcon={isUploading ? <CircularProgress size={20} /> : <UploadFile />}
+                                disabled={isUploading}
+                            >
+                                Μεταφόρτωση
+                                <input type="file" hidden onChange={handleFileUpload} />
+                            </Button>
+                        </Box>
+                        <List>
+                            {formData.documents && formData.documents.length > 0 ? (
+                                formData.documents.map(docItem => (
+                                    <ListItem key={docItem.path} secondaryAction={
+                                        <>
+                                            <Tooltip title="Λήψη"><IconButton href={docItem.url} target="_blank"><Download /></IconButton></Tooltip>
+                                            <Tooltip title="Διαγραφή"><IconButton color="error"><DeleteForever /></IconButton></Tooltip>
+                                        </>
+                                    }>
+                                        <ListItemText primary={docItem.name} secondary={`Μεταφορτώθηκε: ${dayjs(docItem.uploadedAt.toDate()).format('DD/MM/YYYY')}`} />
+                                    </ListItem>
+                                ))
+                            ) : (
+                                <Typography color="text.secondary">Δεν υπάρχουν έγγραφα.</Typography>
+                            )}
+                        </List>
+                    </Paper>
+                )}
 
                 <Box sx={{ mt: 3, textAlign: 'right' }}>
                     <Button variant="outlined" color="secondary" sx={{ mr: 2 }} onClick={() => navigate('/students')}>Ακύρωση</Button>

@@ -2,10 +2,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
     Container, Paper, Typography, Box, FormControl, InputLabel, Select, MenuItem,
-    List, ListItemButton, ListItemIcon, ListItemText, CircularProgress
+    List, ListItemButton, ListItemIcon, ListItemText, CircularProgress, Link, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Alert, Button
 } from '@mui/material';
-import { Assignment as AssignmentIcon, CheckCircleOutline as GradedIcon } from '@mui/icons-material';
-import Gradebook from '../../pages/Gradebook.jsx';
+import { Assignment as AssignmentIcon, CheckCircleOutline as GradedIcon, Download as DownloadIcon, Save } from '@mui/icons-material';
+import { collection, doc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import dayjs from 'dayjs';
 
 const assignmentTypeLabels = {
@@ -15,7 +15,168 @@ const assignmentTypeLabels = {
     oral: 'Προφορική Εξέταση'
 };
 
-function MyGradebook({ db, appId, allStudents, classrooms, allAssignments, allGrades }) {
+function Gradebook({ db, appId, allStudents, classroom, assignment, selectedYear, submissions }) {
+    const [grades, setGrades] = useState({});
+    const [loading, setLoading] = useState(false);
+    const [feedback, setFeedback] = useState({ type: '', message: '' });
+
+    useEffect(() => {
+        const fetchExistingGrades = async () => {
+            if (!assignment || !selectedYear) return;
+            setLoading(true);
+            try {
+                const q = query(
+                    collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/grades`),
+                    where('assignmentId', '==', assignment.id)
+                );
+                const snapshot = await getDocs(q);
+                const gradesData = {};
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    gradesData[data.studentId] = {
+                        grade: data.grade || '',
+                        feedback: data.feedback || ''
+                    };
+                });
+                setGrades(gradesData);
+            } catch (error) {
+                console.error("Error fetching existing grades:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchExistingGrades();
+    }, [assignment, db, appId, selectedYear]);
+
+    const studentsInClassroom = useMemo(() => {
+        if (!classroom || !allStudents) return [];
+        return allStudents
+            .filter(student => student.enrolledClassrooms?.includes(classroom.id))
+            .sort((a, b) => a.lastName.localeCompare(b.lastName));
+    }, [classroom, allStudents]);
+
+    const handleDataChange = (studentId, field, value) => {
+        let sanitizedValue = value;
+        if (field === 'grade') {
+            sanitizedValue = value.replace(/[^0-9,.]/g, '').replace(/[.,]/, ',');
+            if (parseFloat(sanitizedValue.replace(',', '.')) > 20) return;
+        }
+        setGrades(prev => ({
+            ...prev,
+            [studentId]: {
+                ...prev[studentId],
+                [field]: sanitizedValue
+            }
+        }));
+    };
+
+    const handleSaveGrades = async () => {
+        if (!db || !appId || !assignment || !selectedYear) return;
+        setLoading(true);
+        setFeedback({ type: '', message: '' });
+
+        try {
+            const batch = writeBatch(db);
+            const gradesCollectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/grades`);
+            
+            for (const student of studentsInClassroom) {
+                const studentGradeData = grades[student.id];
+                if (studentGradeData && studentGradeData.grade) {
+                    const gradeValue = parseFloat(String(studentGradeData.grade).replace(',', '.'));
+                    const gradeData = {
+                        studentId: student.id,
+                        classroomId: classroom.id,
+                        subject: classroom.subject,
+                        grade: gradeValue,
+                        feedback: studentGradeData.feedback || '',
+                        type: assignment.type,
+                        date: assignment.dueDate.toDate(),
+                        assignmentId: assignment.id,
+                        createdAt: new Date(),
+                    };
+                    const docId = `${assignment.id}_${student.id}`;
+                    const gradeDocRef = doc(gradesCollectionRef, docId);
+                    batch.set(gradeDocRef, gradeData, { merge: true });
+                }
+            }
+
+            await batch.commit();
+            setFeedback({ type: 'success', message: `Οι βαθμοί για "${assignment.title}" αποθηκεύτηκαν!` });
+        } catch (error) {
+            console.error("Error saving grades:", error);
+            setFeedback({ type: 'error', message: 'Αποτυχία αποθήκευσης.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    const submissionsMap = useMemo(() => 
+        new Map((submissions || []).map(s => [s.studentId, s])), 
+    [submissions]);
+
+    return (
+        <Box>
+            <Typography variant="h6" color="primary.main" gutterBottom>
+                Καταχώρηση Βαθμών για: {assignment.title}
+            </Typography>
+            <TableContainer component={Paper} variant="outlined" sx={{ mt: 2 }}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Ονοματεπώνυμο</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Υποβολή</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', width: '150px' }}>Βαθμός (0-20)</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Σχόλια / Ανατροφοδότηση</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {studentsInClassroom.map((student) => {
+                            const submission = submissionsMap.get(student.id);
+                            return (
+                                <TableRow key={student.id}>
+                                    <TableCell>{student.lastName} {student.firstName}</TableCell>
+                                    <TableCell>
+                                        {submission ? (
+                                            <Link href={submission.fileURL} target="_blank" rel="noopener noreferrer" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                <DownloadIcon fontSize="small" />
+                                                {submission.fileName}
+                                            </Link>
+                                        ) : (
+                                            <Typography variant="caption" color="text.secondary">Δεν έχει υποβληθεί</Typography>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <TextField
+                                            variant="outlined" size="small" fullWidth
+                                            value={grades[student.id]?.grade || ''}
+                                            onChange={(e) => handleDataChange(student.id, 'grade', e.target.value)}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <TextField
+                                            variant="outlined" size="small" fullWidth
+                                            placeholder="Προαιρετικά σχόλια..."
+                                            value={grades[student.id]?.feedback || ''}
+                                            onChange={(e) => handleDataChange(student.id, 'feedback', e.target.value)}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+            <Box sx={{ mt: 3, textAlign: 'right' }}>
+                <Button variant="contained" startIcon={<Save />} onClick={handleSaveGrades} disabled={loading}>
+                    {loading ? <CircularProgress size={24} /> : 'Αποθήκευση Βαθμών'}
+                </Button>
+            </Box>
+            {feedback.message && <Alert severity={feedback.type} sx={{ mt: 2 }}>{feedback.message}</Alert>}
+        </Box>
+    );
+}
+
+function MyGradebook({ db, appId, allStudents, classrooms, allAssignments, allGrades, allSubmissions }) {
     const [selectedClassroomId, setSelectedClassroomId] = useState('');
     const [selectedAssignmentId, setSelectedAssignmentId] = useState('');
 
@@ -32,7 +193,6 @@ function MyGradebook({ db, appId, allStudents, classrooms, allAssignments, allGr
 
     const gradedAssignmentIds = useMemo(() => {
         if (!allGrades || !selectedClassroom) return new Set();
-        // An assignment is considered graded for the classroom if at least one student has a grade for it.
         const ids = new Set();
         allGrades.forEach(grade => {
             if (grade.assignmentId) {
@@ -46,7 +206,11 @@ function MyGradebook({ db, appId, allStudents, classrooms, allAssignments, allGr
         return allAssignments.find(a => a.id === selectedAssignmentId) || null;
     }, [selectedAssignmentId, allAssignments]);
 
-    // Reset selected assignment when classroom changes
+    const submissionsForAssignment = useMemo(() => {
+        if (!selectedAssignment || !allSubmissions) return [];
+        return allSubmissions.filter(s => s.assignmentId === selectedAssignment.id);
+    }, [selectedAssignment, allSubmissions]);
+
     useEffect(() => {
         setSelectedAssignmentId('');
     }, [selectedClassroomId]);
@@ -106,12 +270,13 @@ function MyGradebook({ db, appId, allStudents, classrooms, allAssignments, allGr
 
                 {selectedAssignment ? (
                     <Gradebook
-                        key={selectedAssignmentId} // Re-mount component on change
+                        key={selectedAssignmentId}
                         db={db}
                         appId={appId}
                         allStudents={allStudents}
                         classroom={selectedClassroom}
-                        assignment={selectedAssignment} // Pass the selected assignment
+                        assignment={selectedAssignment}
+                        submissions={submissionsForAssignment}
                     />
                 ) : (
                     <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary', border: '1px dashed grey', borderRadius: '4px' }}>

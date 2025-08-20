@@ -2,16 +2,26 @@
 import React, { useState, useMemo } from 'react';
 import {
     Box, Typography, List, ListItem, ListItemText, Button, CircularProgress, Paper,
-    Divider, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, ListItemIcon
+    Divider, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, ListItemIcon,
+    FormControl, InputLabel, Select, MenuItem // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
 } from '@mui/material';
 import { UploadFile as UploadFileIcon, Delete as DeleteIcon, Download as DownloadIcon, InsertDriveFile as FileIcon } from '@mui/icons-material';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+// --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
+import { doc, updateDoc, arrayUnion, arrayRemove, addDoc, collection } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import dayjs from 'dayjs';
 
-function ClassroomMaterials({ classroom, db, appId }) {
+// --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Τύποι εγγράφων ---
+const documentTypes = [
+    { key: 'notes', label: 'Σημειώσεις' },
+    { key: 'exercises', label: 'Ασκήσεις' },
+];
+
+// --- ΕΝΗΜΕΡΩΣΗ: Προσθήκη userId στα props ---
+function ClassroomMaterials({ classroom, db, appId, selectedYear, userId }) {
     const [isUploading, setIsUploading] = useState(false);
     const [fileToDelete, setFileToDelete] = useState(null);
+    const [documentType, setDocumentType] = useState('notes'); // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
 
     const sortedMaterials = useMemo(() => {
         if (!classroom?.materials) return [];
@@ -20,11 +30,11 @@ function ClassroomMaterials({ classroom, db, appId }) {
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
-        if (!file) return;
+        if (!file || !selectedYear || !userId) return;
 
         setIsUploading(true);
         const storage = getStorage(db.app);
-        const storageRef = ref(storage, `artifacts/${appId}/classrooms/${classroom.id}/${Date.now()}_${file.name}`);
+        const storageRef = ref(storage, `artifacts/${appId}/academicYears/${selectedYear}/classrooms/${classroom.id}/${Date.now()}_${file.name}`);
 
         try {
             const snapshot = await uploadBytes(storageRef, file);
@@ -43,6 +53,27 @@ function ClassroomMaterials({ classroom, db, appId }) {
                 materials: arrayUnion(materialData)
             });
 
+            // --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Δημιουργία εγγραφής στη βιβλιοθήκη ---
+            const fileMetadata = {
+                fileName: file.name,
+                fileURL: downloadURL,
+                storagePath: storageRef.fullPath,
+                fileType: file.type,
+                size: file.size,
+                uploadedAt: new Date(),
+                uploaderId: userId,
+                source: 'classroomMaterials',
+                documentType: documentType,
+                grade: classroom.grade,
+                subject: classroom.subject,
+                classroomId: classroom.id,
+                visibility: 'classroom',
+                visibleTo: [classroom.id]
+            };
+            const filesCollectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/files`);
+            await addDoc(filesCollectionRef, fileMetadata);
+            // --- ΤΕΛΟΣ ΝΕΑΣ ΠΡΟΣΘΗΚΗΣ ---
+
         } catch (error) {
             console.error("Error uploading file:", error);
         } finally {
@@ -55,20 +86,19 @@ function ClassroomMaterials({ classroom, db, appId }) {
     };
 
     const confirmDelete = async () => {
-        if (!fileToDelete) return;
+        if (!fileToDelete || !selectedYear) return;
 
         const storage = getStorage(db.app);
         const fileRef = ref(storage, fileToDelete.path);
 
         try {
-            // Delete file from Storage
             await deleteObject(fileRef);
-
-            // Remove file metadata from Firestore
             const classroomRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, classroom.id);
             await updateDoc(classroomRef, {
                 materials: arrayRemove(fileToDelete)
             });
+            // Σημείωση: Δεν διαγράφουμε την εγγραφή από την κεντρική βιβλιοθήκη εδώ,
+            // θα μπορούσε να προστεθεί αυτή η λογική αν είναι επιθυμητό.
         } catch (error) {
             console.error("Error deleting file:", error);
         } finally {
@@ -78,17 +108,30 @@ function ClassroomMaterials({ classroom, db, appId }) {
 
     return (
         <Paper variant="outlined" sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
                 <Typography variant="h6">Αρχεία & Υλικό Τμήματος</Typography>
-                <Button
-                    variant="contained"
-                    component="label"
-                    startIcon={isUploading ? <CircularProgress size={20} /> : <UploadFileIcon />}
-                    disabled={isUploading}
-                >
-                    Μεταφόρτωση
-                    <input type="file" hidden onChange={handleFileUpload} />
-                </Button>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Επιλογή τύπου εγγράφου --- */}
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <InputLabel>Τύπος</InputLabel>
+                        <Select
+                            value={documentType}
+                            label="Τύπος"
+                            onChange={(e) => setDocumentType(e.target.value)}
+                        >
+                            {documentTypes.map(t => <MenuItem key={t.key} value={t.key}>{t.label}</MenuItem>)}
+                        </Select>
+                    </FormControl>
+                    <Button
+                        variant="contained"
+                        component="label"
+                        startIcon={isUploading ? <CircularProgress size={20} /> : <UploadFileIcon />}
+                        disabled={isUploading}
+                    >
+                        Μεταφόρτωση
+                        <input type="file" hidden onChange={handleFileUpload} />
+                    </Button>
+                </Box>
             </Box>
             <Divider />
             <List sx={{ maxHeight: '50vh', overflowY: 'auto', mt: 2 }}>

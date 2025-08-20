@@ -7,19 +7,21 @@ import {
 import { Save } from '@mui/icons-material';
 import { collection, doc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 
-function Gradebook({ db, appId, allStudents, classroom, assignment }) {
-    // --- ΑΛΛΑΓΗ: Το state κρατάει πλέον αντικείμενο με βαθμό και σχόλια ---
+// --- ΔΙΟΡΘΩΣΗ: Προσθήκη του selectedYear στα props ---
+function Gradebook({ db, appId, allStudents, classroom, assignment, selectedYear }) {
     const [grades, setGrades] = useState({});
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
 
     useEffect(() => {
         const fetchExistingGrades = async () => {
-            if (!assignment) return;
+            // --- ΔΙΟΡΘΩΣΗ: Έλεγχος για το selectedYear ---
+            if (!assignment || !selectedYear) return;
             setLoading(true);
             try {
+                // --- ΔΙΟΡΘΩΣΗ: Χρήση του selectedYear και της σωστής διαδρομής ---
                 const q = query(
-                    collection(db, `artifacts/${appId}/academicYears/${selectedYear}/grades`),
+                    collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/grades`),
                     where('assignmentId', '==', assignment.id)
                 );
                 const snapshot = await getDocs(q);
@@ -39,7 +41,7 @@ function Gradebook({ db, appId, allStudents, classroom, assignment }) {
             }
         };
         fetchExistingGrades();
-    }, [assignment, db, appId]);
+    }, [assignment, db, appId, selectedYear]);
 
     const studentsInClassroom = useMemo(() => {
         if (!classroom || !allStudents) return [];
@@ -48,7 +50,6 @@ function Gradebook({ db, appId, allStudents, classroom, assignment }) {
             .sort((a, b) => a.lastName.localeCompare(b.lastName));
     }, [classroom, allStudents]);
 
-    // --- ΑΛΛΑΓΗ: Ενημερωμένη συνάρτηση για αλλαγές ---
     const handleDataChange = (studentId, field, value) => {
         let sanitizedValue = value;
         if (field === 'grade') {
@@ -65,13 +66,15 @@ function Gradebook({ db, appId, allStudents, classroom, assignment }) {
     };
 
     const handleSaveGrades = async () => {
-        if (!db || !appId || !assignment) return;
+        // --- ΔΙΟΡΘΩΣΗ: Έλεγχος για το selectedYear ---
+        if (!db || !appId || !assignment || !selectedYear) return;
         setLoading(true);
         setFeedback({ type: '', message: '' });
 
         try {
             const batch = writeBatch(db);
-            const gradesCollectionRef = collection(db, `artifacts/${appId}/public/data/grades`);
+            // --- ΔΙΟΡΘΩΣΗ: Χρήση του selectedYear και της σωστής διαδρομής ---
+            const gradesCollectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/grades`);
             
             for (const student of studentsInClassroom) {
                 const studentGradeData = grades[student.id];
@@ -82,7 +85,6 @@ function Gradebook({ db, appId, allStudents, classroom, assignment }) {
                         classroomId: classroom.id,
                         subject: classroom.subject,
                         grade: gradeValue,
-                        // --- ΑΛΛΑΓΗ: Προσθήκη του feedback ---
                         feedback: studentGradeData.feedback || '',
                         type: assignment.type,
                         date: assignment.dueDate.toDate(),
@@ -116,7 +118,6 @@ function Gradebook({ db, appId, allStudents, classroom, assignment }) {
                         <TableRow>
                             <TableCell sx={{ fontWeight: 'bold' }}>Ονοματεπώνυμο</TableCell>
                             <TableCell sx={{ fontWeight: 'bold', width: '150px' }}>Βαθμός (0-20)</TableCell>
-                            {/* --- ΑΛΛΑΓΗ: Νέα στήλη --- */}
                             <TableCell sx={{ fontWeight: 'bold' }}>Σχόλια / Ανατροφοδότηση</TableCell>
                         </TableRow>
                     </TableHead>
@@ -131,7 +132,6 @@ function Gradebook({ db, appId, allStudents, classroom, assignment }) {
                                         onChange={(e) => handleDataChange(student.id, 'grade', e.target.value)}
                                     />
                                 </TableCell>
-                                {/* --- ΑΛΛΑΓΗ: Νέο πεδίο εισαγωγής --- */}
                                 <TableCell>
                                     <TextField
                                         variant="outlined" size="small" fullWidth

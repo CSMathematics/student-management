@@ -6,10 +6,11 @@ import {
     RadioGroup, FormControlLabel, Radio, CircularProgress, Alert
 } from '@mui/material';
 import { Save } from '@mui/icons-material';
-import { collection, doc, writeBatch, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import dayjs from 'dayjs';
 
-function AttendanceSheet({ db, appId, allStudents, classroom }) {
+// --- ΔΙΟΡΘΩΣΗ: Προσθήκη του selectedYear στα props ---
+function AttendanceSheet({ db, appId, allStudents, classroom, selectedYear }) {
     const [attendance, setAttendance] = useState({});
     const [attendanceDate, setAttendanceDate] = useState(dayjs().format('YYYY-MM-DD'));
     const [loading, setLoading] = useState(true);
@@ -23,10 +24,10 @@ function AttendanceSheet({ db, appId, allStudents, classroom }) {
             .sort((a, b) => a.lastName.localeCompare(b.lastName));
     }, [classroom, allStudents]);
 
-    // --- ΑΛΛΑΓΗ: Effect #1 - Φορτώνει τις απουσίες μόνο όταν αλλάζει η ημερομηνία ή το τμήμα ---
     useEffect(() => {
         const fetchAttendance = async () => {
-            if (!attendanceDate || !classroom || !db || !appId) {
+            // --- ΔΙΟΡΘΩΣΗ: Έλεγχος για το selectedYear ---
+            if (!attendanceDate || !classroom || !db || !appId || !selectedYear) {
                 setAttendance({});
                 setTodaysAbsences({});
                 return;
@@ -36,6 +37,7 @@ function AttendanceSheet({ db, appId, allStudents, classroom }) {
                 const startOfDay = dayjs(attendanceDate).startOf('day').toDate();
                 const endOfDay = dayjs(attendanceDate).endOf('day').toDate();
 
+                // --- ΔΙΟΡΘΩΣΗ: Χρήση του selectedYear στη διαδρομή ---
                 const absencesQuery = query(
                     collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/absences`),
                     where('classroomId', '==', classroom.id),
@@ -59,9 +61,8 @@ function AttendanceSheet({ db, appId, allStudents, classroom }) {
         };
 
         fetchAttendance();
-    }, [attendanceDate, classroom, db, appId]);
+    }, [attendanceDate, classroom, db, appId, selectedYear]);
 
-    // --- ΑΛΛΑΓΗ: Effect #2 - Αρχικοποιεί τη φόρμα όταν αλλάζουν οι μαθητές ή οι σημερινές απουσίες ---
     useEffect(() => {
         const initialAttendance = {};
         studentsInClassroom.forEach(student => {
@@ -76,11 +77,17 @@ function AttendanceSheet({ db, appId, allStudents, classroom }) {
     };
 
     const handleSaveAttendance = async () => {
+        // --- ΔΙΟΡΘΩΣΗ: Έλεγχος για το selectedYear ---
+        if (!selectedYear) {
+            setFeedback({ type: 'error', message: 'Δεν έχει επιλεγεί ακαδημαϊκό έτος.' });
+            return;
+        }
         setLoading(true);
         setFeedback({ type: '', message: '' });
 
         try {
             const batch = writeBatch(db);
+            // --- ΔΙΟΡΘΩΣΗ: Χρήση του selectedYear στη διαδρομή ---
             const absencesCollectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/absences`);
             const date = dayjs(attendanceDate).toDate();
 
@@ -90,16 +97,14 @@ function AttendanceSheet({ db, appId, allStudents, classroom }) {
                 const absenceDocRef = doc(absencesCollectionRef, docId);
 
                 if (status === 'present') {
-                    // If student is present, delete any existing absence record for that day
                     batch.delete(absenceDocRef);
                 } else {
-                    // If student is absent or justified, create or update the record
                     const absenceData = {
                         studentId,
                         classroomId: classroom.id,
                         subject: classroom.subject,
                         date,
-                        status, // 'absent' or 'justified'
+                        status,
                         createdAt: new Date(),
                     };
                     batch.set(absenceDocRef, absenceData);

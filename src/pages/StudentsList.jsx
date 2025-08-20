@@ -12,7 +12,7 @@ import {
     Download, DeleteForever, KeyboardArrowDown, KeyboardArrowUp, PeopleAlt, Clear, Assessment as ReportIcon, Link as LinkIcon,
     GetApp as ImportIcon
 } from '@mui/icons-material';
-import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, collection, onSnapshot, writeBatch } from 'firebase/firestore';
+import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, collection, onSnapshot, writeBatch, addDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import dayjs from 'dayjs';
 import StudentProgressChart from './StudentProgressChart.jsx';
@@ -27,6 +27,12 @@ const gradeTypeLabels = {
     oral: 'Προφορική Εξέταση',
     assignment: 'Αξιολόγηση',
 };
+
+const documentTypes = [
+    { key: 'certificate', label: 'Πιστοποιητικό' },
+    { key: 'report', label: 'Αναφορά' },
+    { key: 'other', label: 'Άλλο' },
+];
 
 const DetailItem = ({ label, value }) => (
     <Box sx={{ mb: 2 }}>
@@ -102,7 +108,7 @@ const FilterTextField = ({ name, filters, handleFilterChange, handleClearFilter,
 );
 
 
-function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classrooms, loading, db, appId, selectedYear }) {
+function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classrooms, loading, db, appId, selectedYear, userId }) {
     const navigate = useNavigate();
     const { academicYears } = useAcademicYear();
     const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -141,6 +147,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     const [isUploading, setIsUploading] = useState(false);
     const [documentToDelete, setDocumentToDelete] = useState(null);
     const [openDocDeleteConfirm, setOpenDocDeleteConfirm] = useState(false);
+    const [documentType, setDocumentType] = useState('certificate');
 
     useEffect(() => {
         if (!db) return;
@@ -446,17 +453,44 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
-        if (!file || !selectedStudent || !selectedYear) return;
+        if (!file || !selectedStudent || !selectedYear || !userId) return;
         setIsUploading(true);
         const storage = getStorage(db.app);
-        const storageRef = ref(storage, `artifacts/${appId}/academicYears/${selectedYear}/student_documents/${selectedStudent.id}/${Date.now()}_${file.name}`);
+        const storagePath = `artifacts/${appId}/academicYears/${selectedYear}/student_documents/${selectedStudent.id}/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, storagePath);
         try {
             const snapshot = await uploadBytes(storageRef, file);
-            const fileData = { name: file.name, path: snapshot.ref.fullPath, uploadedAt: new Date() };
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`, selectedStudent.id), { documents: arrayUnion(fileData) });
+            const downloadURL = await getDownloadURL(snapshot.ref);
+            const fileData = { name: file.name, path: storagePath, url: downloadURL, uploadedAt: new Date() };
+
+            const studentRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`, selectedStudent.id);
+            await updateDoc(studentRef, { documents: arrayUnion(fileData) });
             setSelectedStudent(prev => ({ ...prev, documents: [...(prev.documents || []), fileData] }));
-        } catch (error) { console.error("Error uploading file:", error); } 
-        finally { setIsUploading(false); }
+
+            const fileMetadata = {
+                fileName: file.name,
+                fileURL: downloadURL,
+                storagePath: storagePath,
+                fileType: file.type,
+                size: file.size,
+                uploadedAt: new Date(),
+                uploaderId: userId,
+                source: 'studentForm',
+                documentType: documentType,
+                grade: selectedStudent.grade,
+                subject: 'all',
+                studentId: selectedStudent.id,
+                visibility: 'student',
+                visibleTo: [selectedStudent.id]
+            };
+            const filesCollectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/files`);
+            await addDoc(filesCollectionRef, fileMetadata);
+
+        } catch (error) { 
+            console.error("Error uploading file:", error); 
+        } finally { 
+            setIsUploading(false); 
+        }
     };
 
     const handleFileDownload = async (filePath) => {
@@ -481,9 +515,6 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     
     const handleCloseImporter = (didImport) => {
         setIsImporting(false);
-        if (didImport) {
-            // You can add a success message here
-        }
     };
 
     const paginatedStudents = filteredAndSortedStudents.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
@@ -672,8 +703,30 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                                 {selectedStudent?.communicationLog && selectedStudent.communicationLog.length > 0 ? (<List>{[...selectedStudent.communicationLog].sort((a, b) => getDateFromFirestoreTimestamp(b.date) - getDateFromFirestoreTimestamp(a.date)).map(log => (<ListItem key={log.id} divider><ListItemText primary={`${log.type} - ${dayjs(getDateFromFirestoreTimestamp(log.date)).format('DD/MM/YYYY')}`} secondary={log.summary}/></ListItem>))}</List>) : (<Typography>Δεν υπάρχουν καταχωρήσεις επικοινωνίας.</Typography>)}
                                                             </TabPanel>
                                                             <TabPanel value={activeTab} index={6}>
-                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}><Typography variant="h6">Έγγραφα Μαθητή</Typography><Button variant="contained" component="label" startIcon={<UploadFile />} size="small" disabled={isUploading}>{isUploading ? 'Μεταφόρτωση...' : 'Μεταφόρτωση Εγγράφου'}<input type="file" hidden onChange={handleFileUpload} /></Button></Box>
-                                                                {selectedStudent?.documents && selectedStudent.documents.length > 0 ? (<List>{[...selectedStudent.documents].sort((a, b) => getDateFromFirestoreTimestamp(b.uploadedAt) - getDateFromFirestoreTimestamp(a.uploadedAt)).map(doc => (<ListItem key={doc.path} secondaryAction={<><IconButton edge="end" aria-label="download" onClick={() => handleFileDownload(doc.path)}><Download /></IconButton><IconButton edge="end" aria-label="delete" onClick={() => { setDocumentToDelete(doc); setOpenDocDeleteConfirm(true); }}><DeleteForever /></IconButton></>}><ListItemText primary={doc.name} secondary={`Μεταφορτώθηκε: ${dayjs(getDateFromFirestoreTimestamp(doc.uploadedAt)).format('DD/MM/YYYY HH:mm')}`}/></ListItem>))}</List>) : (<Typography>Δεν υπάρχουν έγγραφα για αυτόν τον μαθητή.</Typography>)}
+                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                                                    <Typography variant="h6">Έγγραφα Μαθητή</Typography>
+                                                                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                                                                        <FormControl size="small" sx={{ minWidth: 180 }}>
+                                                                            <InputLabel>Τύπος Εγγράφου</InputLabel>
+                                                                            <Select value={documentType} label="Τύπος Εγγράφου" onChange={(e) => setDocumentType(e.target.value)}>
+                                                                                {documentTypes.map(t => <MenuItem key={t.key} value={t.key}>{t.label}</MenuItem>)}
+                                                                            </Select>
+                                                                        </FormControl>
+                                                                        <Button variant="contained" component="label" startIcon={<UploadFile />} size="small" disabled={isUploading}>
+                                                                            {isUploading ? 'Μεταφόρτωση...' : 'Μεταφόρτωση'}
+                                                                            <input type="file" hidden onChange={handleFileUpload} />
+                                                                        </Button>
+                                                                    </Box>
+                                                                </Box>
+                                                                {selectedStudent?.documents && selectedStudent.documents.length > 0 ? (
+                                                                    <List>
+                                                                        {[...selectedStudent.documents].sort((a, b) => getDateFromFirestoreTimestamp(b.uploadedAt) - getDateFromFirestoreTimestamp(a.uploadedAt)).map(docItem => (
+                                                                            <ListItem key={docItem.path} secondaryAction={<><IconButton edge="end" aria-label="download" onClick={() => handleFileDownload(docItem.path)}><Download /></IconButton><IconButton edge="end" aria-label="delete" onClick={() => { setDocumentToDelete(docItem); setOpenDocDeleteConfirm(true); }}><DeleteForever /></IconButton></>}>
+                                                                                <ListItemText primary={docItem.name} secondary={`Μεταφορτώθηκε: ${dayjs(getDateFromFirestoreTimestamp(docItem.uploadedAt)).format('DD/MM/YYYY HH:mm')}`}/>
+                                                                            </ListItem>
+                                                                        ))}
+                                                                    </List>
+                                                                ) : (<Typography>Δεν υπάρχουν έγγραφα για αυτόν τον μαθητή.</Typography>)}
                                                             </TabPanel>
                                                             <TabPanel value={activeTab} index={7}>
                                                                 <Typography variant="h6" sx={{ mb: 2 }}>Σημειώσεις & Σχόλια</Typography>

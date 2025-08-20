@@ -4,32 +4,31 @@ import {
     Container, Paper, Typography, Box, Accordion, AccordionSummary,
     AccordionDetails, List, ListItem, ListItemIcon, Link, ListItemText, Divider
 } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon, Book as CourseIcon, Folder as ClassroomIcon, InsertDriveFile as FileIcon } from '@mui/icons-material';
+import { ExpandMore as ExpandMoreIcon, Book as CourseIcon, Folder as ClassroomIcon, InsertDriveFile as FileIcon, Today as DailyIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
 
-function MyMaterials({ enrolledClassrooms, allCourses }) {
+// --- ΝΕΑ ΠΡΟΣΘΗΚΗ: allDailyLogs στα props ---
+function MyMaterials({ enrolledClassrooms, allCourses, allDailyLogs }) {
 
     const materialsBySubject = useMemo(() => {
-        if (!enrolledClassrooms || !allCourses) return [];
+        if (!enrolledClassrooms || !allCourses || !allDailyLogs) return [];
 
         const grouped = {};
 
-        // Group materials by subject
         enrolledClassrooms.forEach(classroom => {
             const subject = classroom.subject;
             if (!grouped[subject]) {
                 grouped[subject] = {
                     classroomMaterials: [],
-                    courseMaterials: []
+                    courseMaterials: [],
+                    dailyLogMaterials: [] // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
                 };
             }
-            // Add materials specific to this classroom
             if (classroom.materials && classroom.materials.length > 0) {
                 grouped[subject].classroomMaterials.push(...classroom.materials);
             }
         });
 
-        // Find general course materials
         allCourses.forEach(course => {
             if (grouped[course.name] && course.syllabus) {
                 const materials = course.syllabus.flatMap(chapter =>
@@ -41,11 +40,31 @@ function MyMaterials({ enrolledClassrooms, allCourses }) {
             }
         });
 
+        // --- ΝΕΑ ΛΟΓΙΚΗ: Συλλογή αρχείων από το DailyLog ---
+        allDailyLogs.forEach(log => {
+            const classroom = enrolledClassrooms.find(c => c.id === log.classroomId);
+            if (classroom && log.attachedFiles && log.attachedFiles.length > 0) {
+                const subject = classroom.subject;
+                if (grouped[subject]) {
+                    const datedFiles = log.attachedFiles.map(file => ({
+                        ...file,
+                        logDate: log.date // Προσθήκη ημερομηνίας
+                    }));
+                    grouped[subject].dailyLogMaterials.push(...datedFiles);
+                }
+            }
+        });
+        
+        // Ταξινόμηση των ημερήσιων αρχείων ανά ημερομηνία
+        for (const subject in grouped) {
+            grouped[subject].dailyLogMaterials.sort((a, b) => b.logDate.toDate() - a.logDate.toDate());
+        }
+
         return Object.entries(grouped);
 
-    }, [enrolledClassrooms, allCourses]);
+    }, [enrolledClassrooms, allCourses, allDailyLogs]);
 
-    const renderFileList = (files) => (
+    const renderFileList = (files, isDaily = false) => (
         <List dense>
             {files.map((file, index) => (
                 <ListItem key={file.path || index}>
@@ -58,7 +77,11 @@ function MyMaterials({ enrolledClassrooms, allCourses }) {
                                 {file.name}
                             </Link>
                         }
-                        secondary={file.uploadedAt ? `Προστέθηκε: ${dayjs(file.uploadedAt.toDate()).format('DD/MM/YYYY')}` : ''}
+                        secondary={
+                            isDaily 
+                                ? `Μάθημα: ${dayjs(file.logDate.toDate()).format('DD/MM/YYYY')}`
+                                : (file.uploadedAt ? `Προστέθηκε: ${dayjs(file.uploadedAt.toDate()).format('DD/MM/YYYY')}` : '')
+                        }
                     />
                 </ListItem>
             ))}
@@ -82,7 +105,18 @@ function MyMaterials({ enrolledClassrooms, allCourses }) {
                             <Typography variant="h6">{subject}</Typography>
                         </AccordionSummary>
                         <AccordionDetails sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            {/* General Course Material */}
+                            
+                            {/* --- ΝΕΑ ΕΝΟΤΗΤΑ: Υλικό Ημέρας --- */}
+                            {materials.dailyLogMaterials.length > 0 && (
+                                <Box>
+                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                        <DailyIcon color="action" />
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>Υλικό Ημέρας</Typography>
+                                    </Box>
+                                    {renderFileList(materials.dailyLogMaterials, true)}
+                                </Box>
+                            )}
+
                             {materials.courseMaterials.length > 0 && (
                                 <Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -93,7 +127,6 @@ function MyMaterials({ enrolledClassrooms, allCourses }) {
                                 </Box>
                             )}
 
-                             {/* Classroom Specific Material */}
                             {materials.classroomMaterials.length > 0 && (
                                 <Box>
                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -104,7 +137,7 @@ function MyMaterials({ enrolledClassrooms, allCourses }) {
                                 </Box>
                             )}
                             
-                            {materials.courseMaterials.length === 0 && materials.classroomMaterials.length === 0 && (
+                            {materials.dailyLogMaterials.length === 0 && materials.courseMaterials.length === 0 && materials.classroomMaterials.length === 0 && (
                                 <Typography color="text.secondary">Δεν υπάρχει διαθέσιμο υλικό για αυτό το μάθημα.</Typography>
                             )}
 

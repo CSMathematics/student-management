@@ -53,9 +53,9 @@ function AuthPage({ handleSignUp, handleLogin, loading, error }) {
                 }}
             >
                 {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Αφηρημένα σχήματα στο φόντο --- */}
-                <Box sx={{ position: 'absolute', top: -50, left: -80, width: 200, height: 200, bgcolor: 'rgba(255, 255, 255, 0.08)', borderRadius: '50%', zIndex: 1 }} />
+                <Box sx={{ position: 'absolute', top: -70, left: -70, width: 400, height: 400, bgcolor: 'rgba(255, 255, 255, 0.08)', borderRadius: '50%', zIndex: 1 }} />
                 <Box sx={{ position: 'absolute', bottom: 40, left: 20, width: 80, height: 80, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: '50%', zIndex: 1 }} />
-                <Box sx={{ position: 'absolute', top: '20%', right: 50, width: 60, height: 60, border: '2px solid rgba(255, 255, 255, 0.1)', borderRadius: '50%', zIndex: 1 }} />
+                <Box sx={{ position: 'absolute', top: '20%', right: -50, width: 100, height: 100, bgcolor: 'rgba(255, 255, 255, 0.1)', borderRadius: '50%', zIndex: 1 }} />
                 <Box sx={{ position: 'absolute', bottom: -150, right: -150, width: 400, height: 400, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: '50%', zIndex: 1 }} />
                 
                 {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Διάφανο πλαίσιο με blur --- */}

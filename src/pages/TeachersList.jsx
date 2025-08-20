@@ -9,11 +9,11 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Link as LinkIcon } from '@mui/icons-material';
 import { doc, deleteDoc, collection, onSnapshot, updateDoc } from 'firebase/firestore';
 
-function TeachersList({ allTeachers, loading, db, appId }) {
+// --- ΔΙΟΡΘΩΣΗ: Προσθήκη του selectedYear στα props ---
+function TeachersList({ allTeachers, loading, db, appId, selectedYear }) {
     const navigate = useNavigate();
     const [teacherToDelete, setTeacherToDelete] = useState(null);
     
-    // --- ΝΕΑ ΚΑΤΑΣΤΑΣΗ ---
     const [allUsers, setAllUsers] = useState([]);
     const [openLinkDialog, setOpenLinkDialog] = useState(false);
     const [teacherToLink, setTeacherToLink] = useState(null);
@@ -70,8 +70,9 @@ function TeachersList({ allTeachers, loading, db, appId }) {
     };
 
     const handleConfirmDelete = async () => {
-        if (!teacherToDelete) return;
+        if (!teacherToDelete || !selectedYear) return;
         try {
+            // --- ΔΙΟΡΘΩΣΗ: Χρήση του selectedYear στη διαδρομή ---
             await deleteDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`, teacherToDelete.id));
             setTeacherToDelete(null);
         } catch (error) {

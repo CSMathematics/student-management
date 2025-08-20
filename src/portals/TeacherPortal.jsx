@@ -20,7 +20,6 @@ import MyLibrary from './teacher/MyLibrary.jsx';
 import MyCourses from './teacher/MyCourses.jsx';
 import CourseForm from '../pages/CourseForm.jsx';
 
-// Wrapper for editing a course
 const CourseFormWrapper = (props) => {
     const { courseId } = useParams();
     return <CourseForm {...props} key={courseId} />;
@@ -39,6 +38,7 @@ function TeacherPortal({ db, appId, user, userProfile }) {
     const [allTeachers, setAllTeachers] = useState([]);
     const [allUsers, setAllUsers] = useState([]);
     const [allPayments, setAllPayments] = useState([]);
+    const [allSubmissions, setAllSubmissions] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const teacherId = userProfile?.profileId;
@@ -53,7 +53,6 @@ function TeacherPortal({ db, appId, user, userProfile }) {
         setLoading(true);
         let isMounted = true;
 
-        // Fetch teacher's own data (this is not year-specific)
         const teacherRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`, teacherId);
         unsubscribes.push(onSnapshot(teacherRef, (doc) => {
             if (doc.exists() && isMounted) setTeacherData({ id: doc.id, ...doc.data() });
@@ -64,7 +63,6 @@ function TeacherPortal({ db, appId, user, userProfile }) {
             if (isMounted) setAllUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         }));
 
-        // Base path for year-specific data
         const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
 
         const collectionsToFetch = {
@@ -75,6 +73,7 @@ function TeacherPortal({ db, appId, user, userProfile }) {
             absences: setAllAbsences,
             teachers: setAllTeachers,
             payments: setAllPayments,
+            submissions: setAllSubmissions,
         };
 
         for (const [name, setter] of Object.entries(collectionsToFetch)) {
@@ -140,7 +139,7 @@ function TeacherPortal({ db, appId, user, userProfile }) {
         classrooms: assignedClassrooms,
         allTeachers,
         allUsers,
-        teacherData,
+        teacherData, selectedYear,
         assignedClassrooms,
         studentsInClassrooms,
         assignments: teacherAssignments,
@@ -150,6 +149,7 @@ function TeacherPortal({ db, appId, user, userProfile }) {
         allGrades,
         allAbsences,
         allPayments,
+        allSubmissions,
         loading
     };
 
