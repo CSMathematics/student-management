@@ -7,6 +7,7 @@ import {
 import { Assignment as AssignmentIcon, CheckCircleOutline as GradedIcon, Download as DownloadIcon, Save } from '@mui/icons-material';
 import { collection, doc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import dayjs from 'dayjs';
+import { checkAndAwardBadges } from '../../services/BadgeService.js'; // --- ΝΕΑ ΕΙΣΑΓΩΓΗ ---
 
 const assignmentTypeLabels = {
     homework: 'Εργασία',
@@ -48,6 +49,7 @@ function Gradebook({ db, appId, allStudents, classroom, assignment, selectedYear
         fetchExistingGrades();
     }, [assignment, db, appId, selectedYear]);
 
+
     const studentsInClassroom = useMemo(() => {
         if (!classroom || !allStudents) return [];
         return allStudents
@@ -74,6 +76,7 @@ function Gradebook({ db, appId, allStudents, classroom, assignment, selectedYear
         if (!db || !appId || !assignment || !selectedYear) return;
         setLoading(true);
         setFeedback({ type: '', message: '' });
+        const studentsToCheckForBadges = new Set();
 
         try {
             const batch = writeBatch(db);
@@ -97,11 +100,17 @@ function Gradebook({ db, appId, allStudents, classroom, assignment, selectedYear
                     const docId = `${assignment.id}_${student.id}`;
                     const gradeDocRef = doc(gradesCollectionRef, docId);
                     batch.set(gradeDocRef, gradeData, { merge: true });
+                    studentsToCheckForBadges.add(student.id);
                 }
             }
 
             await batch.commit();
             setFeedback({ type: 'success', message: `Οι βαθμοί για "${assignment.title}" αποθηκεύτηκαν!` });
+
+            for (const studentId of studentsToCheckForBadges) {
+                await checkAndAwardBadges(db, appId, selectedYear, studentId);
+            }
+
         } catch (error) {
             console.error("Error saving grades:", error);
             setFeedback({ type: 'error', message: 'Αποτυχία αποθήκευσης.' });
@@ -176,7 +185,7 @@ function Gradebook({ db, appId, allStudents, classroom, assignment, selectedYear
     );
 }
 
-function MyGradebook({ db, appId, allStudents, classrooms, allAssignments, allGrades, allSubmissions }) {
+function MyGradebook({ db, appId, allStudents, classrooms, allAssignments, allGrades, allSubmissions, selectedYear }) {
     const [selectedClassroomId, setSelectedClassroomId] = useState('');
     const [selectedAssignmentId, setSelectedAssignmentId] = useState('');
 
@@ -276,6 +285,7 @@ function MyGradebook({ db, appId, allStudents, classrooms, allAssignments, allGr
                         allStudents={allStudents}
                         classroom={selectedClassroom}
                         assignment={selectedAssignment}
+                        selectedYear={selectedYear}
                         submissions={submissionsForAssignment}
                     />
                 ) : (

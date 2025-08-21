@@ -22,6 +22,12 @@ const StatCard = ({ title, value, icon, color }) => (
 function MyGradesAndAbsences({ enrolledClassrooms, grades, absences, type }) {
 
     const dataByClassroom = useMemo(() => {
+        // --- ΔΙΟΡΘΩΣΗ: Προσθήκη ελέγχου για να αποφευχθεί το σφάλμα ---
+        // Αν το enrolledClassrooms δεν είναι ακόμα διαθέσιμο, επιστρέφουμε έναν κενό πίνακα.
+        if (!enrolledClassrooms || !Array.isArray(enrolledClassrooms)) {
+            return [];
+        }
+
         return enrolledClassrooms.map(classroom => {
             const classroomGrades = grades
                 .filter(g => g.classroomId === classroom.id)
@@ -39,21 +45,28 @@ function MyGradesAndAbsences({ enrolledClassrooms, grades, absences, type }) {
         });
     }, [enrolledClassrooms, grades, absences]);
 
-    // --- ΝΕΑ ΛΟΓΙΚΗ: Υπολογισμός συνολικών στατιστικών ---
     const overallStats = useMemo(() => {
         if (!grades || grades.length === 0) {
             return { avg: 'N/A', count: 0, bestSubject: 'N/A' };
         }
         
-        const totalSum = grades.reduce((sum, g) => sum + parseFloat(g.grade), 0);
-        const avg = (totalSum / grades.length).toFixed(2);
+        const validGrades = grades.map(g => parseFloat(String(g.grade).replace(',', '.'))).filter(g => !isNaN(g));
+        if (validGrades.length === 0) {
+             return { avg: 'N/A', count: 0, bestSubject: 'N/A' };
+        }
+
+        const totalSum = validGrades.reduce((sum, g) => sum + g, 0);
+        const avg = (totalSum / validGrades.length).toFixed(2);
 
         const gradesBySubject = {};
         grades.forEach(g => {
+            const gradeValue = parseFloat(String(g.grade).replace(',', '.'));
+            if(isNaN(gradeValue)) return;
+
             if (!gradesBySubject[g.subject]) {
                 gradesBySubject[g.subject] = [];
             }
-            gradesBySubject[g.subject].push(parseFloat(g.grade));
+            gradesBySubject[g.subject].push(gradeValue);
         });
 
         let bestSubject = 'N/A';
@@ -67,7 +80,7 @@ function MyGradesAndAbsences({ enrolledClassrooms, grades, absences, type }) {
             }
         }
 
-        return { avg, count: grades.length, bestSubject };
+        return { avg, count: validGrades.length, bestSubject };
     }, [grades]);
 
     const title = type === 'grades' ? 'Οι Βαθμοί & η Πρόοδός μου' : 'Οι Απουσίες μου';
@@ -79,7 +92,6 @@ function MyGradesAndAbsences({ enrolledClassrooms, grades, absences, type }) {
                     {title}
                 </Typography>
                 
-                {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Ενότητα Στατιστικών & Γραφήματος (εμφανίζεται μόνο για τους βαθμούς) --- */}
                 {type === 'grades' && (
                     <Box sx={{ my: 4 }}>
                         <Grid container spacing={3}>

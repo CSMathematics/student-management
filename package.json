@@ -35,6 +35,7 @@
     "react": "^18.2.0",
     "react-chat-elements": "^12.0.18",
     "react-dom": "^18.2.0",
+    "react-hook-form": "^7.62.0",
     "react-image-crop": "^11.0.10",
     "react-plotly.js": "^2.6.0",
     "react-router-dom": "^6.15.0",

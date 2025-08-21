@@ -7,11 +7,12 @@ import {
 import { ExpandMore as ExpandMoreIcon, Book as CourseIcon, Folder as ClassroomIcon, InsertDriveFile as FileIcon, Today as DailyIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
 
-// --- ΝΕΑ ΠΡΟΣΘΗΚΗ: allDailyLogs στα props ---
-function MyMaterials({ enrolledClassrooms, allCourses, allDailyLogs }) {
+// --- ΔΙΟΡΘΩΣΗ: Αλλαγή του prop allDailyLogs σε dailyLogs ---
+function MyMaterials({ enrolledClassrooms, allCourses, dailyLogs }) {
 
     const materialsBySubject = useMemo(() => {
-        if (!enrolledClassrooms || !allCourses || !allDailyLogs) return [];
+        // Προσθέτουμε ελέγχους για να σιγουρευτούμε ότι τα δεδομένα είναι πίνακες
+        if (!Array.isArray(enrolledClassrooms) || !Array.isArray(allCourses) || !Array.isArray(dailyLogs)) return [];
 
         const grouped = {};
 
@@ -21,7 +22,7 @@ function MyMaterials({ enrolledClassrooms, allCourses, allDailyLogs }) {
                 grouped[subject] = {
                     classroomMaterials: [],
                     courseMaterials: [],
-                    dailyLogMaterials: [] // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
+                    dailyLogMaterials: []
                 };
             }
             if (classroom.materials && classroom.materials.length > 0) {
@@ -40,29 +41,29 @@ function MyMaterials({ enrolledClassrooms, allCourses, allDailyLogs }) {
             }
         });
 
-        // --- ΝΕΑ ΛΟΓΙΚΗ: Συλλογή αρχείων από το DailyLog ---
-        allDailyLogs.forEach(log => {
+        // --- ΔΙΟΡΘΩΣΗ: Χρήση της μεταβλητής dailyLogs ---
+        dailyLogs.forEach(log => {
             const classroom = enrolledClassrooms.find(c => c.id === log.classroomId);
             if (classroom && log.attachedFiles && log.attachedFiles.length > 0) {
                 const subject = classroom.subject;
                 if (grouped[subject]) {
                     const datedFiles = log.attachedFiles.map(file => ({
                         ...file,
-                        logDate: log.date // Προσθήκη ημερομηνίας
+                        logDate: log.date
                     }));
                     grouped[subject].dailyLogMaterials.push(...datedFiles);
                 }
             }
         });
         
-        // Ταξινόμηση των ημερήσιων αρχείων ανά ημερομηνία
         for (const subject in grouped) {
             grouped[subject].dailyLogMaterials.sort((a, b) => b.logDate.toDate() - a.logDate.toDate());
         }
 
         return Object.entries(grouped);
 
-    }, [enrolledClassrooms, allCourses, allDailyLogs]);
+    // --- ΔΙΟΡΘΩΣΗ: Ενημέρωση της εξάρτησης του useMemo ---
+    }, [enrolledClassrooms, allCourses, dailyLogs]);
 
     const renderFileList = (files, isDaily = false) => (
         <List dense>
@@ -78,9 +79,9 @@ function MyMaterials({ enrolledClassrooms, allCourses, allDailyLogs }) {
                             </Link>
                         }
                         secondary={
-                            isDaily 
+                            isDaily && file.logDate?.toDate
                                 ? `Μάθημα: ${dayjs(file.logDate.toDate()).format('DD/MM/YYYY')}`
-                                : (file.uploadedAt ? `Προστέθηκε: ${dayjs(file.uploadedAt.toDate()).format('DD/MM/YYYY')}` : '')
+                                : (file.uploadedAt?.toDate ? `Προστέθηκε: ${dayjs(file.uploadedAt.toDate()).format('DD/MM/YYYY')}` : '')
                         }
                     />
                 </ListItem>
@@ -106,7 +107,6 @@ function MyMaterials({ enrolledClassrooms, allCourses, allDailyLogs }) {
                         </AccordionSummary>
                         <AccordionDetails sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             
-                            {/* --- ΝΕΑ ΕΝΟΤΗΤΑ: Υλικό Ημέρας --- */}
                             {materials.dailyLogMaterials.length > 0 && (
                                 <Box>
                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>

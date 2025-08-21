@@ -3,8 +3,8 @@ import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Container, Paper, Typography, Box, Accordion, AccordionSummary,
-    AccordionDetails, List, ListItem, ListItemIcon, Link, ListItemText, Divider,
-    Button, Avatar, ListSubheader, Chip, Tooltip, ListItemAvatar, Grid, IconButton
+    AccordionDetails, List, ListItem, ListItemIcon, ListItemText, Divider, ListItemAvatar,
+    Button, Avatar, ListSubheader, Chip, Grid, IconButton
 } from '@mui/material';
 import {
     ExpandMore as ExpandMoreIcon,
@@ -14,16 +14,16 @@ import {
     Person as PersonIcon,
     Message as MessageIcon
 } from '@mui/icons-material';
-import dayjs from 'dayjs';
+import { useStudentData } from '../../context/StudentDataContext'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
 
-function MyCourses({ studentData, enrolledClassrooms, allCourses, allTeachers, classmates }) {
+function MyCourses() {
     const navigate = useNavigate();
+    // Αντλούμε όλα τα απαραίτητα δεδομένα από το context
+    const { studentData, enrolledClassrooms, allCourses, allTeachers, classmates } = useStudentData();
 
     const coursesData = useMemo(() => {
-        // Guard clause: Ensure all required data is available.
         if (!studentData || !enrolledClassrooms || !allCourses || !allTeachers || !classmates) return [];
 
-        // Group all enrolled classrooms by their subject name.
         const groupedBySubject = enrolledClassrooms.reduce((acc, classroom) => {
             if (!acc[classroom.subject]) {
                 acc[classroom.subject] = {
@@ -35,14 +35,10 @@ function MyCourses({ studentData, enrolledClassrooms, allCourses, allTeachers, c
             return acc;
         }, {});
 
-        // Process each subject group.
         return Object.entries(groupedBySubject).map(([subject, data]) => {
             const enrichedClassrooms = data.classrooms.map(cr => {
                 const teacher = allTeachers.find(t => t.id === cr.teacherId);
                 
-                // Filter the general 'classmates' list to find only those who are:
-                // 1. Enrolled in this specific classroom (cr.id).
-                // 2. Not the current student themselves (studentData.id).
                 const classroomClassmates = classmates.filter(
                     cm => cm.enrolledClassrooms?.includes(cr.id) && cm.id !== studentData.id
                 );
@@ -50,7 +46,7 @@ function MyCourses({ studentData, enrolledClassrooms, allCourses, allTeachers, c
                 return {
                     ...cr,
                     teacher,
-                    classmates: classroomClassmates // Assign the correctly filtered list.
+                    classmates: classroomClassmates
                 };
             });
             return {
@@ -79,13 +75,10 @@ function MyCourses({ studentData, enrolledClassrooms, allCourses, allTeachers, c
                             <Typography variant="h6">{subject}</Typography>
                         </AccordionSummary>
                         <AccordionDetails>
-                            {/* Loop through each classroom within the subject accordion */}
                             {classrooms.map((cr, index) => (
                                 <Box key={cr.id}>
-                                    {/* Add a divider if there are multiple classrooms for the same subject */}
                                     {index > 0 && <Divider sx={{ my: 3 }}><Chip label="Επόμενο Τμήμα" /></Divider>}
                                     <Grid container spacing={3}>
-                                        {/* Left side: Classroom-specific info */}
                                         <Grid item xs={12} md={8}>
                                             <Chip label={`Τμήμα: ${cr.classroomName}`} sx={{ mb: 2 }} color="primary" variant="outlined" />
                                             {cr.teacher && (
@@ -102,7 +95,6 @@ function MyCourses({ studentData, enrolledClassrooms, allCourses, allTeachers, c
                                             )}
                                         </Grid>
                                         
-                                        {/* Right side: Classmates for this specific classroom */}
                                         <Grid item xs={12} md={4}>
                                             <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Συμμαθητές</Typography>
                                             <List dense sx={{ maxHeight: 200, overflow: 'auto' }}>
@@ -128,7 +120,6 @@ function MyCourses({ studentData, enrolledClassrooms, allCourses, allTeachers, c
                                 </Box>
                             ))}
 
-                            {/* Syllabus (common for the subject, shown after all classrooms) */}
                             {courseInfo?.syllabus && courseInfo.syllabus.length > 0 && (
                                 <Box sx={{ mt: 3 }}>
                                     <Divider sx={{ mb: 2 }} />

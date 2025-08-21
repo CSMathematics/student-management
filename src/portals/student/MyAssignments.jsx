@@ -2,14 +2,14 @@
 import React, { useState, useMemo } from 'react';
 import {
     Container, Paper, Typography, Box, Accordion, AccordionSummary,
-    AccordionDetails, List, ListItem, ListItemIcon, ListItemText, Chip, Link, Divider, Button, CircularProgress, Tooltip, IconButton
+    AccordionDetails, List, ListItem, ListItemIcon, ListItemText, Link, Divider, Button, CircularProgress, Tooltip, IconButton
 } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon, Assignment as AssignmentIcon, Event as EventIcon, Description as FileIcon, UploadFile as UploadFileIcon, CheckCircle as SubmittedIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { ExpandMore as ExpandMoreIcon, Event as EventIcon, Description as FileIcon, UploadFile as UploadFileIcon, CheckCircle as SubmittedIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { collection, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
-
+import { useStudentData } from '../../context/StudentDataContext';
 
 dayjs.extend(isSameOrAfter);
 
@@ -20,7 +20,8 @@ const assignmentTypeLabels = {
     oral: 'Προφορική Εξέταση'
 };
 
-const SubmissionStatus = ({ assignment, submission, studentId, db, appId, selectedYear }) => {
+const SubmissionStatus = ({ assignment, submission }) => {
+    const { studentId, db, appId, selectedYear } = useStudentData();
     const [isUploading, setIsUploading] = useState(false);
 
     const handleFileUpload = async (event) => {
@@ -71,7 +72,6 @@ const SubmissionStatus = ({ assignment, submission, studentId, db, appId, select
         }
     };
 
-
     if (submission) {
         return (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
@@ -104,32 +104,70 @@ const SubmissionStatus = ({ assignment, submission, studentId, db, appId, select
 };
 
 
-function MyAssignments({ studentData, enrolledClassrooms, assignments, submissions, db, appId, selectedYear }) {
+function MyAssignments() {
+    const { enrolledClassrooms, assignments, submissions } = useStudentData();
 
-    const assignmentsByClassroom = useMemo(() => {
-        if (!enrolledClassrooms || !assignments) return [];
+    // --- ΒΕΛΤΙΣΤΟΠΟΙΗΣΗ: Δημιουργούμε έναν χάρτη (Map) που ομαδοποιεί τις εργασίες ανά ID τμήματος.
+    // Αυτό είναι πιο αποδοτικό και αξιόπιστο από το να φιλτράρουμε μέσα σε map.
+    const assignmentsByClassroomMap = useMemo(() => {
+        if (!assignments || assignments.length === 0) {
+            return new Map();
+        }
+        
+        const map = new Map();
+        
+        for (const assignment of assignments) {
+            const { classroomId } = assignment;
+            if (!map.has(classroomId)) {
+                map.set(classroomId, []);
+            }
+            map.get(classroomId).push(assignment);
+        }
 
-        return enrolledClassrooms.map(classroom => {
-            const classroomAssignments = assignments
-                .filter(a => a.classroomId === classroom.id)
+        map.forEach((classroomAssignments, classroomId) => {
+            const processedAssignments = classroomAssignments
                 .map(assignment => {
                     const submission = submissions.find(s => s.assignmentId === assignment.id);
-                    // --- ΔΙΟΡΘΩΣΗ: Διασφαλίζουμε ότι το attachedFiles είναι πάντα πίνακας ---
                     return { ...assignment, submission, attachedFiles: assignment.attachedFiles || [] };
                 })
                 .sort((a, b) => b.dueDate.toDate() - a.dueDate.toDate());
-
-            const today = dayjs().startOf('day');
-            const active = classroomAssignments.filter(a => dayjs(a.dueDate.toDate()).isSameOrAfter(today));
-            const past = classroomAssignments.filter(a => dayjs(a.dueDate.toDate()).isBefore(today));
-
-            return {
-                ...classroom,
-                activeAssignments: active,
-                pastAssignments: past
-            };
+            
+            map.set(classroomId, processedAssignments);
         });
-    }, [enrolledClassrooms, assignments, submissions]);
+
+        return map;
+    }, [assignments, submissions]);
+
+    // Τώρα, δημιουργούμε τη λίστα των τμημάτων που θα εμφανιστούν, μόνο αν έχουν εργασίες.
+    const classroomsWithAssignments = useMemo(() => {
+        if (!enrolledClassrooms || assignmentsByClassroomMap.size === 0) {
+            return [];
+        }
+
+        return enrolledClassrooms
+            .map(classroom => {
+                const allClassroomAssignments = assignmentsByClassroomMap.get(classroom.id) || [];
+                
+                if (allClassroomAssignments.length === 0) {
+                    return { ...classroom, hasAssignments: false };
+                }
+
+                const today = dayjs().startOf('day');
+                const active = allClassroomAssignments.filter(a => dayjs(a.dueDate.toDate()).isSameOrAfter(today));
+                const past = allClassroomAssignments.filter(a => dayjs(a.dueDate.toDate()).isBefore(today));
+
+                return {
+                    ...classroom,
+                    hasAssignments: true,
+                    activeAssignments: active,
+                    pastAssignments: past,
+                };
+            })
+            .filter(c => c.hasAssignments); // Κρατάμε μόνο τα τμήματα που όντως έχουν εργασίες
+
+    }, [enrolledClassrooms, assignmentsByClassroomMap]);
+
+    const hasAnyAssignments = classroomsWithAssignments.length > 0;
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4 }}>
@@ -138,7 +176,14 @@ function MyAssignments({ studentData, enrolledClassrooms, assignments, submissio
                     Εργασίες & Διαγωνίσματα
                 </Typography>
 
-                {assignmentsByClassroom.map(classroom => (
+                {!hasAnyAssignments && (
+                    <Typography color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+                        Δεν βρέθηκαν εργασίες για τα μαθήματα στα οποία είστε εγγεγραμμένος/η.
+                    </Typography>
+                )}
+
+                {/* Χρησιμοποιούμε τη νέα, φιλτραρισμένη λίστα για την εμφάνιση */}
+                {classroomsWithAssignments.map(classroom => (
                     <Accordion key={classroom.id} defaultExpanded>
                         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                             <Typography variant="h6">{classroom.subject} ({classroom.classroomName})</Typography>
@@ -154,8 +199,7 @@ function MyAssignments({ studentData, enrolledClassrooms, assignments, submissio
                                                     primary={`${item.title} - ${assignmentTypeLabels[item.type] || item.type}`}
                                                     secondary={`Προθεσμία: ${dayjs(item.dueDate.toDate()).format('DD/MM/YYYY')}`}
                                                 />
-                                                {/* --- ΔΙΟΡΘΩΣΗ: Προσθήκη ελέγχου πριν την εκτέλεση του .map() --- */}
-                                                {item.attachedFiles && item.attachedFiles.map(file => (
+                                                {item.attachedFiles.map(file => (
                                                     <Link href={file.url} target="_blank" rel="noopener noreferrer" key={file.path} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, mb: 1 }}>
                                                         <FileIcon fontSize="inherit" /> Εκφώνηση: {file.name}
                                                     </Link>
@@ -163,10 +207,6 @@ function MyAssignments({ studentData, enrolledClassrooms, assignments, submissio
                                                 <SubmissionStatus 
                                                     assignment={item} 
                                                     submission={item.submission}
-                                                    studentId={studentData.id}
-                                                    db={db}
-                                                    appId={appId}
-                                                    selectedYear={selectedYear}
                                                 />
                                             </ListItem>
                                         ))}
@@ -177,13 +217,13 @@ function MyAssignments({ studentData, enrolledClassrooms, assignments, submissio
                             <Box>
                                 <Typography variant="subtitle1" sx={{ fontWeight: 500, color: 'text.secondary' }}>Παλαιότερες Εργασίες</Typography>
                                 {classroom.pastAssignments.length > 0 ? (
-                                     <List dense>
+                                    <List dense>
                                         {classroom.pastAssignments.map(item => (
                                             <ListItem key={item.id} divider>
                                                 <ListItemIcon><EventIcon /></ListItemIcon>
                                                 <ListItemText
-                                                     primary={`${item.title} - ${assignmentTypeLabels[item.type] || item.type}`}
-                                                     secondary={`Ημερομηνία: ${dayjs(item.dueDate.toDate()).format('DD/MM/YYYY')}`}
+                                                    primary={`${item.title} - ${assignmentTypeLabels[item.type] || item.type}`}
+                                                    secondary={`Ημερομηνία: ${dayjs(item.dueDate.toDate()).format('DD/MM/YYYY')}`}
                                                 />
                                             </ListItem>
                                         ))}

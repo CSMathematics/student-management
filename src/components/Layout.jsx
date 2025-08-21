@@ -1,6 +1,6 @@
 // src/components/Layout.jsx
 import React, { useState, useEffect } from 'react';
-import { Box, Toolbar, AppBar, IconButton, Tooltip, FormControl, Select, MenuItem, CircularProgress, Typography } from '@mui/material';
+import { Box, Toolbar, AppBar, IconButton, Tooltip, FormControl, Select, MenuItem, CircularProgress, Typography, Badge } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import Sidebar from '../pages/Sidebar.jsx';
@@ -8,30 +8,58 @@ import Notifications from './Notifications.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAcademicYear } from '../context/AcademicYearContext.jsx';
 import { collection, query, where, onSnapshot, doc, updateDoc, writeBatch, orderBy, limit, arrayUnion } from 'firebase/firestore';
-import { Brightness7, Brightness2 } from '@mui/icons-material';
+import { Brightness7, Brightness2, EmojiEvents as EmojiEventsIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
 const drawerWidth = 280;
 
 function Layout({ userProfile, handleLogout, children, db, appId, user }) {
+    const navigate = useNavigate();
     const [mobileOpen, setMobileOpen] = useState(false);
     const { mode, toggleTheme } = useTheme();
     const [notifications, setNotifications] = useState([]);
+    const [newBadgeCount, setNewBadgeCount] = useState(0);
     
     const { academicYears, selectedYear, setSelectedYear, loadingYears } = useAcademicYear();
 
-    // --- ΔΙΟΡΘΩΣΗ 1: Νέο useEffect για άμεσο καθαρισμό των ειδοποιήσεων έτους ---
     useEffect(() => {
-        // Όταν αλλάζει το έτος, αφαιρούμε αμέσως τις παλιές ειδοποιήσεις για να αποφύγουμε σφάλματα
         setNotifications(prev => prev.filter(n => n.source !== 'year'));
     }, [selectedYear]);
 
+    // useEffect for fetching new badges (notification style)
+    useEffect(() => {
+        if (userProfile?.role !== 'student' || !userProfile.profileId || !selectedYear || !db) {
+            setNewBadgeCount(0);
+            return;
+        }
 
+        let isMounted = true;
+        const badgesQuery = query(
+            collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students/${userProfile.profileId}/badges`),
+            where("seenByUser", "==", false)
+        );
+
+        const unsubscribe = onSnapshot(badgesQuery, (snapshot) => {
+            if (isMounted) {
+                setNewBadgeCount(snapshot.size); 
+            }
+        }, (error) => {
+            console.error("Error fetching new badges:", error);
+        });
+
+        return () => {
+            isMounted = false;
+            unsubscribe();
+        };
+    }, [db, appId, userProfile, selectedYear]);
+
+
+    // useEffect for fetching general notifications
     useEffect(() => {
         if (!db || !user?.uid) return;
 
         const unsubscribes = [];
 
-        // --- LISTENER 1: Για τις ειδοποιήσεις του Ακαδημαϊκού Έτους ---
         if (selectedYear) {
             const recipientIds = ['global', user.uid];
             if (userProfile?.role === 'parent' && userProfile.childIds) {
@@ -65,11 +93,10 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
             unsubscribes.push(yearUnsubscribe);
         }
 
-        // --- LISTENER 2: Μόνο για τον Admin, για τις καθολικές ειδοποιήσεις ---
         if (userProfile?.role === 'admin') {
             const adminNotificationsQuery = query(
                 collection(db, `artifacts/${appId}/public/data/adminNotifications`),
-                 where('recipientId', '==', 'admin'),
+                where('recipientId', '==', 'admin'),
                 orderBy('timestamp', 'desc'),
                 limit(20)
             );
@@ -188,8 +215,15 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
                                     onChange={(e) => setSelectedYear(e.target.value)}
                                     displayEmpty
                                     sx={{
-                                        color: 'white', border: '1px solid white', 
-                                        "& .MuiSvgIcon-root": {
+                                        color: 'white',
+                                        // *** THE FIX IS HERE: Correctly styling the Select border ***
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: 'text.secondary',
+                                        },
+                                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: 'white',
+                                        },
+                                        '& .MuiSvgIcon-root': {
                                             color: 'white'
                                         },
                                     }}
@@ -208,6 +242,17 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
                                 onMarkAsRead={handleMarkAsRead}
                                 onMarkAllAsRead={handleMarkAllAsRead}
                             />
+
+                            {userProfile?.role === 'student' && (
+                                <Tooltip title="Νέα Παράσημα">
+                                    <IconButton color="inherit" onClick={() => navigate('/my-badges')}>
+                                        <Badge badgeContent={newBadgeCount} color="secondary">
+                                            <EmojiEventsIcon />
+                                        </Badge>
+                                    </IconButton>
+                                </Tooltip>
+                            )}
+
                             <Tooltip title="Εναλλαγή Θέματος">
                                 <IconButton onClick={toggleTheme} color="inherit">
                                     {mode === 'dark' ? <Brightness7 /> : <Brightness2 />}

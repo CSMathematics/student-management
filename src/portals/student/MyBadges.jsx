@@ -1,10 +1,10 @@
 // src/portals/student/MyBadges.jsx
-import React, { useMemo } from 'react';
-import { Container, Paper, Typography, Grid, Box, Tooltip, CircularProgress, Avatar, Divider, List, ListItem, ListItemText } from '@mui/material';
+import React, { useMemo, useEffect } from 'react';
+import { Container, Paper, Typography, Grid, Box, Tooltip, CircularProgress, Avatar, List, ListItem, ListItemText } from '@mui/material';
 import { keyframes } from '@mui/system';
 import dayjs from 'dayjs';
+import { writeBatch, doc } from 'firebase/firestore'; // Προσθήκη imports
 
-// Animation for newly earned badges
 const tadaAnimation = keyframes`
   from { transform: scale3d(1, 1, 1); }
   10%, 20% { transform: scale3d(0.9, 0.9, 0.9) rotate3d(0, 0, 1, -3deg); }
@@ -13,7 +13,6 @@ const tadaAnimation = keyframes`
   to { transform: scale3d(1, 1, 1); }
 `;
 
-// List of all available badges in the system
 export const allBadges = [
     {
         id: 'high_flyer',
@@ -21,7 +20,7 @@ export const allBadges = [
         description: 'Πέτυχες βαθμολογία 19 ή μεγαλύτερη σε μια αξιολόγηση!',
         icon: 'fas fa-rocket',
         color: '#e53935',
-        xp: 50, // <-- XP Value
+        xp: 50,
     },
     {
         id: 'perfect_attendance_month',
@@ -84,7 +83,7 @@ export const allBadges = [
         title: 'Πάντα στην Ώρα μου!',
         description: 'Υπέβαλες μια εργασία τουλάχιστον 2 ημέρες πριν τη λήξη της προθεσμίας.',
         icon: 'fas fa-clock',
-        color: '#66bb6a',
+        color: '#5ba85f',
         xp: 10,
     },
     {
@@ -94,8 +93,81 @@ export const allBadges = [
         icon: 'fas fa-compass',
         color: '#78909c',
         xp: 15,
+    },
+    {
+        id: 'flawless_victory',
+        title: 'Άριστος!',
+        description: 'Πέτυχες τέλεια βαθμολογία 20/20 σε μια αξιολόγηση.',
+        icon: 'fas fa-medal',
+        color: '#FFD700',
+        xp: 100,
+        category: 'Ακαδημαϊκή Επίδοση'
+    },
+    {
+        id: 'knowledge_hat_trick',
+        title: 'Χατ-τρικ Γνώσης',
+        description: 'Πέτυχες βαθμολογία 18+ σε 3 διαφορετικά μαθήματα μέσα σε έναν μήνα.',
+        icon: 'fas fa-hat-wizard',
+        color: '#8e44ad',
+        xp: 80,
+        category: 'Ακαδημαϊκή Επίδοση'
+    },
+    {
+        id: 'early_bird',
+        title: 'Πρωινό Πουλί',
+        description: 'Υπέβαλες 5 εργασίες τουλάχιστον 24 ώρες πριν τη λήξη της προθεσμίας.',
+        icon: 'fas fa-kiwi-bird',
+        color: '#1abc9c',
+        xp: 25,
+        category: 'Συνέπεια & Επιμέλεια'
+    },
+    {
+        id: 'iron_will',
+        title: 'Ατσαλένια Θέληση',
+        description: 'Μηδέν αδικαιολόγητες απουσίες για ένα ολόκληρο τρίμηνο.',
+        icon: 'fas fa-shield-alt',
+        color: '#3498db',
+        xp: 200,
+        category: 'Συνέπεια & Επιμέλεια'
+    },
+    {
+        id: 'homework_hero',
+        title: 'Ήρωας των Εργασιών',
+        description: 'Ολοκλήρωσες όλες τις εργασίες για το σπίτι σε ένα μάθημα για έναν ολόκληρο μήνα.',
+        icon: 'fas fa-book-reader',
+        color: '#2ecc71',
+        xp: 50,
+        category: 'Συνέπεια & Επιμέλεια'
+    },
+    {
+        id: 'librarian',
+        title: 'Βιβλιοφάγος',
+        description: 'Κατέβασες πάνω από 20 αρχεία από τη Βιβλιοθήκη Υλικού.',
+        icon: 'fas fa-book-journal-whills',
+        color: '#795548',
+        xp: 30,
+        category: 'Εξερεύνηση & Περιέργεια'
+    },
+    {
+        id: 'planner',
+        title: 'Σχεδιαστής',
+        description: 'Έλεγξες το ημερολόγιό σου για 5 συνεχόμενες ημέρες.',
+        icon: 'fas fa-calendar-day',
+        color: '#f39c12',
+        xp: 15,
+        category: 'Εξερεύνηση & Περιέργεια'
+    },
+    {
+        id: 'fully_informed',
+        title: 'Πλήρης Ενημέρωση',
+        description: 'Διάβασες όλες τις ανακοινώσεις του σχολείου μέσα σε 24 ώρες από τη δημοσίευσή τους για έναν μήνα.',
+        icon: 'fas fa-broadcast-tower',
+        color: '#e74c3c',
+        xp: 20,
+        category: 'Εξερεύνηση & Περιέργεια'
     }
 ];
+
 
 const BadgeTooltipContent = ({ badge }) => {
     if (!badge.isEarned) {
@@ -167,8 +239,34 @@ const Badge = ({ badge }) => (
     </Tooltip>
 );
 
-function MyBadges({ earnedBadges, loading }) {
+function MyBadges({ earnedBadges, loading, db, appId, selectedYear, studentData }) {
     
+    // --- BUG FIX: useEffect για την επισήμανση των παρασήμων ως "διαβασμένα" ---
+    useEffect(() => {
+        // Έξοδος αν δεν υπάρχουν τα απαραίτητα δεδομένα
+        if (!earnedBadges || earnedBadges.length === 0 || !studentData?.id || !selectedYear) return;
+
+        // Βρίσκουμε τα παράσημα που δεν έχει δει ο χρήστης
+        const unreadBadges = earnedBadges.filter(b => b.seenByUser === false);
+
+        // Αν υπάρχουν, τα ενημερώνουμε στη βάση
+        if (unreadBadges.length > 0) {
+            const batch = writeBatch(db);
+            const badgeCollectionPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}/students/${studentData.id}/badges`;
+            
+            unreadBadges.forEach(badge => {
+                const badgeRef = doc(db, badgeCollectionPath, badge.id);
+                batch.update(badgeRef, { seenByUser: true });
+            });
+
+            // Εκτελούμε τη μαζική εγγραφή
+            batch.commit().catch(error => {
+                console.error("Error marking badges as seen:", error);
+            });
+        }
+    }, [earnedBadges, db, appId, selectedYear, studentData]); // Εξαρτήσεις του effect
+
+
     const badgesToDisplay = useMemo(() => {
         const earnedGrouped = earnedBadges.reduce((acc, b) => {
             if (!acc[b.badgeId]) {
@@ -195,6 +293,21 @@ function MyBadges({ earnedBadges, loading }) {
         });
     }, [earnedBadges]);
 
+    const groupedBadgesForDisplay = useMemo(() => {
+        const categories = ['Ακαδημαϊκή Επίδοση', 'Συνέπεια & Επιμέλεια', 'Εξερεύνηση & Περιέργεια', undefined];
+        const grouped = {};
+        
+        badgesToDisplay.forEach(badge => {
+            const category = badge.category || 'Γενικά';
+            if (!grouped[category]) {
+                grouped[category] = [];
+            }
+            grouped[category].push(badge);
+        });
+        return grouped;
+    }, [badgesToDisplay]);
+
+
     if (loading) {
         return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}><CircularProgress /></Box>;
     }
@@ -208,13 +321,19 @@ function MyBadges({ earnedBadges, loading }) {
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
                     Ξεκλείδωσε επιτεύγματα καθώς προοδεύεις! Πέρνα τον κέρσορα πάνω από ένα κλειδωμένο παράσημο για να δεις πώς μπορείς να το κερδίσεις.
                 </Typography>
-                <Grid container spacing={3}>
-                    {badgesToDisplay.map(badge => (
-                        <Grid item xs={12} sm={6} md={3} key={badge.id}>
-                            <Badge badge={badge} />
+                
+                {Object.entries(groupedBadgesForDisplay).map(([category, badges]) => (
+                    <Box key={category} sx={{mb: 4}}>
+                        <Typography variant="h5" sx={{mb: 2}}>{category}</Typography>
+                        <Grid container spacing={3}>
+                            {badges.map(badge => (
+                                <Grid item xs={12} sm={6} md={3} key={badge.id}>
+                                    <Badge badge={badge} />
+                                </Grid>
+                            ))}
                         </Grid>
-                    ))}
-                </Grid>
+                    </Box>
+                ))}
             </Paper>
         </Container>
     );

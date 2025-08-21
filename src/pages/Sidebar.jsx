@@ -8,7 +8,6 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 
 const drawerWidth = 280;
 
-// --- ΝΕΑ ΔΟΜΗ: Μενού ανά ρόλο ---
 const navItemsByRole = {
     admin: [
         { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
@@ -67,12 +66,12 @@ const navItemsByRole = {
     ],
     teacher: [
         { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
-        { text: "Το Προφίλ μου", icon: "fas fa-user-cog", path: "/my-profile" }, // <-- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ
-        { text: "Η Βιβλιοθήκη μου", icon: "fas fa-book-open", path: "/my-library" }, // <-- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ
+        { text: "Το Προφίλ μου", icon: "fas fa-user-cog", path: "/my-profile" },
+        { text: "Η Βιβλιοθήκη μου", icon: "fas fa-book-open", path: "/my-library" },
         { text: "Τα Μαθήματά μου", icon: "fas fa-book", path: "/my-courses" },
         { text: "Το Πρόγραμμά μου", icon: "fas fa-calendar-alt", path: "/my-schedule" },
         { text: "Τα Τμήματά μου", icon: "fas fa-chalkboard", path: "/my-classrooms" },
-        { text: "Οι Μαθητές μου", icon: "fas fa-users", path: "/my-students" }, // <-- Η ΝΕΑ ΠΡΟΣΘΗΚΗ
+        { text: "Οι Μαθητές μου", icon: "fas fa-users", path: "/my-students" },
         { text: "Οι Αξιολογήσεις μου", icon: "fas fa-tasks", path: "/my-assignments" },
         { text: "Το Βαθμολόγιό μου", icon: "fas fa-book-reader", path: "/my-gradebook" },
         { text: "Στατιστικά", icon: "fas fa-chart-pie", path: "/teacher-stats" },
@@ -81,24 +80,25 @@ const navItemsByRole = {
     student: [
         { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
         { text: "Το Προφίλ μου", icon: "fas fa-user-cog", path: "/my-profile" },
-        { text: "Το Ημερολόγιό μου", icon: "fas fa-calendar-alt", path: "/my-schedule" }, // <-- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ
+        { text: "Το Ημερολόγιό μου", icon: "fas fa-calendar-alt", path: "/my-schedule" },
         { text: "Τα Μαθήματά μου", icon: "fas fa-book-reader", path: "/my-courses" }, 
         { text: "Εργασίες & Διαγωνίσματα", icon: "fas fa-file-alt", path: "/my-assignments" },
         { text: "Το Υλικό μου", icon: "fas fa-book-open", path: "/my-materials" },
         { text: "Οι Βαθμοί μου", icon: "fas fa-chart-bar", path: "/my-grades" },
         { text: "Οι Απουσίες μου", icon: "fas fa-times", path: "/my-absences" },
         { text: "Τα Παράσημά μου", icon: "fas fa-trophy", path: "/my-badges" },
+        { text: "Κατάταξη", icon: "fas fa-trophy", path: "/leaderboard" }, // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
     ],
     parent: [
         { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
-        { text: "Το Προφίλ μου", icon: "fas fa-user-cog", path: "/my-profile" }, // <-- Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ
+        { text: "Το Προφίλ μου", icon: "fas fa-user-cog", path: "/my-profile" },
         { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
         { text: "Ημερολόγιο Παιδιού", icon: "fas fa-calendar-alt", path: "/child-schedule" },
         { text: "Εργασίες Παιδιού", icon: "fas fa-file-alt", path: "/child-assignments" },
         { text: "Υλικό Μαθημάτων", icon: "fas fa-book-open", path: "/child-materials" },
         { text: "Βαθμολογία & Απουσίες", icon: "fas fa-chart-bar", path: "/child-grades-absences" },
-        { text: "Καθηγητές & Αναφορές", icon: "fas fa-chalkboard-user", path: "/child-teachers-report" }, // <-- Η ΝΕΑ ΠΡΟΣΘΗΚΗ
+        { text: "Καθηγητές & Αναφορές", icon: "fas fa-chalkboard-user", path: "/child-teachers-report" },
         { text: "Οικονομικά", icon: "fas fa-money-bill", path: "/payments" },
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
     ],
@@ -144,7 +144,6 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRole }) {
                 }
             },
             selected: isSelected,
-            // --- ΑΛΛΑΓΗ: Προσαρμογή της εσοχής ---
             className: isSubItem ? 'sub-item' : ''
         };
 

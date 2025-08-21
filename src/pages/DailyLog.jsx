@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Box, Paper, Typography, Button, TextField, Switch, FormControlLabel, CircularProgress, FormControl, InputLabel, Select, MenuItem, ListSubheader, Chip, Divider, Accordion, AccordionSummary, AccordionDetails, Grid, Alert } from '@mui/material';
 import { Save as SaveIcon, Add as AddIcon, UploadFile as UploadFileIcon, Link as LinkIcon, Delete as DeleteIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
-import { doc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, writeBatch } from 'firebase/firestore'; // Προσθήκη writeBatch
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -12,6 +12,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import 'dayjs/locale/el';
 import AssignmentForm from './AssignmentForm.jsx';
 import MaterialSelector from './MaterialSelector.jsx';
+import { checkAndAwardBadges } from '../services/BadgeService.js'; // --- ΝΕΑ ΕΙΣΑΓΩΓΗ ---
 
 dayjs.locale('el');
 
@@ -208,14 +209,56 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
         setFeedback({ type: '', message: '' });
         const logId = `${classroom.id}_${selectedDate}`;
         const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
-        
+        const batch = writeBatch(db);
+        const studentsToCheckForBadges = new Set();
+
         try {
             const logRef = doc(db, `${yearPath}/dailyLogs`, logId);
-            await setDoc(logRef, { 
+            batch.set(logRef, { 
                 classroomId: classroom.id, date: new Date(selectedDate), type: 'lesson',
                 taughtSection, notes, attachedFiles
             }, { merge: true });
-            setFeedback({ type: 'success', message: 'Η αποθήκευση ολοκληρώθηκε με επιτυχία!' });
+
+            const gradesRef = collection(db, `${yearPath}/grades`);
+            const absencesRef = collection(db, `${yearPath}/absences`);
+
+            for (const student of studentsInClassroom) {
+                const studentId = student.id;
+                const data = dailyData[studentId];
+                if (!data) continue;
+
+                const absenceId = `${dayjs(selectedDate).format('YYYY-MM-DD')}_${classroom.id}_${studentId}`;
+                const absenceRef = doc(absencesRef, absenceId);
+                if (data.attendance === 'absent') {
+                    batch.set(absenceRef, { studentId, classroomId: classroom.id, date: new Date(selectedDate), status: 'absent', subject: classroom.subject });
+                } else {
+                    batch.delete(absenceRef);
+                }
+
+                const gradeTypes = ['participation', 'homework'];
+                for (const type of gradeTypes) {
+                    const gradeValue = data.lesson?.[type];
+                    const gradeId = `${logId}_${studentId}_${type}`;
+                    const gradeRef = doc(gradesRef, gradeId);
+                    if (gradeValue && data.attendance === 'present') {
+                        batch.set(gradeRef, {
+                            studentId, classroomId: classroom.id, subject: classroom.subject,
+                            grade: parseFloat(String(gradeValue).replace(',', '.')), type, date: new Date(selectedDate), logId
+                        });
+                        studentsToCheckForBadges.add(studentId);
+                    } else {
+                        batch.delete(gradeRef);
+                    }
+                }
+            }
+            
+            await batch.commit();
+            setFeedback({ type: 'success', message: 'Η αποθήκευση ολοκληρώθηκε!' });
+
+            for (const studentId of studentsToCheckForBadges) {
+                await checkAndAwardBadges(db, appId, selectedYear, studentId);
+            }
+
         } catch (error) {
             console.error("Error saving daily log:", error);
             setFeedback({ type: 'error', message: 'Προέκυψε σφάλμα κατά την αποθήκευση.' });

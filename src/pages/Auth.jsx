@@ -1,5 +1,7 @@
 // src/pages/Auth.jsx
 import { React, useState } from 'react';
+// --- 1. ΕΙΣΑΓΩΓΗ του useForm ---
+import { useForm, Controller } from 'react-hook-form';
 import { 
     Container, Paper, Box, Typography, TextField, Button, 
     CircularProgress, Alert, Tabs, Tab, FormControl, InputLabel, Select, MenuItem, Grid
@@ -8,23 +10,23 @@ import { LockOutlined } from '@mui/icons-material';
 
 function AuthPage({ handleSignUp, handleLogin, loading, error }) {
     const [isLogin, setIsLogin] = useState(true);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [role, setRole] = useState('student');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    // --- 2. ΑΡΧΙΚΟΠΟΙΗΣΗ του React Hook Form ---
+    // Αφαιρούμε όλα τα παλιά useState για τα πεδία της φόρμας.
+    const { register, handleSubmit, watch, control, formState: { errors } } = useForm({
+        mode: "onTouched" // Η επικύρωση θα τρέχει όταν ο χρήστης φεύγει από ένα πεδίο
+    });
+
+    // Παρακολουθούμε την τιμή του πεδίου 'password' για να την ελέγξουμε στην επιβεβαίωση
+    const password = watch('password');
+
+    // --- 3. Η ΝΕΑ ΣΥΝΑΡΤΗΣΗ ΥΠΟΒΟΛΗΣ ---
+    // Λαμβάνει τα δεδομένα της φόρμας ως ένα αντικείμενο 'data'.
+    const onSubmit = (data) => {
         if (isLogin) {
-            handleLogin(email, password);
+            handleLogin(data.email, data.password);
         } else {
-            if (password !== confirmPassword) {
-                alert("Οι κωδικοί δεν ταιριάζουν!");
-                return;
-            }
-            handleSignUp(email, password, role, firstName, lastName);
+            handleSignUp(data.email, data.password, data.role, data.firstName, data.lastName);
         }
     };
     
@@ -36,7 +38,6 @@ function AuthPage({ handleSignUp, handleLogin, loading, error }) {
 
     return (
         <Grid container component="main" sx={{ height: '100vh' }}>
-            {/* --- ΕΝΗΜΕΡΩΜΕΝΟ ΠΑΝΕΛ ΕΙΚΟΝΑΣ & ΛΟΓΟΤΥΠΟΥ --- */}
             <Grid 
                 item 
                 xs={false} 
@@ -52,19 +53,17 @@ function AuthPage({ handleSignUp, handleLogin, loading, error }) {
                     color: '#fff',
                 }}
             >
-                {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Αφηρημένα σχήματα στο φόντο --- */}
                 <Box sx={{ position: 'absolute', top: -70, left: -70, width: 400, height: 400, bgcolor: 'rgba(255, 255, 255, 0.08)', borderRadius: '50%', zIndex: 1 }} />
                 <Box sx={{ position: 'absolute', bottom: 40, left: 20, width: 80, height: 80, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: '50%', zIndex: 1 }} />
                 <Box sx={{ position: 'absolute', top: '20%', right: -50, width: 100, height: 100, bgcolor: 'rgba(255, 255, 255, 0.1)', borderRadius: '50%', zIndex: 1 }} />
                 <Box sx={{ position: 'absolute', bottom: -150, right: -150, width: 400, height: 400, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: '50%', zIndex: 1 }} />
                 
-                {/* --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Διάφανο πλαίσιο με blur --- */}
                 <Box sx={{
                     zIndex: 2,
                     p: 5,
                     borderRadius: '20px',
                     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(10px)', // Αυτό δημιουργεί το εφέ θολού γυαλιού
+                    backdropFilter: 'blur(10px)',
                     border: '1px solid rgba(255, 255, 255, 0.2)',
                     textAlign: 'center',
                     boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)'
@@ -122,30 +121,106 @@ function AuthPage({ handleSignUp, handleLogin, loading, error }) {
                             <Tab label="Εγγραφή" />
                         </Tabs>
                     </Box>
-                    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+                    {/* --- 4. ΧΡΗΣΗ του handleSubmit --- */}
+                    <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 1, width: '100%' }}>
                         {!isLogin && (
                              <Grid container spacing={2}>
                                 <Grid item xs={12} sm={6}>
-                                    <TextField margin="normal" required fullWidth id="firstName" label="Όνομα" name="firstName" autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} sx={textFieldStyles} />
+                                    {/* --- 5. ΕΓΓΡΑΦΗ ΠΕΔΙΩΝ & ΕΜΦΑΝΙΣΗ ΣΦΑΛΜΑΤΩΝ --- */}
+                                    <TextField 
+                                        margin="normal" 
+                                        required 
+                                        fullWidth 
+                                        label="Όνομα" 
+                                        autoComplete="given-name" 
+                                        sx={textFieldStyles}
+                                        {...register("firstName", { required: "Το όνομα είναι υποχρεωτικό" })}
+                                        error={!!errors.firstName}
+                                        helperText={errors.firstName?.message}
+                                    />
                                 </Grid>
                                 <Grid item xs={12} sm={6}>
-                                     <TextField margin="normal" required fullWidth id="lastName" label="Επώνυμο" name="lastName" autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} sx={textFieldStyles} />
+                                     <TextField 
+                                        margin="normal" 
+                                        required 
+                                        fullWidth 
+                                        label="Επώνυμο" 
+                                        autoComplete="family-name" 
+                                        sx={textFieldStyles}
+                                        {...register("lastName", { required: "Το επώνυμο είναι υποχρεωτικό" })}
+                                        error={!!errors.lastName}
+                                        helperText={errors.lastName?.message}
+                                     />
                                 </Grid>
                             </Grid>
                         )}
-                        <TextField margin="normal" required fullWidth id="email" label="Διεύθυνση Email" name="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} sx={textFieldStyles} />
-                        <TextField margin="normal" required fullWidth name="password" label="Κωδικός Πρόσβασης" type="password" id="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} sx={textFieldStyles} />
+                        <TextField 
+                            margin="normal" 
+                            required 
+                            fullWidth 
+                            label="Διεύθυνση Email" 
+                            autoComplete="email" 
+                            sx={textFieldStyles}
+                            {...register("email", { 
+                                required: "Το email είναι υποχρεωτικό",
+                                pattern: {
+                                    value: /^\S+@\S+$/i,
+                                    message: "Μη έγκυρη διεύθυνση email"
+                                }
+                            })}
+                            error={!!errors.email}
+                            helperText={errors.email?.message}
+                        />
+                        <TextField 
+                            margin="normal" 
+                            required 
+                            fullWidth 
+                            label="Κωδικός Πρόσβασης" 
+                            type="password" 
+                            autoComplete="current-password" 
+                            sx={textFieldStyles}
+                            {...register("password", { 
+                                required: "Ο κωδικός είναι υποχρεωτικός",
+                                minLength: {
+                                    value: 6,
+                                    message: "Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες"
+                                }
+                            })}
+                            error={!!errors.password}
+                            helperText={errors.password?.message}
+                        />
                         {!isLogin && (
                             <>
-                                <TextField margin="normal" required fullWidth name="confirmPassword" label="Επιβεβαίωση Κωδικού" type="password" id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} sx={textFieldStyles} />
-                                <FormControl fullWidth margin="normal" sx={textFieldStyles}>
-                                    <InputLabel>Ρόλος</InputLabel>
-                                    <Select value={role} label="Ρόλος" onChange={(e) => setRole(e.target.value)}>
-                                        <MenuItem value="student">Μαθητής</MenuItem>
-                                        <MenuItem value="teacher">Καθηγητής</MenuItem>
-                                        <MenuItem value="parent">Γονέας</MenuItem>
-                                    </Select>
-                                </FormControl>
+                                <TextField 
+                                    margin="normal" 
+                                    required 
+                                    fullWidth 
+                                    label="Επιβεβαίωση Κωδικού" 
+                                    type="password" 
+                                    sx={textFieldStyles}
+                                    {...register("confirmPassword", { 
+                                        required: "Η επιβεβαίωση κωδικού είναι υποχρεωτική",
+                                        validate: value => value === password || "Οι κωδικοί δεν ταιριάζουν"
+                                    })}
+                                    error={!!errors.confirmPassword}
+                                    helperText={errors.confirmPassword?.message}
+                                />
+                                {/* --- 6. ΧΡΗΣΗ του Controller για το Select του Material-UI --- */}
+                                <Controller
+                                    name="role"
+                                    control={control}
+                                    defaultValue="student"
+                                    render={({ field }) => (
+                                        <FormControl fullWidth margin="normal" sx={textFieldStyles}>
+                                            <InputLabel>Ρόλος</InputLabel>
+                                            <Select {...field} label="Ρόλος">
+                                                <MenuItem value="student">Μαθητής</MenuItem>
+                                                <MenuItem value="teacher">Καθηγητής</MenuItem>
+                                                <MenuItem value="parent">Γονέας</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    )}
+                                />
                             </>
                         )}
                         {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}

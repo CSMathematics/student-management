@@ -1,6 +1,6 @@
 // src/pages/Communication.jsx
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
+import { useLocation } from 'react-router-dom';
 import {
     Box, Grid, Paper, Typography, List, Divider, ListSubheader,
     InputAdornment, IconButton, Container, TextField as MuiTextField,
@@ -14,7 +14,7 @@ import {
     People as PeopleIcon, Person as PersonIcon, Class as ClassIcon, Email as EmailIcon, Phone as PhoneIcon,
     PhotoCamera as PhotoCameraIcon, Delete as DeleteIcon, Send as SendIcon, ExpandLess, ExpandMore,
     AttachFile as AttachFileIcon, Reply as ReplyIcon, Close as CloseIcon, InsertDriveFile as FileIcon,
-    Done as DoneIcon, DoneAll as DoneAllIcon, School as TeacherIcon // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
+    Done as DoneIcon, DoneAll as DoneAllIcon, School as TeacherIcon
 } from '@mui/icons-material';
 import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, updateDoc, deleteField, writeBatch, arrayUnion, deleteDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject, uploadBytes } from "firebase/storage";
@@ -462,9 +462,9 @@ const ChatMessage = ({ msg, onReplyClick, onDeleteClick, currentUser, participan
 };
 
 
-// --- ΑΛΛΑΓΗ: Προσθήκη του `allTeachers` στα props ---
-function Communication({ db, appId, allStudents, classrooms, allTeachers, userId }) {
-    const location = useLocation(); // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
+// --- ΔΙΟΡΘΩΣΗ: Προσθήκη προεπιλεγμένων τιμών στα props για αποφυγή σφαλμάτων ---
+function Communication({ db, appId, allStudents = [], classrooms = [], allTeachers = [], userId }) {
+    const location = useLocation();
     const { mode } = useTheme();
     const [selectedChannel, setSelectedChannel] = useState({ id: 'global', type: 'global', title: 'Γενική Ανακοίνωση' });
     const [messages, setMessages] = useState([]);
@@ -488,15 +488,10 @@ function Communication({ db, appId, allStudents, classrooms, allTeachers, userId
         name: 'Me' 
     }), [userId]);
     
-    // --- ΑΛΛΑΓΗ: Το `allUsersMap` περιλαμβάνει πλέον και τους καθηγητές ---
     const allUsersMap = useMemo(() => {
         const map = new Map();
-        if(allStudents) {
-            allStudents.forEach(s => map.set(s.id, { name: `${s.lastName} ${s.firstName}`, avatar: s.profileImageUrl }));
-        }
-        if(allTeachers) {
-            allTeachers.forEach(t => map.set(t.id, { name: `${t.firstName} ${t.lastName}`, avatar: t.profileImageUrl }));
-        }
+        allStudents.forEach(s => map.set(s.id, { name: `${s.lastName} ${s.firstName}`, avatar: s.profileImageUrl }));
+        allTeachers.forEach(t => map.set(t.id, { name: `${t.firstName} ${t.lastName}`, avatar: t.profileImageUrl }));
         map.set(currentUser.id, { name: currentUser.name, avatar: null });
         return map;
     }, [allStudents, allTeachers, currentUser]);
@@ -675,23 +670,21 @@ function Communication({ db, appId, allStudents, classrooms, allTeachers, userId
         subtitle: 'Μηνύματα προς όλους', date: null, unread: 0,
     }], []);
 
-    const classroomChannels = useMemo(() => (classrooms || []).filter(c => c.classroomName.toLowerCase().includes(searchTerm.toLowerCase())).map(c => ({
+    const classroomChannels = useMemo(() => (classrooms).filter(c => c.classroomName.toLowerCase().includes(searchTerm.toLowerCase())).map(c => ({
         id: c.id, type: 'classroom', avatar: c.profileImageUrl || null,
         title: c.classroomName, subtitle: c.subject, date: null, unread: 0,
     })), [classrooms, searchTerm]);
 
-    const studentChannels = useMemo(() => (allStudents || []).filter(s => `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())).map(s => ({
+    const studentChannels = useMemo(() => (allStudents).filter(s => `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())).map(s => ({
         id: s.id, type: 'personal', avatar: s.profileImageUrl || null,
         title: `${s.lastName} ${s.firstName}`, subtitle: s.grade, date: null, unread: 0,
     })), [allStudents, searchTerm]);
     
-    // --- ΝΕΑ ΛΟΓΙΚΗ: Δημιουργία καναλιών για τους καθηγητές ---
-    const teacherChannels = useMemo(() => (allTeachers || []).filter(t => `${t.firstName} ${t.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())).map(t => ({
+    const teacherChannels = useMemo(() => (allTeachers).filter(t => `${t.firstName} ${t.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())).map(t => ({
         id: t.id, type: 'personal', avatar: t.profileImageUrl || null,
         title: `${t.firstName} ${t.lastName}`, subtitle: t.specialty || 'Καθηγητής', date: null, unread: 0,
     })), [allTeachers, searchTerm]);
 
-    // --- ΝΕΟ EFFECT: Ελέγχει το state της πλοήγησης για να προ-επιλέξει συνομιλία ---
     useEffect(() => {
         const channelId = location.state?.selectedChannelId;
         if (channelId) {
@@ -774,7 +767,6 @@ function Communication({ db, appId, allStudents, classrooms, allTeachers, userId
                                 {renderChannelList(classroomChannels)}
                             </Collapse>
 
-                            {/* --- ΝΕΑ ΕΝΟΤΗΤΑ: Καθηγητές --- */}
                             {teacherChannels.length > 0 && (
                                 <>
                                     <ListItemButton onClick={() => handleToggleSection('teachers')}>
