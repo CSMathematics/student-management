@@ -2,16 +2,16 @@
 import React, { useMemo } from 'react';
 import {
     Container, Paper, Typography, Box, Accordion, AccordionSummary,
-    AccordionDetails, List, ListItem, ListItemIcon, Link, ListItemText, Divider
+    AccordionDetails, List, ListItem, ListItemIcon, Link, ListItemText
 } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon, Book as CourseIcon, Folder as ClassroomIcon, InsertDriveFile as FileIcon, Today as DailyIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
+import { getFunctions, httpsCallable } from 'firebase/functions'; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
 
-// --- ΔΙΟΡΘΩΣΗ: Αλλαγή του prop allDailyLogs σε dailyLogs ---
-function MyMaterials({ enrolledClassrooms, allCourses, dailyLogs }) {
+// --- Το component δέχεται πλέον όλα τα props που χρειαζόμαστε ---
+function MyMaterials({ enrolledClassrooms, allCourses, dailyLogs, db, user, appId, selectedYear }) {
 
     const materialsBySubject = useMemo(() => {
-        // Προσθέτουμε ελέγχους για να σιγουρευτούμε ότι τα δεδομένα είναι πίνακες
         if (!Array.isArray(enrolledClassrooms) || !Array.isArray(allCourses) || !Array.isArray(dailyLogs)) return [];
 
         const grouped = {};
@@ -41,7 +41,6 @@ function MyMaterials({ enrolledClassrooms, allCourses, dailyLogs }) {
             }
         });
 
-        // --- ΔΙΟΡΘΩΣΗ: Χρήση της μεταβλητής dailyLogs ---
         dailyLogs.forEach(log => {
             const classroom = enrolledClassrooms.find(c => c.id === log.classroomId);
             if (classroom && log.attachedFiles && log.attachedFiles.length > 0) {
@@ -61,9 +60,27 @@ function MyMaterials({ enrolledClassrooms, allCourses, dailyLogs }) {
         }
 
         return Object.entries(grouped);
-
-    // --- ΔΙΟΡΘΩΣΗ: Ενημέρωση της εξάρτησης του useMemo ---
     }, [enrolledClassrooms, allCourses, dailyLogs]);
+
+    // --- ΝΕΑ ΣΥΝΑΡΤΗΣΗ: Καταγράφει το download και ανοίγει το αρχείο ---
+    const handleFileDownload = (fileUrl) => {
+        if (db && user?.uid && appId && selectedYear) {
+            try {
+                const functions = getFunctions(db.app);
+                const logUserEvent = httpsCallable(functions, 'logUserEvent');
+                logUserEvent({
+                    eventName: 'downloaded_material',
+                    studentId: user.uid,
+                    appId: appId,
+                    academicYear: selectedYear
+                });
+            } catch (error) {
+                console.error("Error logging download event:", error);
+            }
+        }
+        // Ανοίγουμε το αρχείο σε νέα καρτέλα
+        window.open(fileUrl, '_blank');
+    };
 
     const renderFileList = (files, isDaily = false) => (
         <List dense>
@@ -74,7 +91,8 @@ function MyMaterials({ enrolledClassrooms, allCourses, dailyLogs }) {
                     </ListItemIcon>
                     <ListItemText
                         primary={
-                            <Link href={file.url} target="_blank" rel="noopener noreferrer" underline="hover">
+                            // --- ΤΡΟΠΟΠΟΙΗΣΗ: Το Link καλεί πλέον τη συνάρτηση handleFileDownload ---
+                            <Link href="#" onClick={(e) => { e.preventDefault(); handleFileDownload(file.url); }} underline="hover">
                                 {file.name}
                             </Link>
                         }
@@ -88,7 +106,6 @@ function MyMaterials({ enrolledClassrooms, allCourses, dailyLogs }) {
             ))}
         </List>
     );
-
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4 }}>

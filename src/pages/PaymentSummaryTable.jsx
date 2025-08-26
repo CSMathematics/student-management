@@ -20,19 +20,14 @@ const getDateFromFirestoreTimestamp = (timestamp) => {
 
 function PaymentSummaryTable({ allStudents, allPayments, loading }) {
     const { mode } = useTheme();
-    // --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Ανάκτηση δεδομένων του ακαδημαϊκού έτους ---
     const { selectedYearData } = useAcademicYear();
 
-    // --- ΝΕΑ ΛΟΓΙΚΗ: Δημιουργία λίστας μηνών δυναμικά ---
     const billableMonths = useMemo(() => {
-        if (!selectedYearData?.startDate || !selectedYearData?.endDate) {
-            return [];
-        }
+        if (!selectedYearData?.startDate || !selectedYearData?.endDate) return [];
         const start = dayjs(selectedYearData.startDate.toDate()).startOf('month');
         const end = dayjs(selectedYearData.endDate.toDate()).endOf('month');
         const months = [];
         let current = start;
-
         while (current.isBefore(end) || current.isSame(end, 'month')) {
             months.push({
                 key: current.format('YYYY-MM'),
@@ -44,6 +39,7 @@ function PaymentSummaryTable({ allStudents, allPayments, loading }) {
         return months;
     }, [selectedYearData]);
 
+    // --- ΔΙΟΡΘΩΜΕΝΗ ΛΟΓΙΚΗ ΥΠΟΛΟΓΙΣΜΩΝ ---
     const { summaryData, studentTotals, monthlyTotals, grandTotal } = useMemo(() => {
         if (!allStudents || !allPayments || billableMonths.length === 0) {
             return { summaryData: new Map(), studentTotals: new Map(), monthlyTotals: {}, grandTotal: 0 };
@@ -62,6 +58,7 @@ function PaymentSummaryTable({ allStudents, allPayments, loading }) {
             
             const registrationDate = student.createdAt ? dayjs(getDateFromFirestoreTimestamp(student.createdAt)) : null;
             const studentMonthlyStatus = student.monthlyStatus || {};
+            const customMonthlyDues = student.monthlyDues || {}; // <-- Διαβάζουμε τα προσαρμοσμένα δίδακτρα
 
             const studentPayments = allPayments.filter(p => p.studentId === student.id);
             const monthlyPaymentsMap = new Map();
@@ -83,9 +80,13 @@ function PaymentSummaryTable({ allStudents, allPayments, loading }) {
                     .filter(p => p.notes === targetNote)
                     .reduce((sum, p) => sum + p.amount, 0);
                 
-                const dueThisMonth = isActive ? studentMonthlyFee : 0;
+                // --- ΥΠΟΛΟΓΙΣΜΟΣ ΟΦΕΙΛΗΣ ΜΕ ΒΑΣΗ ΤΑ ΠΡΟΣΑΡΜΟΣΜΕΝΑ ΔΙΔΑΚΤΡΑ ---
+                const dueThisMonth = isActive 
+                    ? (customMonthlyDues[month.key] !== undefined ? customMonthlyDues[month.key] : studentMonthlyFee) 
+                    : 0;
+                
                 const balance = dueThisMonth - paidThisMonth;
-                monthlyPaymentsMap.set(month.key, { paid: paidThisMonth, balance: balance, isActive: isActive });
+                monthlyPaymentsMap.set(month.key, { paid: paidThisMonth, balance: balance, isActive: isActive, due: dueThisMonth });
 
                 totalPaidByStudent += paidThisMonth;
                 monthlyTotalsObj[month.key] += paidThisMonth;
@@ -143,7 +144,7 @@ function PaymentSummaryTable({ allStudents, allPayments, loading }) {
 
                                     if (monthData) {
                                         if (monthData.isActive) {
-                                            const isFullyPaid = Math.abs(monthData.balance) < 0.01;
+                                            const isFullyPaid = monthData.balance <= 0.01 && monthData.due > 0;
                                             displayValue = isFullyPaid ? `${monthData.paid.toFixed(2)} €` : `${monthData.balance.toFixed(2)} €`;
                                             
                                             if (mode === 'light') {

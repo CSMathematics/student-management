@@ -7,7 +7,7 @@ import {
     CircularProgress, Alert, Divider, Chip, IconButton,
     Dialog, DialogActions, DialogContent, DialogTitle, DialogContentText, Tooltip, Checkbox
 } from '@mui/material';
-import { Receipt as ReceiptIcon, AddCard as AddCardIcon } from '@mui/icons-material';
+import { Receipt as ReceiptIcon, AddCard as AddCardIcon, Save as SaveIcon } from '@mui/icons-material';
 import { collection, doc, addDoc, query, where, getDocs, writeBatch, setDoc } from 'firebase/firestore';
 import dayjs from 'dayjs';
 import 'dayjs/locale/el';
@@ -86,7 +86,6 @@ const generateReceipt = async (student, payment) => {
 
 function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }) {
     const location = useLocation();
-    // --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Ανάκτηση δεδομένων του ακαδημαϊκού έτους ---
     const { selectedYearData } = useAcademicYear();
 
     const [selectedStudentId, setSelectedStudentId] = useState(null);
@@ -101,16 +100,12 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
     const [paymentDates, setPaymentDates] = useState({});
     const [monthlyStatus, setMonthlyStatus] = useState({});
 
-    // --- ΝΕΑ ΛΟΓΙΚΗ: Δημιουργία λίστας μηνών δυναμικά ---
     const billableMonths = useMemo(() => {
-        if (!selectedYearData?.startDate || !selectedYearData?.endDate) {
-            return [];
-        }
+        if (!selectedYearData?.startDate || !selectedYearData?.endDate) return [];
         const start = dayjs(selectedYearData.startDate.toDate()).startOf('month');
         const end = dayjs(selectedYearData.endDate.toDate()).endOf('month');
         const months = [];
         let current = start;
-
         while (current.isBefore(end) || current.isSame(end, 'month')) {
             months.push({
                 key: current.format('YYYY-MM'),
@@ -124,9 +119,7 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
 
     useEffect(() => {
         const studentIdFromState = location.state?.selectedStudentId;
-        if (studentIdFromState) {
-            setSelectedStudentId(studentIdFromState);
-        }
+        if (studentIdFromState) setSelectedStudentId(studentIdFromState);
     }, [location.state]);
 
     const studentsWithBalance = useMemo(() => {
@@ -137,13 +130,19 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
             const monthlyFee = monthlyFeeRaw - (monthlyFeeRaw * (discount / 100));
             
             const studentMonthlyStatus = student.monthlyStatus || {};
-            const activeMonthsCount = billableMonths.filter(m => studentMonthlyStatus[m.key] !== false).length;
-            const finalFees = monthlyFee * activeMonthsCount;
+            const customMonthlyDues = student.monthlyDues || {};
+
+            const totalDue = billableMonths.reduce((sum, month) => {
+                const isActive = studentMonthlyStatus[month.key] !== false;
+                if (!isActive) return sum;
+                const dueForMonth = customMonthlyDues[month.key] !== undefined ? customMonthlyDues[month.key] : monthlyFee;
+                return sum + dueForMonth;
+            }, 0);
 
             const paymentsForStudent = allPayments.filter(p => p.studentId === student.id);
             const totalPaid = paymentsForStudent.reduce((sum, p) => sum + p.amount, 0);
-            const balance = finalFees - totalPaid;
-            return { ...student, finalFees, totalPaid, balance, monthlyFee };
+            const balance = totalDue - totalPaid;
+            return { ...student, finalFees: totalDue, totalPaid, balance, monthlyFee };
         }).sort((a, b) => a.lastName.localeCompare(b.lastName));
     }, [allStudents, allPayments, billableMonths]);
 
@@ -153,14 +152,16 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
     
     useEffect(() => {
         if (selectedStudent && billableMonths.length > 0) {
-            const initialDues = {};
+            const initialDues = { ...selectedStudent.monthlyDues };
             const initialDates = {};
             const initialStatus = {};
             
             const registrationDate = selectedStudent.createdAt ? dayjs(getDateFromFirestoreTimestamp(selectedStudent.createdAt)) : null;
 
             billableMonths.forEach(month => {
-                initialDues[month.key] = selectedStudent.monthlyFee;
+                if (initialDues[month.key] === undefined) {
+                    initialDues[month.key] = selectedStudent.monthlyFee;
+                }
                 const monthDate = dayjs(month.key);
                 initialDates[month.key] = monthDate.format('YYYY-MM-DD');
 
@@ -181,27 +182,17 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
         }
     }, [selectedStudent, billableMonths]);
 
-
     const monthlyBreakdown = useMemo(() => {
         if (!selectedStudent || billableMonths.length === 0) return [];
         const paymentsForStudent = allPayments.filter(p => p.studentId === selectedStudent.id);
 
         return billableMonths.map(month => {
             const targetNote = `Δόση ${month.name} ${month.year}`;
-
-            const paidThisMonth = paymentsForStudent
-                .filter(p => p.notes === targetNote)
-                .reduce((sum, p) => sum + p.amount, 0);
-            
-            const dueAmount = monthlyStatus[month.key] ? (monthlyDues[month.key] !== undefined ? monthlyDues[month.key] : selectedStudent.monthlyFee) : 0;
+            const paidThisMonth = paymentsForStudent.filter(p => p.notes === targetNote).reduce((sum, p) => sum + p.amount, 0);
+            const dueAmount = monthlyStatus[month.key] ? (monthlyDues[month.key] ?? selectedStudent.monthlyFee) : 0;
             const balance = dueAmount - paidThisMonth;
-            
             return {
-                ...month,
-                targetNote: targetNote,
-                due: dueAmount,
-                paid: paidThisMonth,
-                balance: balance,
+                ...month, targetNote, due: dueAmount, paid: paidThisMonth, balance,
                 status: balance <= 0.01 && dueAmount > 0 ? 'Εξοφλημένο' : (dueAmount === 0 ? 'Ανενεργός' : 'Εκκρεμεί')
             };
         });
@@ -215,30 +206,23 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
 
     const selectedStudentPayments = useMemo(() => {
         if (!selectedStudent) return [];
-        return allPayments
-            .filter(p => p.studentId === selectedStudent.id)
-            .sort((a, b) => getDateFromFirestoreTimestamp(b.date) - getDateFromFirestoreTimestamp(a.date));
+        return allPayments.filter(p => p.studentId === selectedStudent.id).sort((a, b) => getDateFromFirestoreTimestamp(b.date) - getDateFromFirestoreTimestamp(a.date));
     }, [selectedStudent, allPayments]);
 
     const handleOpenPaymentDialog = (monthData) => {
-        setPaymentDetails({ monthData: monthData, amount: monthData.balance > 0 ? monthData.balance : 0 });
+        setPaymentDetails({ monthData, amount: monthData.balance > 0 ? monthData.balance : 0 });
         setPaymentDialogOpen(true);
     };
     
     const recordPayment = async (monthData, amount, date) => {
         if (isSaving || !monthData || amount <= 0 || !selectedYear) return;
-        
         setIsSaving(true);
         setFeedback({ type: '', message: '' });
-
         try {
             const paymentData = {
                 studentId: selectedStudent.id,
                 studentName: `${selectedStudent.firstName} ${selectedStudent.lastName}`,
-                amount: amount,
-                notes: monthData.targetNote,
-                date: dayjs(date).toDate(),
-                createdAt: new Date(),
+                amount, notes: monthData.targetNote, date: dayjs(date).toDate(), createdAt: new Date(),
             };
             const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/payments`), paymentData);
             generateReceipt(selectedStudent, { ...paymentData, id: docRef.id });
@@ -263,24 +247,19 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
         recordPayment(monthData, monthData.balance, date);
     };
 
-
     const handleUnpayAction = async (monthData) => {
         if (isSaving || !selectedYear) return;
         setIsSaving(true);
         setFeedback({ type: '', message: '' });
-
         try {
             const q = query(
                 collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/payments`),
-                where('studentId', '==', selectedStudent.id),
-                where('notes', '==', monthData.targetNote)
+                where('studentId', '==', selectedStudent.id), where('notes', '==', monthData.targetNote)
             );
             const snapshot = await getDocs(q);
             const batch = writeBatch(db);
             if (!snapshot.empty) {
-                snapshot.forEach(doc => {
-                    batch.delete(doc.ref);
-                });
+                snapshot.forEach(doc => batch.delete(doc.ref));
                 await batch.commit();
                 setFeedback({ type: 'success', message: `Οι πληρωμές για ${monthData.name} αναιρέθηκαν.` });
             }
@@ -305,13 +284,29 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
         if (!selectedYear) return;
         const newStatus = { ...selectedStudent.monthlyStatus, [monthKey]: isChecked };
         setMonthlyStatus(prev => ({...prev, [monthKey]: isChecked}));
-        
         try {
             const studentRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`, selectedStudent.id);
             await setDoc(studentRef, { monthlyStatus: newStatus }, { merge: true });
         } catch (error) {
             console.error("Error updating monthly status:", error);
             setFeedback({ type: 'error', message: 'Αποτυχία ενημέρωσης κατάστασης.' });
+        }
+    };
+
+    // --- ΝΕΑ ΣΥΝΑΡΤΗΣΗ: Αποθηκεύει τις αλλαγές στα δίδακτρα ---
+    const handleSaveDues = async () => {
+        if (!selectedStudent || !selectedYear) return;
+        setIsSaving(true);
+        setFeedback({ type: '', message: '' });
+        try {
+            const studentRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`, selectedStudent.id);
+            await setDoc(studentRef, { monthlyDues: monthlyDues }, { merge: true });
+            setFeedback({ type: 'success', message: 'Οι αλλαγές στα δίδακτρα αποθηκεύτηκαν.' });
+        } catch (error) {
+            console.error("Error saving custom dues:", error);
+            setFeedback({ type: 'error', message: 'Σφάλμα κατά την αποθήκευση των αλλαγών.' });
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -353,7 +348,7 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
                                 </Grid>
                                 <Divider sx={{ my: 2 }} />
                                 <Typography variant="h6" sx={{ mb: 2 }}>Μηνιαία Ανάλυση</Typography>
-                                <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+                                <TableContainer component={Paper} variant="outlined" sx={{ mb: 1 }}>
                                     <Table size="small">
                                         <TableHead><TableRow><TableCell>Ενεργός</TableCell><TableCell>Μήνας</TableCell><TableCell>Δίδακτρα</TableCell><TableCell>Πληρωμένα</TableCell><TableCell>Υπόλοιπο</TableCell><TableCell>Ημερομηνία</TableCell><TableCell>Κατάσταση</TableCell></TableRow></TableHead>
                                         <TableBody>
@@ -361,18 +356,12 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
                                                 const isMonthActive = monthlyStatus[row.key] !== false;
                                                 return (
                                                 <TableRow key={row.key} sx={{ bgcolor: !isMonthActive ? 'grey.100' : 'transparent' }}>
-                                                    <TableCell padding="checkbox">
-                                                        <Checkbox checked={isMonthActive} onChange={(e) => handleMonthlyStatusChange(row.key, e.target.checked)} />
-                                                    </TableCell>
+                                                    <TableCell padding="checkbox"><Checkbox checked={isMonthActive} onChange={(e) => handleMonthlyStatusChange(row.key, e.target.checked)} /></TableCell>
                                                     <TableCell>{row.name}</TableCell>
-                                                    <TableCell>
-                                                        <TextField disabled={!isMonthActive} variant="standard" size="small" value={monthlyDues[row.key] !== undefined ? monthlyDues[row.key] : ''} onChange={(e) => handleDueChange(row.key, e.target.value)} sx={{ width: '80px' }} InputProps={{ endAdornment: '€' }} />
-                                                    </TableCell>
+                                                    <TableCell><TextField disabled={!isMonthActive} variant="standard" size="small" value={monthlyDues[row.key] ?? ''} onChange={(e) => handleDueChange(row.key, e.target.value)} sx={{ width: '80px' }} InputProps={{ endAdornment: '€' }} /></TableCell>
                                                     <TableCell>{row.paid.toFixed(2)} €</TableCell>
                                                     <TableCell>{row.balance.toFixed(2)} €</TableCell>
-                                                    <TableCell>
-                                                        <TextField disabled={!isMonthActive} type="date" variant="standard" size="small" value={paymentDates[row.key] || ''} onChange={(e) => handleDateChange(row.key, e.target.value)} sx={{ width: '130px' }} InputLabelProps={{ shrink: true }} />
-                                                    </TableCell>
+                                                    <TableCell><TextField disabled={!isMonthActive} type="date" variant="standard" size="small" value={paymentDates[row.key] || ''} onChange={(e) => handleDateChange(row.key, e.target.value)} sx={{ width: '130px' }} InputLabelProps={{ shrink: true }} /></TableCell>
                                                     <TableCell>
                                                         {row.status === 'Εξοφλημένο' ? (
                                                             <Chip label={row.status} color='success' size="small" onClick={() => handleUnpayAction(row)} disabled={isSaving || !isMonthActive} sx={{ cursor: 'pointer' }} />
@@ -381,11 +370,7 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
                                                         ) : (
                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                                 <Chip label="Εξόφληση" color='warning' size="small" onClick={() => handlePayFullBalance(row)} disabled={isSaving || !isMonthActive || row.balance <= 0} sx={{ cursor: 'pointer', flexGrow: 1 }} />
-                                                                <Tooltip title="Μερική Πληρωμή">
-                                                                    <span>
-                                                                        <IconButton size="small" onClick={() => handleOpenPaymentDialog(row)} disabled={isSaving || !isMonthActive || row.balance <= 0}><AddCardIcon fontSize="small" /></IconButton>
-                                                                    </span>
-                                                                </Tooltip>
+                                                                <Tooltip title="Μερική Πληρωμή"><span><IconButton size="small" onClick={() => handleOpenPaymentDialog(row)} disabled={isSaving || !isMonthActive || row.balance <= 0}><AddCardIcon fontSize="small" /></IconButton></span></Tooltip>
                                                             </Box>
                                                         )}
                                                     </TableCell>
@@ -394,6 +379,12 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
                                         </TableBody>
                                     </Table>
                                 </TableContainer>
+                                {/* --- ΝΕΟ ΚΟΥΜΠΙ ΑΠΟΘΗΚΕΥΣΗΣ --- */}
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, mb: 3 }}>
+                                    <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSaveDues} disabled={isSaving}>
+                                        Αποθήκευση Αλλαγών στα Δίδακτρα
+                                    </Button>
+                                </Box>
                                 {feedback.message && <Alert severity={feedback.type} sx={{ mb: 2 }}>{feedback.message}</Alert>}
                                 <Typography variant="h6" sx={{ mb: 2 }}>Ιστορικό Πληρωμών</Typography>
                                 <TableContainer component={Paper} variant="outlined">
@@ -405,9 +396,7 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
                                                     <TableCell>{dayjs(getDateFromFirestoreTimestamp(p.date)).format('DD/MM/YYYY')}</TableCell>
                                                     <TableCell>{p.amount.toFixed(2)} €</TableCell>
                                                     <TableCell>{p.notes}</TableCell>
-                                                    <TableCell>
-                                                        <IconButton color="primary" onClick={() => generateReceipt(selectedStudent, p)}><ReceiptIcon /></IconButton>
-                                                    </TableCell>
+                                                    <TableCell><IconButton color="primary" onClick={() => generateReceipt(selectedStudent, p)}><ReceiptIcon /></IconButton></TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -418,7 +407,6 @@ function Payments({ allStudents, allPayments, db, appId, loading, selectedYear }
                     </Paper>
                 </Grid>
             </Grid>
-
             <Dialog open={paymentDialogOpen} onClose={() => setPaymentDialogOpen(false)}>
                 <DialogTitle>Καταχώρηση Πληρωμής</DialogTitle>
                 <DialogContent>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Εργαλείο Μετατροπής CSV σε JSON</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        #diagnostics {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen py-12">
+
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-lg mx-4">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Εργαλείο Μετατροπής CSV σε JSON</h1>
+            <p class="text-gray-500 mt-2">Συνδυάστε τα δύο αρχεία CSV και εξάγετε το αποτέλεσμα σε δομημένο αρχείο JSON.</p>
+        </div>
+
+        <!-- File Input 1 -->
+        <div class="mb-6">
+            <label for="file1" class="block text-sm font-medium text-gray-700 mb-2">1. Κύριο Αρχείο (π.χ. 2oPedio.csv)</label>
+            <input type="file" id="file1" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors duration-200 cursor-pointer">
+        </div>
+
+        <!-- File Input 2 -->
+        <div class="mb-6">
+            <label for="file2" class="block text-sm font-medium text-gray-700 mb-2">2. Αρχείο Συντελεστών (π.χ. 2oPedio_SB.csv)</label>
+            <input type="file" id="file2" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors duration-200 cursor-pointer">
+        </div>
+
+        <!-- Merge Button -->
+        <div class="mt-8">
+            <button id="mergeBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105 duration-200">
+                Μετατροπή & Λήψη JSON
+            </button>
+        </div>
+        
+        <!-- Status Message -->
+        <div id="status" class="mt-6 text-center text-sm font-medium h-5"></div>
+
+        <!-- Diagnostics Section -->
+        <div id="diagnostics" class="hidden mt-6 opacity-0">
+            <label for="unmatched" class="block text-sm font-medium text-gray-700 mb-2">Διαγνωστικά Αποτελέσματα:</label>
+            <p id="diagnostics-summary" class="text-sm text-gray-600 mb-2"></p>
+            <textarea id="unmatched" readonly class="w-full h-32 p-2 border border-gray-300 rounded-md bg-gray-50 text-sm focus:ring-0 focus:border-gray-400"></textarea>
+        </div>
+
+    </div>
+
+    <script>
+        const fileInput1 = document.getElementById('file1');
+        const fileInput2 = document.getElementById('file2');
+        const mergeBtn = document.getElementById('mergeBtn');
+        const statusDiv = document.getElementById('status');
+        const diagnosticsDiv = document.getElementById('diagnostics');
+        const diagnosticsSummary = document.getElementById('diagnostics-summary');
+        const unmatchedTextarea = document.getElementById('unmatched');
+
+        const KEY_1 = 'Κωδικός Τμήματος';
+        const KEY_2 = 'ΚΩΔ. ΣΧΟΛΗΣ';
+        // This header name from file1 has a comma inside the quotes
+        const EVE_COEFFICIENT_HEADER = 'Συντελεστής Ε.Β.Ε,';
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split(/\r?\n/);
+            if (lines.length === 0) return { header: [], data: [] };
+
+            const splitRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+            const cleanValue = (val) => {
+                let value = (val || '').trim();
+                if (value.startsWith('"') && value.endsWith('"')) {
+                    value = value.slice(1, -1).replace(/""/g, '"');
+                }
+                return value;
+            };
+            
+            const header = lines[0].split(splitRegex).map(cleanValue);
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const values = lines[i].split(splitRegex).map(cleanValue);
+                const entry = {};
+                for (let j = 0; j < header.length; j++) {
+                    entry[header[j]] = values[j] || '';
+                }
+                data.push(entry);
+            }
+            return { header, data };
+        }
+
+        function downloadJSON(filename, jsonData) {
+            const jsonString = JSON.stringify(jsonData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+            const link = document.createElement("a");
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+        
+        mergeBtn.addEventListener('click', async () => {
+            statusDiv.textContent = 'Επεξεργασία...';
+            statusDiv.className = 'mt-6 text-center text-sm font-medium h-5 text-gray-600';
+            diagnosticsDiv.classList.add('hidden');
+            diagnosticsDiv.style.opacity = 0;
+
+            const file1 = fileInput1.files[0];
+            const file2 = fileInput2.files[0];
+
+            if (!file1 || !file2) {
+                statusDiv.textContent = 'Παρακαλώ επιλέξτε και τα δύο αρχεία.';
+                statusDiv.classList.add('text-red-500');
+                return;
+            }
+
+            try {
+                const [csvText1, csvText2] = await Promise.all([readFileAsText(file1), readFileAsText(file2)]);
+                const { data: data1 } = parseCSV(csvText1);
+                const { header: header2, data: data2 } = parseCSV(csvText2);
+
+                if (data1.length === 0) {
+                    statusDiv.textContent = 'Σφάλμα: Το πρώτο αρχείο είναι κενό ή έχει λανθασμένη μορφή.';
+                    statusDiv.classList.add('text-red-500');
+                    return;
+                }
+                
+                const data2Headers = header2.filter(h => h && h !== KEY_2 && h !== 'ΟΝΟΜΑ ΣΧΟΛΗΣ');
+                const data1Keys = new Set(data1.map(row => row[KEY_1]?.trim()));
+
+                const data2Map = new Map();
+                data2.forEach(row => {
+                    const key = row[KEY_2]?.trim();
+                    if (key) {
+                        const rowData = { ...row };
+                        delete rowData[KEY_2];
+                        delete rowData['ΟΝΟΜΑ ΣΧΟΛΗΣ'];
+                        data2Map.set(key, rowData);
+                    }
+                });
+
+                const unmatchedKeys = [];
+                for (const key of data2Map.keys()) {
+                    if (!data1Keys.has(key)) {
+                        unmatchedKeys.push(key);
+                    }
+                }
+
+                // --- TRANSFORM MERGED DATA TO JSON ---
+                const jsonData = data1.map(row1 => {
+                    const key = row1[KEY_1]?.trim();
+                    const row2Data = key ? data2Map.get(key) : {};
+
+                    // Split school name and university
+                    const schoolFullName = row1['Σχολή'] || '';
+                    const lastCommaIndex = schoolFullName.lastIndexOf(',');
+                    let name = schoolFullName;
+                    let university = '';
+                    if (lastCommaIndex !== -1) {
+                        name = schoolFullName.substring(0, lastCommaIndex).trim();
+                        university = schoolFullName.substring(lastCommaIndex + 1).trim();
+                    }
+
+                    // Build coefficients array
+                    const coefficients = [];
+                    data2Headers.forEach(subject => {
+                        const weightStr = row2Data[subject];
+                        if (weightStr && weightStr.includes('%')) {
+                            const weight = parseInt(weightStr.replace('%', ''), 10);
+                            if (!isNaN(weight)) {
+                                coefficients.push({ subject, weight });
+                            }
+                        }
+                    });
+
+                    // Build the final JSON object for this school
+                    return {
+                        code: parseInt(row1[KEY_1], 10) || null,
+                        name: name,
+                        university: university,
+                        link: row1['link'] || '',
+                        city: row1['Πόλη'] || '',
+                        fields: row1['Πεδία'] || '',
+                        capacity: parseInt(row1['Εισακτέοι'], 10) || null,
+                        base_2025: parseInt(row1['Βάση 2025'], 10) || null,
+                        eve_coefficient: parseFloat(row1[EVE_COEFFICIENT_HEADER]?.replace(',', '.')) || null,
+                        eve_score: row1['Ε.Β.Ε.'] || null,
+                        coefficients: coefficients
+                    };
+                });
+
+                if (jsonData.length === 0) {
+                    statusDiv.textContent = 'Η μετατροπή δεν παρήγαγε αποτελέσματα.';
+                    statusDiv.classList.add('text-yellow-600');
+                    return;
+                }
+
+                downloadJSON('sygxwneymena_dedomena.json', jsonData);
+                
+                statusDiv.textContent = `Επιτυχής μετατροπή ${jsonData.length} εγγραφών σε JSON!`;
+                statusDiv.classList.add('text-green-600');
+
+                // --- DISPLAY DIAGNOSTICS ---
+                diagnosticsDiv.classList.remove('hidden');
+                setTimeout(() => diagnosticsDiv.style.opacity = 1, 50);
+                if (unmatchedKeys.length > 0) {
+                    diagnosticsSummary.textContent = `Βρέθηκαν ${unmatchedKeys.length} κωδικοί από το 2ο αρχείο που δεν αντιστοιχίστηκαν στο 1ο:`;
+                    unmatchedTextarea.value = unmatchedKeys.join('\n');
+                } else {
+                    diagnosticsSummary.textContent = 'Όλοι οι κωδικοί από το 2ο αρχείο βρήκαν αντιστοιχία στο 1ο!';
+                    unmatchedTextarea.value = 'Κανένα πρόβλημα αντιστοίχισης.';
+                }
+
+            } catch (error) {
+                console.error('Error during merge process:', error);
+                statusDiv.textContent = 'Προέκυψε ένα σφάλμα κατά την επεξεργασία.';
+                statusDiv.classList.add('text-red-500');
+            }
+        });
+    </script>
+</body>
+</html>

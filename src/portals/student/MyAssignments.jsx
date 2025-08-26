@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import {
     Container, Paper, Typography, Box, Accordion, AccordionSummary,
-    AccordionDetails, List, ListItem, ListItemIcon, ListItemText, Link, Divider, Button, CircularProgress, Tooltip, IconButton
+    AccordionDetails, List, ListItem, ListItemIcon, ListItemText, Link, Divider, Button, CircularProgress, Tooltip, IconButton, Alert, Collapse
 } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon, Event as EventIcon, Description as FileIcon, UploadFile as UploadFileIcon, CheckCircle as SubmittedIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
@@ -10,6 +10,7 @@ import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { collection, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
 import { useStudentData } from '../../context/StudentDataContext';
+import { checkAndAwardBadges } from '../../services/BadgeService.js';
 
 dayjs.extend(isSameOrAfter);
 
@@ -20,16 +21,18 @@ const assignmentTypeLabels = {
     oral: 'Προφορική Εξέταση'
 };
 
-const SubmissionStatus = ({ assignment, submission }) => {
-    const { studentId, db, appId, selectedYear } = useStudentData();
+const SubmissionStatus = ({ assignment, submission, studentId, db, appId, selectedYear }) => {
     const [isUploading, setIsUploading] = useState(false);
+    const [feedback, setFeedback] = useState({ type: '', message: '' });
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
         if (!file || !studentId || !selectedYear) return;
 
+        setFeedback({ type: '', message: '' });
+
         if (submission) {
-            await handleDeleteSubmission();
+            await handleDeleteSubmission(false); 
         }
 
         setIsUploading(true);
@@ -51,15 +54,20 @@ const SubmissionStatus = ({ assignment, submission }) => {
                 submittedAt: serverTimestamp(),
             };
             await addDoc(collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/submissions`), submissionData);
+            
+            setFeedback({ type: 'success', message: 'Η εργασία υποβλήθηκε με επιτυχία!' });
+            await checkAndAwardBadges(db, appId, selectedYear, studentId);
 
         } catch (error) {
-            console.error("Error uploading submission:", error);
+            console.error("Error uploading submission or awarding badges:", error);
+            setFeedback({ type: 'error', message: 'Η υποβολή απέτυχε. Δοκιμάστε ξανά.' });
         } finally {
             setIsUploading(false);
+            setTimeout(() => setFeedback({ type: '', message: '' }), 5000);
         }
     };
 
-    const handleDeleteSubmission = async () => {
+    const handleDeleteSubmission = async (showFeedback = true) => {
         if (!submission) return;
         const storage = getStorage();
         const fileRef = ref(storage, submission.storagePath);
@@ -67,55 +75,97 @@ const SubmissionStatus = ({ assignment, submission }) => {
         try {
             await deleteObject(fileRef);
             await deleteDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/submissions`, submission.id));
+            if (showFeedback) {
+                 setFeedback({ type: 'info', message: 'Η προηγούμενη υποβολή διαγράφηκε.' });
+                 setTimeout(() => setFeedback({ type: '', message: '' }), 4000);
+            }
         } catch (error) {
             console.error("Error deleting submission:", error);
+            if (showFeedback) {
+                setFeedback({ type: 'error', message: 'Η διαγραφή απέτυχε.' });
+                setTimeout(() => setFeedback({ type: '', message: '' }), 4000);
+            }
         }
     };
 
-    if (submission) {
-        return (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                <SubmittedIcon color="success" fontSize="small" />
-                <Typography variant="body2" color="text.secondary">
-                    Υποβλήθηκε: <Link href={submission.fileURL} target="_blank">{submission.fileName}</Link>
-                </Typography>
-                <Tooltip title="Διαγραφή & Αντικατάσταση">
-                    <IconButton size="small" onClick={handleDeleteSubmission} disabled={isUploading}>
-                        <DeleteIcon fontSize="inherit" />
-                    </IconButton>
-                </Tooltip>
-            </Box>
-        );
-    }
-
     return (
-        <Button
-            variant="contained"
-            size="small"
-            component="label"
-            startIcon={isUploading ? <CircularProgress size={16} /> : <UploadFileIcon />}
-            disabled={isUploading}
-            sx={{ mt: 1 }}
-        >
-            Υποβολή Εργασίας
-            <input type="file" hidden onChange={handleFileUpload} />
-        </Button>
+        <Box sx={{ width: '100%' }}>
+            {submission ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <SubmittedIcon color="success" fontSize="small" />
+                    <Typography variant="body2" color="text.secondary">
+                        Υποβλήθηκε: <Link href={submission.fileURL} target="_blank">{submission.fileName}</Link>
+                    </Typography>
+                    <Tooltip title="Διαγραφή & Αντικατάσταση">
+                        <IconButton size="small" onClick={() => handleDeleteSubmission()} disabled={isUploading}>
+                            <DeleteIcon fontSize="inherit" />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+            ) : (
+                <Button
+                    variant="contained"
+                    size="small"
+                    component="label"
+                    startIcon={isUploading ? <CircularProgress size={16} /> : <UploadFileIcon />}
+                    disabled={isUploading}
+                    sx={{ mt: 1 }}
+                >
+                    Υποβολή Εργασίας
+                    <input type="file" hidden onChange={handleFileUpload} />
+                </Button>
+            )}
+            <Collapse in={!!feedback.message}>
+                <Alert severity={feedback.type} sx={{ mt: 1, p: '0px 12px' }}>
+                    {feedback.message}
+                </Alert>
+            </Collapse>
+        </Box>
     );
 };
 
+function MyAssignments(props) {
+    const contextData = useStudentData();
+    // A more robust check to see if we are in the Parent Portal context.
+    const isParentView = props.hasOwnProperty('childData');
 
-function MyAssignments() {
-    const { enrolledClassrooms, assignments, submissions } = useStudentData();
+    // If in parent view, use props. Otherwise, use context.
+    const sourceData = isParentView ? props : contextData;
+    
+    // Handle case where data might not be ready yet.
+    if (!sourceData) {
+        return (
+            <Container sx={{ mt: 4, textAlign: 'center' }}>
+                <CircularProgress />
+            </Container>
+        );
+    }
+    
+    const { 
+        enrolledClassrooms, 
+        assignments, 
+        db, 
+        appId, 
+        selectedYear 
+    } = sourceData;
 
-    // --- ΒΕΛΤΙΣΤΟΠΟΙΗΣΗ: Δημιουργούμε έναν χάρτη (Map) που ομαδοποιεί τις εργασίες ανά ID τμήματος.
-    // Αυτό είναι πιο αποδοτικό και αξιόπιστο από το να φιλτράρουμε μέσα σε map.
+    // Submissions and childData are special cases
+    const submissions = sourceData.submissions || [];
+    const childData = sourceData.childData || null;
+    const studentId = isParentView ? childData?.id : sourceData.studentId;
+
+    // If parent is viewing but hasn't selected a child, show a message.
+    if (isParentView && !childData) {
+        return (
+            <Container sx={{ mt: 4 }}>
+                <Typography>Παρακαλώ επιλέξτε ένα παιδί για να δείτε τις εργασίες του.</Typography>
+            </Container>
+        );
+    }
+
     const assignmentsByClassroomMap = useMemo(() => {
-        if (!assignments || assignments.length === 0) {
-            return new Map();
-        }
-        
+        if (!assignments || assignments.length === 0) return new Map();
         const map = new Map();
-        
         for (const assignment of assignments) {
             const { classroomId } = assignment;
             if (!map.has(classroomId)) {
@@ -123,7 +173,6 @@ function MyAssignments() {
             }
             map.get(classroomId).push(assignment);
         }
-
         map.forEach((classroomAssignments, classroomId) => {
             const processedAssignments = classroomAssignments
                 .map(assignment => {
@@ -131,40 +180,23 @@ function MyAssignments() {
                     return { ...assignment, submission, attachedFiles: assignment.attachedFiles || [] };
                 })
                 .sort((a, b) => b.dueDate.toDate() - a.dueDate.toDate());
-            
             map.set(classroomId, processedAssignments);
         });
-
         return map;
     }, [assignments, submissions]);
 
-    // Τώρα, δημιουργούμε τη λίστα των τμημάτων που θα εμφανιστούν, μόνο αν έχουν εργασίες.
     const classroomsWithAssignments = useMemo(() => {
-        if (!enrolledClassrooms || assignmentsByClassroomMap.size === 0) {
-            return [];
-        }
-
+        if (!enrolledClassrooms || assignmentsByClassroomMap.size === 0) return [];
         return enrolledClassrooms
             .map(classroom => {
                 const allClassroomAssignments = assignmentsByClassroomMap.get(classroom.id) || [];
-                
-                if (allClassroomAssignments.length === 0) {
-                    return { ...classroom, hasAssignments: false };
-                }
-
+                if (allClassroomAssignments.length === 0) return { ...classroom, hasAssignments: false };
                 const today = dayjs().startOf('day');
                 const active = allClassroomAssignments.filter(a => dayjs(a.dueDate.toDate()).isSameOrAfter(today));
                 const past = allClassroomAssignments.filter(a => dayjs(a.dueDate.toDate()).isBefore(today));
-
-                return {
-                    ...classroom,
-                    hasAssignments: true,
-                    activeAssignments: active,
-                    pastAssignments: past,
-                };
+                return { ...classroom, hasAssignments: true, activeAssignments: active, pastAssignments: past };
             })
-            .filter(c => c.hasAssignments); // Κρατάμε μόνο τα τμήματα που όντως έχουν εργασίες
-
+            .filter(c => c.hasAssignments);
     }, [enrolledClassrooms, assignmentsByClassroomMap]);
 
     const hasAnyAssignments = classroomsWithAssignments.length > 0;
@@ -173,16 +205,15 @@ function MyAssignments() {
         <Container maxWidth="lg" sx={{ mt: 4 }}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: '12px' }}>
                 <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                    Εργασίες & Διαγωνίσματα
+                    {isParentView ? `Εργασίες - ${childData.firstName}` : 'Εργασίες & Διαγωνίσματα'}
                 </Typography>
 
                 {!hasAnyAssignments && (
                     <Typography color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
-                        Δεν βρέθηκαν εργασίες για τα μαθήματα στα οποία είστε εγγεγραμμένος/η.
+                        Δεν βρέθηκαν εργασίες για τα μαθήματα στα οποία είναι εγγεγραμμένος/η.
                     </Typography>
                 )}
 
-                {/* Χρησιμοποιούμε τη νέα, φιλτραρισμένη λίστα για την εμφάνιση */}
                 {classroomsWithAssignments.map(classroom => (
                     <Accordion key={classroom.id} defaultExpanded>
                         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -204,10 +235,16 @@ function MyAssignments() {
                                                         <FileIcon fontSize="inherit" /> Εκφώνηση: {file.name}
                                                     </Link>
                                                 ))}
-                                                <SubmissionStatus 
-                                                    assignment={item} 
-                                                    submission={item.submission}
-                                                />
+                                                {!isParentView && (
+                                                    <SubmissionStatus 
+                                                        assignment={item} 
+                                                        submission={item.submission}
+                                                        studentId={studentId}
+                                                        db={db}
+                                                        appId={appId}
+                                                        selectedYear={selectedYear}
+                                                    />
+                                                )}
                                             </ListItem>
                                         ))}
                                     </List>

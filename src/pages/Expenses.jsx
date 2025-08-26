@@ -1,10 +1,10 @@
 // src/pages/Expenses.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     Container, Paper, Typography, Button, Box, IconButton,
     Dialog, DialogActions, DialogContent, DialogTitle, TextField, CircularProgress, Alert,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Select, MenuItem, FormControl, InputLabel, Grid, Chip,
-    Accordion, AccordionSummary, AccordionDetails, ListItemIcon, ListItemText, Divider, Tooltip, TableFooter
+    Accordion, AccordionSummary, AccordionDetails, ListItemIcon, ListItemText, Divider, Tooltip, TableFooter, List, ListItem
 } from '@mui/material';
 import {
     Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, ReceiptLong as ReceiptIcon,
@@ -64,26 +64,26 @@ const SummaryCard = ({ title, value, icon, color }) => (
     </Paper>
 );
 
-
-function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId }) {
+function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId, selectedYear }) {
     const { mode } = useTheme();
     const [formData, setFormData] = useState(getInitialFormState());
     const [expenseToDelete, setExpenseToDelete] = useState(null);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
     const [isSaving, setIsSaving] = useState(false);
-    // --- ΝΕΑ ΠΡΟΣΘΗΚΗ: States για τα νέα φίλτρα ---
     const [timeFilter, setTimeFilter] = useState('all');
     const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [studentFilter, setStudentFilter] = useState('all');
     const isEditMode = Boolean(formData.id);
-    React.useEffect(() => {
+    
+    useEffect(() => {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css';
         document.head.appendChild(link);
         return () => { document.head.removeChild(link); };
     }, []);
+
     const availableMonths = useMemo(() => {
         if (!Array.isArray(allExpenses)) return [];
         const months = new Set(allExpenses.map(exp => {
@@ -92,10 +92,10 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
         }).filter(Boolean));
         return Array.from(months).sort().reverse();
     }, [allExpenses]);
+
     const filteredExpenses = useMemo(() => {
         let expenses = Array.isArray(allExpenses) ? [...allExpenses] : [];
         const now = dayjs();
-        // 1. Time Filter
         if (timeFilter === '3-months') expenses = expenses.filter(exp => safeGetDate(exp.date)?.isAfter(now.subtract(3, 'month')));
         else if (timeFilter === '6-months') expenses = expenses.filter(exp => safeGetDate(exp.date)?.isAfter(now.subtract(6, 'month')));
         else if (timeFilter === 'custom' && customDateRange.start && customDateRange.end) {
@@ -104,16 +104,15 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
             expenses = expenses.filter(exp => safeGetDate(exp.date)?.isBetween(start, end, 'day', '[]'));
         }
         else if (timeFilter !== 'all') expenses = expenses.filter(exp => safeGetDate(exp.date)?.format('YYYY-MM') === timeFilter);
-        // 2. Category Filter
         if (categoryFilter !== 'all') {
             expenses = expenses.filter(exp => exp.category === categoryFilter);
         }
         return expenses;
     }, [allExpenses, timeFilter, customDateRange, categoryFilter]);
+
     const filteredIncome = useMemo(() => {
         let income = Array.isArray(allPayments) ? [...allPayments] : [];
         const now = dayjs();
-        // 1. Time Filter
         if (timeFilter === '3-months') income = income.filter(p => safeGetDate(p.date)?.isAfter(now.subtract(3, 'month')));
         else if (timeFilter === '6-months') income = income.filter(p => safeGetDate(p.date)?.isAfter(now.subtract(6, 'month')));
         else if (timeFilter === 'custom' && customDateRange.start && customDateRange.end) {
@@ -122,13 +121,11 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
             income = income.filter(p => safeGetDate(p.date)?.isBetween(start, end, 'day', '[]'));
         }
         else if (timeFilter !== 'all') income = income.filter(p => safeGetDate(p.date)?.format('YYYY-MM') === timeFilter);
-        // 2. Student Filter
         if (studentFilter !== 'all') {
             income = income.filter(p => p.studentId === studentFilter);
         }
         return income;
     }, [allPayments, timeFilter, customDateRange, studentFilter]);
-
 
     const handleFormChange = (e) => {
         const { name, value } = e.target;
@@ -148,23 +145,28 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
     const handleClearForm = () => setFormData(getInitialFormState());
 
     const handleSave = async () => {
-        if (!formData.category || !formData.amount || formData.amount <= 0) {
-            setFeedback({ type: 'error', message: 'Παρακαλώ συμπληρώστε την κατηγορία και το ποσό.' });
+        const amount = parseFloat(formData.amount);
+        if (!formData.category || isNaN(amount) || amount <= 0) {
+            setFeedback({ type: 'error', message: 'Παρακαλώ συμπληρώστε την κατηγορία και ένα έγκυρο, θετικό ποσό.' });
+            return;
+        }
+        if (!selectedYear) {
+            setFeedback({ type: 'error', message: 'Δεν έχει επιλεγεί ακαδημαϊκό έτος.' });
             return;
         }
         setIsSaving(true);
         try {
             const dataToSave = {
-                date: dayjs(formData.date).toDate(), category: formData.category, amount: parseFloat(formData.amount),
+                date: dayjs(formData.date).toDate(), category: formData.category, amount: amount,
                 description: formData.description, updatedAt: serverTimestamp()
             };
+            const collectionPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}/expenses`;
             if (isEditMode) {
-                const docRef = doc(db, `artifacts/${appId}/academicYears/${selectedYear}/expenses`, formData.id);
+                const docRef = doc(db, collectionPath, formData.id);
                 await setDoc(docRef, dataToSave, { merge: true });
             } else {
                 dataToSave.createdAt = serverTimestamp();
-                const collectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/expenses`);
-                await addDoc(collectionRef, dataToSave);
+                await addDoc(collection(db, collectionPath), dataToSave);
             }
             setFeedback({ type: 'success', message: `Το έξοδο ${isEditMode ? 'ενημερώθηκε' : 'αποθηκεύτηκε'}.` });
             handleClearForm();
@@ -177,9 +179,10 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
     };
 
     const confirmDelete = async () => {
-        if (!expenseToDelete) return;
+        if (!expenseToDelete || !selectedYear) return;
         try {
-            await deleteDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/expenses`, expenseToDelete.id));
+            const docRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/expenses`, expenseToDelete.id);
+            await deleteDoc(docRef);
             setFeedback({ type: 'success', message: 'Το έξοδο διαγράφηκε.' });
         } catch (error) {
             console.error("Error deleting expense: ", error);
@@ -191,10 +194,15 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
 
     const handleExportCSV = () => {
         const headers = ["Ημερομηνία", "Κατηγορία", "Περιγραφή", "Ποσό (€)"];
-        const rows = filteredExpenses.map(exp => [
-            safeGetDate(exp.date).format('DD/MM/YYYY'), `"${exp.category.replace(/"/g, '""')}"`,
-            `"${exp.description.replace(/"/g, '""')}"`, exp.amount.toFixed(2)
-        ]);
+        const rows = filteredExpenses.map(exp => {
+            const date = safeGetDate(exp.date);
+            return [
+                date ? date.format('DD/MM/YYYY') : 'Άγνωστη Ημερομηνία',
+                `"${(exp.category || '').replace(/"/g, '""')}"`,
+                `"${(exp.description || '').replace(/"/g, '""')}"`,
+                (exp.amount || 0).toFixed(2)
+            ];
+        });
         let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
@@ -212,7 +220,7 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
                 const month = expenseDate.format('YYYY-MM');
                 if (!acc[month]) { acc[month] = { expenses: [], total: 0 }; }
                 acc[month].expenses.push(expense);
-                acc[month].total += expense.amount;
+                acc[month].total += expense.amount || 0;
             }
             return acc;
         }, {});
@@ -226,23 +234,20 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
             if (expenseDate) {
                 const month = expenseDate.format('YYYY-MM');
                 if (!expensesData[month]) expensesData[month] = 0;
-                expensesData[month] += exp.amount;
+                expensesData[month] += exp.amount || 0;
             }
         });
-
         const incomeData = {};
         filteredIncome.forEach(p => {
             const paymentDate = safeGetDate(p.date);
             if (paymentDate) {
                 const month = paymentDate.format('YYYY-MM');
                 if (!incomeData[month]) incomeData[month] = 0;
-                incomeData[month] += p.amount;
+                incomeData[month] += p.amount || 0;
             }
         });
-
         const allMonths = new Set([...Object.keys(expensesData), ...Object.keys(incomeData)]);
         const sortedMonths = Array.from(allMonths).sort();
-
         return [
             { name: 'Έσοδα', x: sortedMonths.map(m => dayjs(m).format('MMM YYYY')), y: sortedMonths.map(m => incomeData[m] || 0), type: 'bar', marker: { color: '#4caf50' } },
             { name: 'Έξοδα', x: sortedMonths.map(m => dayjs(m).format('MMM YYYY')), y: sortedMonths.map(m => expensesData[m] || 0), type: 'bar', marker: { color: '#f44336' } }
@@ -260,28 +265,46 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
         };
     }, [mode]);
 
+    // --- ΑΛΛΑΓΗ: Προετοιμασία δεδομένων για το διάγραμμα και τη λίστα ---
     const expensesByCategoryChart = useMemo(() => {
         const data = filteredExpenses.reduce((acc, exp) => {
             const category = exp.category || 'Άλλο';
             if (!acc[category]) acc[category] = 0;
-            acc[category] += exp.amount;
+            acc[category] += exp.amount || 0;
             return acc;
         }, {});
+
+        const labels = Object.keys(data);
+        const values = Object.values(data);
+        const colors = labels.map(label => categoryColorMap[label] || '#9e9e9e');
+        const total = values.reduce((sum, val) => sum + val, 0);
+
+        const legendData = labels.map((label, index) => ({
+            label: label,
+            value: values[index],
+            percentage: total > 0 ? ((values[index] / total) * 100).toFixed(2) : 0,
+            color: colors[index]
+        })).sort((a, b) => b.value - a.value);
+
         return {
-            labels: Object.keys(data), values: Object.values(data),
-            type: 'pie', hole: .5, textposition: 'outside',
-            texttemplate: "%{label}<br>%{value:,.2f}€ (%{percent})", automargin: true
+            chartData: {
+                labels: labels, values: values, marker: { colors: colors },
+                type: 'pie', hole: .5, textinfo: 'none',
+                hoverinfo: 'label+percent+value', automargin: true
+            },
+            legendData: legendData,
+            total: total
         };
     }, [filteredExpenses]);
 
-    const totalFilteredExpenses = useMemo(() => filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0), [filteredExpenses]);
-    const totalFilteredIncome = useMemo(() => filteredIncome.reduce((sum, p) => sum + p.amount, 0), [filteredIncome]);
+    const totalFilteredExpenses = useMemo(() => expensesByCategoryChart.total, [expensesByCategoryChart]);
+    const totalFilteredIncome = useMemo(() => filteredIncome.reduce((sum, p) => sum + (p.amount || 0), 0), [filteredIncome]);
     const profitLoss = totalFilteredIncome - totalFilteredExpenses;
 
     const donutChartLayout = useMemo(() => {
         const currentPalette = mode === 'light' ? lightPalette : darkPalette;
         return {
-            autosize: true, showlegend: false, margin: { l: 40, r: 40, b: 40, t: 40 },
+            autosize: true, showlegend: false, margin: { l: 10, r: 10, b: 10, t: 10 },
             paper_bgcolor: currentPalette.chartPaperBg, plot_bgcolor: currentPalette.chartPlotBg,
             font: { color: currentPalette.chartFontColor },
             annotations: [{
@@ -315,14 +338,11 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
                         <FormControl fullWidth size="small">
                             <InputLabel>Κατηγορία</InputLabel>
                             <Select
-                                name="category"
-                                value={formData.category}
-                                label="Κατηγορία"
-                                onChange={handleFormChange}
-                                // --- ΔΙΟΡΘΩΣΗ: Προσθήκη του renderValue ---
+                                name="category" value={formData.category} label="Κατηγορία" onChange={handleFormChange}
                                 renderValue={(selected) => {
                                     if (!selected) { return <em>Επιλέξτε...</em>; }
                                     const category = expenseCategories.find(cat => cat.name === selected);
+                                    if (!category) return selected;
                                     return (
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                             <i className={category.icon} style={{ fontSize: '1.2em', width: '24px', textAlign: 'center' }}></i>
@@ -400,10 +420,31 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
                         <Typography variant="h6" sx={{ mb: 2 }}>Έσοδα vs Έξοδα ανά Μήνα</Typography>
                         <Plot data={incomeExpenseChartData} layout={barChartLayout} style={{ width: '100%', height: '300px' }} useResizeHandler />
                     </Grid>
+                    {/* --- ΑΛΛΑΓΗ: Νέα διάταξη για το διάγραμμα και τη λίστα --- */}
                     <Grid item xs={12} md={5}>
                         <Typography variant="h6" sx={{ mb: 2 }}>Ανάλυση Κατηγοριών Εξόδων</Typography>
-                        {expensesByCategoryChart && expensesByCategoryChart.labels.length > 0 ? (
-                            <Plot data={[expensesByCategoryChart]} layout={donutChartLayout} style={{ width: '100%', height: '300px' }} useResizeHandler />
+                        {expensesByCategoryChart && expensesByCategoryChart.legendData.length > 0 ? (
+                            <Grid container spacing={2} alignItems="center">
+                                <Grid item xs={12} sm={7}>
+                                    <Plot data={[expensesByCategoryChart.chartData]} layout={donutChartLayout} style={{ width: '100%', height: '300px' }} useResizeHandler />
+                                </Grid>
+                                <Grid item xs={12} sm={5}>
+                                    <List dense>
+                                        {expensesByCategoryChart.legendData.map((item) => (
+                                            <ListItem key={item.label} disableGutters>
+                                                <ListItemIcon sx={{ minWidth: '20px' }}>
+                                                    <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: item.color }} />
+                                                </ListItemIcon>
+                                                <ListItemText
+                                                    primary={item.label}
+                                                    secondary={`${item.value.toFixed(2)}€ (${item.percentage}%)`}
+                                                    sx={{m:'0px'}}
+                                                />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                </Grid>
+                            </Grid>
                         ) : (
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
                                 <Typography color="text.secondary">Δεν υπάρχουν δεδομένα για αυτή την περίοδο.</Typography>
@@ -426,10 +467,10 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId })
                                     <TableBody>
                                         {expenses.sort((a, b) => safeGetDate(b.date) - safeGetDate(a.date)).map(exp => (
                                             <TableRow key={exp.id} hover>
-                                                <TableCell>{safeGetDate(exp.date).format('DD/MM/YYYY')}</TableCell>
+                                                <TableCell>{safeGetDate(exp.date)?.format('DD/MM/YYYY')}</TableCell>
                                                 <TableCell><Chip icon={<i className={categoryIconMap[exp.category]} style={{ fontSize: '1em', color: '#fff', width: '16px', textAlign: 'center' }}></i>} label={exp.category} size="small" sx={{ backgroundColor: categoryColorMap[exp.category] || '#9e9e9e', color: '#fff' }} /></TableCell>
                                                 <TableCell>{exp.description}</TableCell>
-                                                <TableCell align="right">{exp.amount.toFixed(2)} €</TableCell>
+                                                <TableCell align="right">{(exp.amount || 0).toFixed(2)} €</TableCell>
                                                 <TableCell align="center">
                                                     <IconButton size="small" onClick={() => handleEditClick(exp)}><EditIcon /></IconButton>
                                                     <IconButton size="small" onClick={() => setExpenseToDelete(exp)}><DeleteIcon /></IconButton>

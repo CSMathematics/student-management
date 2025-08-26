@@ -1,5 +1,5 @@
 // src/portals/student/StudentCalendar.jsx
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
     Container, Paper, Typography, Box, Dialog, DialogTitle,
     DialogContent, DialogContentText, List, ListItem, ListItemIcon, ListItemText
@@ -11,12 +11,33 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { Event as EventIcon, Assignment as AssignmentIcon, Campaign as CampaignIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import 'dayjs/locale/el';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 dayjs.locale('el');
 
-// --- ΔΙΟΡΘΩΣΗ: Αλλαγή του prop από allAssignments σε assignments ---
-function StudentCalendar({ enrolledClassrooms, assignments, announcements }) {
+function StudentCalendar({ enrolledClassrooms, assignments, announcements, db, user, appId, selectedYear }) {
     const [selectedEvent, setSelectedEvent] = useState(null);
+
+    useEffect(() => {
+        const logVisit = async () => {
+            if (!db || !user?.uid || !appId || !selectedYear) return;
+            try {
+                const functions = getFunctions(db.app);
+                const logUserEvent = httpsCallable(functions, 'logUserEvent');
+                await logUserEvent({
+                    eventName: 'visited_calendar',
+                    studentId: user.uid,
+                    appId: appId,
+                    academicYear: selectedYear
+                });
+                console.log("Calendar visit event logged.");
+            } catch (error) {
+                console.error("Error logging calendar visit event:", error);
+            }
+        };
+        logVisit();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const calendarEvents = useMemo(() => {
         const events = [];
@@ -31,11 +52,7 @@ function StudentCalendar({ enrolledClassrooms, assignments, announcements }) {
                         startTime: slot.startTime,
                         endTime: slot.endTime,
                         color: classroom.color || '#1e88e5',
-                        extendedProps: {
-                            type: 'lesson',
-                            classroomName: classroom.classroomName,
-                            teacherName: classroom.teacherName || 'N/A'
-                        }
+                        extendedProps: { type: 'lesson', classroomName: classroom.classroomName, teacherName: classroom.teacherName || 'N/A' }
                     });
                 });
             });
@@ -48,11 +65,7 @@ function StudentCalendar({ enrolledClassrooms, assignments, announcements }) {
                     date: dayjs(assignment.dueDate.toDate()).format('YYYY-MM-DD'),
                     allDay: true,
                     color: '#f57c00',
-                    extendedProps: {
-                        type: 'assignment',
-                        assignmentType: assignment.type,
-                        notes: assignment.notes
-                    }
+                    extendedProps: { type: 'assignment', assignmentType: assignment.type, notes: assignment.notes }
                 });
             });
         }
@@ -66,7 +79,8 @@ function StudentCalendar({ enrolledClassrooms, assignments, announcements }) {
                     color: '#64b5f6',
                     extendedProps: {
                         type: 'announcement',
-                        content: ann.content
+                        content: ann.content,
+                        announcementId: ann.id // <-- ΣΗΜΑΝΤΙΚΗ ΠΡΟΣΘΗΚΗ: Αποθηκεύουμε το ID
                     }
                 });
             });
@@ -77,6 +91,28 @@ function StudentCalendar({ enrolledClassrooms, assignments, announcements }) {
 
     const handleEventClick = (clickInfo) => {
         setSelectedEvent(clickInfo.event);
+
+        // --- ΝΕΑ ΛΟΓΙΚΗ: Καταγράφουμε το "διάβασμα" της ανακοίνωσης ---
+        if (clickInfo.event.extendedProps.type === 'announcement') {
+            const { announcementId } = clickInfo.event.extendedProps;
+            if (db && user?.uid && appId && selectedYear && announcementId) {
+                try {
+                    const functions = getFunctions(db.app);
+                    const logUserEvent = httpsCallable(functions, 'logUserEvent');
+                    
+                    logUserEvent({
+                        eventName: 'read_announcement',
+                        studentId: user.uid,
+                        appId: appId,
+                        academicYear: selectedYear,
+                        // Στέλνουμε το ID της ανακοίνωσης στο backend
+                        details: { announcementId: announcementId } 
+                    });
+                } catch (error) {
+                    console.error("Error logging read announcement event:", error);
+                }
+            }
+        }
     };
 
     const handleCloseDialog = () => {

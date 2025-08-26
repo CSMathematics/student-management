@@ -107,6 +107,7 @@ function AuthPage({ handleSignUp, handleLogin, loading, error }) {
                         maxWidth: '400px',
                     }}
                 >
+                    <img src="../public/Logo_fullΒ.svg" alt="Φιλομάθεια Λογότυπο" style={{marginBottom : '30px',maxWidth:'350px'}}/>
                     <LockOutlined sx={{ fontSize: 40, mb: 1, color: 'primary.main' }} />
                     <Typography component="h1" variant="h5">
                         {isLogin ? 'Σύνδεση' : 'Εγγραφή'}

@@ -44,6 +44,17 @@ const navItemsByRole = {
         { text: "Διαγωνίσματα - Εργασίες", icon: "fas fa-file-alt", path: "assignments" },
         { text: "Βαθμολογίες", icon: "fas fa-chart-bar", path: "/grades-summary" },
         { text: "Βιβλιοθήκη", icon: "fas fa-book-open", path: "/library" },
+        // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
+        {
+            text: "Οδηγός Σπουδών", icon: "fas fa-university", isParent: true,
+            subItems: [
+                { text: "Σχολές", icon: "fas fa-building-columns", path: "/study-guide/faculties" },
+                { text: "Υπολογισμός μορίων", icon: "fas fa-calculator", path: "/study-guide/points-calculator" },
+                { text: "Χρήσιμα έγγραφα", icon: "fas fa-file-archive", path: "/study-guide/documents" },
+                { text: "Προσομοίωση", icon: "fas fa-tasks", path: "/study-guide/simulation" }
+            ]
+        },
+        // --- ΤΕΛΟΣ ΠΡΟΣΘΗΚΗΣ ---
         { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", path: "/phonebook" },
         { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
@@ -74,6 +85,17 @@ const navItemsByRole = {
         { text: "Οι Μαθητές μου", icon: "fas fa-users", path: "/my-students" },
         { text: "Οι Αξιολογήσεις μου", icon: "fas fa-tasks", path: "/my-assignments" },
         { text: "Το Βαθμολόγιό μου", icon: "fas fa-book-reader", path: "/my-gradebook" },
+        // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
+        {
+            text: "Οδηγός Σπουδών", icon: "fas fa-university", isParent: true,
+            subItems: [
+                { text: "Σχολές", icon: "fas fa-building-columns", path: "/study-guide/faculties" },
+                { text: "Υπολογισμός μορίων", icon: "fas fa-calculator", path: "/study-guide/points-calculator" },
+                { text: "Χρήσιμα έγγραφα", icon: "fas fa-file-archive", path: "/study-guide/documents" },
+                { text: "Προσομοίωση", icon: "fas fa-tasks", path: "/study-guide/simulation" }
+            ]
+        },
+        // --- ΤΕΛΟΣ ΠΡΟΣΘΗΚΗΣ ---
         { text: "Στατιστικά", icon: "fas fa-chart-pie", path: "/teacher-stats" },
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
     ],
@@ -84,10 +106,20 @@ const navItemsByRole = {
         { text: "Τα Μαθήματά μου", icon: "fas fa-book-reader", path: "/my-courses" }, 
         { text: "Εργασίες & Διαγωνίσματα", icon: "fas fa-file-alt", path: "/my-assignments" },
         { text: "Το Υλικό μου", icon: "fas fa-book-open", path: "/my-materials" },
+        // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
+        {
+            text: "Οδηγός Σπουδών", icon: "fas fa-university", isParent: true,
+            subItems: [
+                { text: "Σχολές", icon: "fas fa-building-columns", path: "/study-guide/faculties" },
+                { text: "Υπολογισμός μορίων", icon: "fas fa-calculator", path: "/study-guide/points-calculator" },
+                { text: "Χρήσιμα έγγραφα", icon: "fas fa-file-archive", path: "/study-guide/documents" },
+                { text: "Προσομοίωση", icon: "fas fa-tasks", path: "/study-guide/simulation" }
+            ]
+        },
+        // --- ΤΕΛΟΣ ΠΡΟΣΘΗΚΗΣ ---
         { text: "Οι Βαθμοί μου", icon: "fas fa-chart-bar", path: "/my-grades" },
         { text: "Οι Απουσίες μου", icon: "fas fa-times", path: "/my-absences" },
         { text: "Τα Παράσημά μου", icon: "fas fa-trophy", path: "/my-badges" },
-        { text: "Κατάταξη", icon: "fas fa-trophy", path: "/leaderboard" }, // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
     ],
     parent: [

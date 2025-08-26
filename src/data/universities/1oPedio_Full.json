@@ -1,0 +1,4372 @@
+[
+  {
+    "code": 101,
+    "name": "Θεολογίας",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 175,
+    "base_2025": 9130,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 102,
+    "name": "Φιλοσοφίας",
+    "university": "Πατρών",
+    "link": "http://www.upatras.gr/",
+    "city": "Πάτρα",
+    "fields": "I",
+    "capacity": 155,
+    "base_2025": 9360,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 103,
+    "name": "Θεολογίας",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 135,
+    "base_2025": 9050,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 104,
+    "name": "Ιστορίας, Αρχαιολογίας & Διαχείρισης Πολιτισμικών Αγαθών",
+    "university": "Πελοποννήσου",
+    "link": "http://www.uop.gr/",
+    "city": "Καλαμάτα",
+    "fields": "I",
+    "capacity": 99,
+    "base_2025": 8760,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 105,
+    "name": "Κοινωνικής Θεολογίας & Θρησκειολογίας",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 175,
+    "base_2025": 8860,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 107,
+    "name": "Κοινωνικής Θεολογίας & Χριστιανικού Πολιτισμού",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 135,
+    "base_2025": 8940,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 109,
+    "name": "Φιλολογίας",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 279,
+    "base_2025": 11304,
+    "eve_coefficient": 1,
+    "eve_score": "11.29",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 26
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 26
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 22
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 26
+      }
+    ]
+  },
+  {
+    "code": 110,
+    "name": "Ιστορίας & Αρχαιολογίας",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 191,
+    "base_2025": 11838,
+    "eve_coefficient": 1.05,
+    "eve_score": "11.86",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 26
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 24
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 111,
+    "name": "Φιλολογίας",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 175,
+    "base_2025": 11127,
+    "eve_coefficient": 1,
+    "eve_score": "11.29",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 27
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 27
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 26
+      }
+    ]
+  },
+  {
+    "code": 112,
+    "name": "Ιστορίας & Αρχαιολογίας",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 144,
+    "base_2025": 12425,
+    "eve_coefficient": 1.1,
+    "eve_score": "12.42",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 113,
+    "name": "Φιλολογίας",
+    "university": "Ιωαννίνων",
+    "link": "http://www.uoi.gr/",
+    "city": "Ιωάννινα",
+    "fields": "I",
+    "capacity": 220,
+    "base_2025": 9451,
+    "eve_coefficient": 0.85,
+    "eve_score": "09.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 29
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 21
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 114,
+    "name": "Ιστορίας & Αρχαιολογίας",
+    "university": "Ιωαννίνων",
+    "link": "http://www.uoi.gr/",
+    "city": "Ιωάννινα",
+    "fields": "I",
+    "capacity": 198,
+    "base_2025": 9433,
+    "eve_coefficient": 0.85,
+    "eve_score": "09.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 28
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 22
+      }
+    ]
+  },
+  {
+    "code": 115,
+    "name": "Φιλολογίας",
+    "university": "Κρήτης",
+    "link": "http://www.uoc.gr/",
+    "city": "Ρέθυμνο",
+    "fields": "I",
+    "capacity": 180,
+    "base_2025": 9134,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 26
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 26
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 22
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 26
+      }
+    ]
+  },
+  {
+    "code": 116,
+    "name": "Ιστορίας & Αρχαιολογίας",
+    "university": "Κρήτης",
+    "link": "http://www.uoc.gr/",
+    "city": "Ρέθυμνο",
+    "fields": "I",
+    "capacity": 135,
+    "base_2025": 9050,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 117,
+    "name": "Νομικής",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 360,
+    "base_2025": 17875,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 119,
+    "name": "Νομικής",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 333,
+    "base_2025": 17280,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 120,
+    "name": "Φιλοσοφίας & Παιδαγωγικής",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 135,
+    "base_2025": 11580,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 121,
+    "name": "Νομικής",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Κομοτηνή",
+    "fields": "I",
+    "capacity": 455,
+    "base_2025": 16725,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 122,
+    "name": "Φιλοσοφίας",
+    "university": "Ιωαννίνων",
+    "link": "http://www.uoi.gr/",
+    "city": "Ιωάννινα",
+    "fields": "I",
+    "capacity": 216,
+    "base_2025": 9180,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 123,
+    "name": "Πολιτικής Επιστήμης & Δημόσιας Διοίκησης",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 187,
+    "base_2025": 14430,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 124,
+    "name": "Δημόσιας Διοίκησης",
+    "university": "Παντείου",
+    "link": "http://www.panteion.gr/",
+    "city": "Αθήνα",
+    "fields": "I,IV",
+    "capacity": 254,
+    "base_2025": 13075,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 125,
+    "name": "Πολιτικής Επιστήμης & Ιστορίας",
+    "university": "Παντείου",
+    "link": "http://www.panteion.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 133,
+    "base_2025": 12760,
+    "eve_coefficient": 1,
+    "eve_score": "11.29",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 126,
+    "name": "Κοινωνιολογίας",
+    "university": "Παντείου",
+    "link": "http://www.panteion.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 127,
+    "base_2025": 13860,
+    "eve_coefficient": 0.9,
+    "eve_score": "10.16",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 127,
+    "name": "Αγγλικής Γλώσσας & Φιλολογίας",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 202,
+    "base_2025": 17355,
+    "eve_coefficient": 0.9,
+    "eve_score": "10.66",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 128,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 162,
+    "base_2025": 16250,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 129,
+    "name": "Αγγλικής Γλώσσας & Φιλολογίας",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 153,
+    "base_2025": 18150,
+    "eve_coefficient": 1,
+    "eve_score": "11.84",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 130,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "Ιωαννίνων",
+    "link": "http://www.uoi.gr/",
+    "city": "Ιωάννινα",
+    "fields": "I,II,III,IV",
+    "capacity": 206,
+    "base_2025": 14575,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 131,
+    "name": "Γαλλικής Γλώσσας & Φιλολογίας",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 105,
+    "base_2025": 11680,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.66",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 30
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 132,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "Κρήτης",
+    "link": "http://www.uoc.gr/",
+    "city": "Ρέθυμνο",
+    "fields": "I,II,III,IV",
+    "capacity": 166,
+    "base_2025": 13375,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 133,
+    "name": "Γαλλικής Γλώσσας & Φιλολογίας",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 72,
+    "base_2025": 11715,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.66",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 35
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 134,
+    "name": "Επιστημών Προσχολικής Αγωγής & Εκπ/σης",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 120,
+    "base_2025": 13875,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 135,
+    "name": "Γερμανικής Γλώσσας & Φιλολογίας",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 114,
+    "base_2025": 11850,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.72",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 136,
+    "name": "Επιστημών της Εκπαίδευσης & της Αγωγής στην Προσχολική Ηλικία",
+    "university": "Πατρών",
+    "link": "http://www.upatras.gr/",
+    "city": "Πάτρα",
+    "fields": "I,II,III,IV",
+    "capacity": 138,
+    "base_2025": 13000,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 137,
+    "name": "Γερμανικής Γλώσσας & Φιλολογίας",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 99,
+    "base_2025": 11030,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.72",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 138,
+    "name": "Φιλοσοφίας",
+    "university": "Κρήτης (Πρώην Φιλοσοφικών & Κοινωνικών Σπουδών)",
+    "link": "http://www.uoc.gr/",
+    "city": "Ρέθυμνο",
+    "fields": "I",
+    "capacity": 117,
+    "base_2025": 9130,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 139,
+    "name": "Ιταλικής Γλώσσας & Φιλολογίας",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 63,
+    "base_2025": 12080,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.75",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 30
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 140,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 162,
+    "base_2025": 15950,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 142,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Αλεξ/πολη",
+    "fields": "I,II,III,IV",
+    "capacity": 218,
+    "base_2025": 13000,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 143,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Ρόδος",
+    "fields": "I,II,III,IV",
+    "capacity": 309,
+    "base_2025": 11875,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 145,
+    "name": "Ιστορίας & Ψηφιακών Ανθρωπιστικών Επιστημών",
+    "university": "Ιονίου",
+    "link": "http://www.ionio.gr/",
+    "city": "Κέρκυρα",
+    "fields": "I",
+    "capacity": 99,
+    "base_2025": 8560,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 40
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 146,
+    "name": "Θεατρικών Σπουδών",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 85,
+    "base_2025": 10550,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 147,
+    "name": "Δημοσιογραφίας & Μέσων Μαζικής Επικοινωνίας",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 107,
+    "base_2025": 16860,
+    "eve_coefficient": 0.9,
+    "eve_score": "10.66",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 148,
+    "name": "Επικοινωνίας & Μέσων Μαζικής Ενημέρωσης",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 118,
+    "base_2025": 16110,
+    "eve_coefficient": 1,
+    "eve_score": "11.84",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 10
+      }
+    ]
+  },
+  {
+    "code": 149,
+    "name": "Κοινωνιολογίας",
+    "university": "Κρήτης",
+    "link": "http://www.uoc.gr/",
+    "city": "Ρέθυμνο",
+    "fields": "I",
+    "capacity": 159,
+    "base_2025": 10250,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 151,
+    "name": "Ψυχολογίας",
+    "university": "Κρήτης",
+    "link": "http://www.uoc.gr/",
+    "city": "Ρέθυμνο",
+    "fields": "I",
+    "capacity": 174,
+    "base_2025": 16165,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 35
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 153,
+    "name": "Επικοινωνίας Μέσων & Πολιτισμού",
+    "university": "Παντείου",
+    "link": "http://www.panteion.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 127,
+    "base_2025": 15150,
+    "eve_coefficient": 1,
+    "eve_score": "11.84",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 10
+      }
+    ]
+  },
+  {
+    "code": 154,
+    "name": "Εκπαίδευσης & Αγωγής στην Προσχολική Ηλικία",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 95,
+    "base_2025": 14800,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 156,
+    "name": "Παιδαγωγικό Νηπιαγωγών",
+    "university": "Ιωαννίνων",
+    "link": "http://www.uoi.gr/",
+    "city": "Ιωάννινα",
+    "fields": "I,II,III,IV",
+    "capacity": 223,
+    "base_2025": 11905,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 158,
+    "name": "Παιδαγωγικό Προσχολικής Εκπ/σης",
+    "university": "Κρήτης",
+    "link": "http://www.uoc.gr/",
+    "city": "Ρέθυμνο",
+    "fields": "I,II,III,IV",
+    "capacity": 152,
+    "base_2025": 11600,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 159,
+    "name": "Κοινωνικής Πολιτικής",
+    "university": "Παντείου",
+    "link": "http://www.panteion.gr/",
+    "city": "Αθήνα",
+    "fields": "I,IV",
+    "capacity": 127,
+    "base_2025": 12430,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 160,
+    "name": "Επιστημών της Εκπαίδευσης στην Προσχολική Ηλικία",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Αλεξ/πολη",
+    "fields": "I,II,III,IV",
+    "capacity": 192,
+    "base_2025": 10750,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 161,
+    "name": "Διεθνών & Ευρωπαϊκών Σπουδών",
+    "university": "Μακεδονίας",
+    "link": "http://www.uom.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,IV",
+    "capacity": 121,
+    "base_2025": 19295,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.22",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 35
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 162,
+    "name": "Επιστημών της Προσχολικής Αγωγής & του Εκπαιδευτικού Σχεδιασμού",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Ρόδος",
+    "fields": "I,II,III,IV",
+    "capacity": 259,
+    "base_2025": 10150,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 163,
+    "name": "Κινηματογράφου",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 72,
+    "base_2025": 13125,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 164,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "Θεσσαλίας",
+    "link": "http://www.uth.gr/",
+    "city": "Βόλος",
+    "fields": "I,II,III,IV",
+    "capacity": 139,
+    "base_2025": 15125,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 165,
+    "name": "Κοινωνικής Ανθρωπολογίας",
+    "university": "Παντείου",
+    "link": "http://www.panteion.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 96,
+    "base_2025": 12300,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 166,
+    "name": "Παιδαγωγικό Προσχολικής Εκπ/σης",
+    "university": "Θεσσαλίας",
+    "link": "http://www.uth.gr/",
+    "city": "Βόλος",
+    "fields": "I,II,III,IV",
+    "capacity": 122,
+    "base_2025": 12425,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 167,
+    "name": "Κοινωνικής Ανθρωπολογίας & Ιστορίας",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Μυτιλήνη",
+    "fields": "I",
+    "capacity": 144,
+    "base_2025": 9075,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 168,
+    "name": "Θεάτρου",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 62,
+    "base_2025": 11425,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 169,
+    "name": "Θεατρικών Σπουδών",
+    "university": "Πατρών",
+    "link": "http://www.upatras.gr/",
+    "city": "Πάτρα",
+    "fields": "I",
+    "capacity": 80,
+    "base_2025": 9040,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 170,
+    "name": "Ψυχολογίας",
+    "university": "Παντείου",
+    "link": "http://www.panteion.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 127,
+    "base_2025": 17100,
+    "eve_coefficient": 1,
+    "eve_score": "11.29",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 171,
+    "name": "Ψυχολογίας",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 152,
+    "base_2025": 17475,
+    "eve_coefficient": 1,
+    "eve_score": "11.29",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 172,
+    "name": "Ψυχολογίας",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 162,
+    "base_2025": 17150,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 35
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 173,
+    "name": "Ιστορίας & Φιλοσοφίας της Επιστήμης",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 114,
+    "base_2025": 10810,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 28
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 22
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 28
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 22
+      }
+    ]
+  },
+  {
+    "code": 174,
+    "name": "Εκπαιδευτικής & Κοινωνικής Πολιτικής",
+    "university": "Μακεδονίας",
+    "link": "http://www.uom.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 137,
+    "base_2025": 13550,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 175,
+    "name": "Φιλολογίας",
+    "university": "Πατρών",
+    "link": "http://www.upatras.gr/",
+    "city": "Πάτρα",
+    "fields": "I",
+    "capacity": 146,
+    "base_2025": 10060,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 176,
+    "name": "Βαλκανικών, Σλαβικών & Ανατολικών Σπουδών",
+    "university": "Μακεδονίας",
+    "link": "http://www.uom.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,IV",
+    "capacity": 172,
+    "base_2025": 12240,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 177,
+    "name": "Ιστορίας, Αρχαιολογίας & Κοινωνικής Ανθρωπολογίας",
+    "university": "Θεσσαλίας",
+    "link": "http://www.uth.gr/",
+    "city": "Βόλος",
+    "fields": "I",
+    "capacity": 101,
+    "base_2025": 9775,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 178,
+    "name": "Παιδαγωγικό Ειδικής Αγωγής",
+    "university": "Θεσσαλίας",
+    "link": "http://www.uth.gr/",
+    "city": "Βόλος",
+    "fields": "I,II,III,IV",
+    "capacity": 115,
+    "base_2025": 13050,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 179,
+    "name": "Διεθνών & Ευρωπαϊκών Σπουδών",
+    "university": "Παντείου",
+    "link": "http://www.panteion.gr/",
+    "city": "Αθήνα",
+    "fields": "I,IV",
+    "capacity": 131,
+    "base_2025": 17040,
+    "eve_coefficient": 1,
+    "eve_score": "11.02",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 10
+      }
+    ]
+  },
+  {
+    "code": 181,
+    "name": "Μεσογειακών Σπουδών: Αρχαιολογία, Γλωσσολογία, Διεθνείς Σχέσεις",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Ρόδος",
+    "fields": "I,IV",
+    "capacity": 120,
+    "base_2025": 8798,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 22
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 24
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 24
+      }
+    ]
+  },
+  {
+    "code": 182,
+    "name": "Ιταλικής Γλώσσας & Φιλολογίας",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 53,
+    "base_2025": 12245,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.75",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 30
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 183,
+    "name": "Ισπανικής Γλώσσας & Φιλολογίας",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 75,
+    "base_2025": 11545,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.76",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 187,
+    "name": "Κοινωνικής & Εκπαιδευτικής Πολιτικής",
+    "university": "Πελοποννήσου",
+    "link": "http://www.uop.gr/",
+    "city": "Κόρινθος",
+    "fields": "I",
+    "capacity": 105,
+    "base_2025": 10540,
+    "eve_coefficient": 0.85,
+    "eve_score": "09.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 188,
+    "name": "Τουρκικών Σπουδών & Σύγχρονων Ασιατικών Σπουδών",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 79,
+    "base_2025": 11250,
+    "eve_coefficient": 1,
+    "eve_score": "11.29",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 189,
+    "name": "Φιλολογίας",
+    "university": "Πελοποννήσου",
+    "link": "http://www.uop.gr/",
+    "city": "Καλαμάτα",
+    "fields": "I",
+    "capacity": 135,
+    "base_2025": 8900,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 192,
+    "name": "Ρωσικής Γλώσσα & Φιλολογίας (Εισ. Κατ.)",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 76,
+    "base_2025": 10225,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 334,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "http://www.uowm.gr/",
+    "city": "Φλώρινα",
+    "fields": "I,II,III,IV",
+    "capacity": 182,
+    "base_2025": 12860,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 341,
+    "name": "Παιδαγωγικό Νηπιαγωγών",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "http://www.uowm.gr/",
+    "city": "Φλώρινα",
+    "fields": "I,II,III,IV",
+    "capacity": 178,
+    "base_2025": 10975,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 342,
+    "name": "Αρχειονομίας, Βιβλιοθηκονομίας & Μουσειολογίας",
+    "university": "Ιονίου",
+    "link": "http://www.ionio.gr/",
+    "city": "Κέρκυρα",
+    "fields": "I,IV",
+    "capacity": 64,
+    "base_2025": 8525,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 348,
+    "name": "Κοινωνιολογίας",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Μυτιλήνη",
+    "fields": "I",
+    "capacity": 200,
+    "base_2025": 8560,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 351,
+    "name": "Πολιτικής Επιστήμης",
+    "university": "Κρήτης",
+    "link": "http://www.uoc.gr/",
+    "city": "Ρέθυμνο",
+    "fields": "I",
+    "capacity": 202,
+    "base_2025": 9300,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 354,
+    "name": "Πολιτισμικής Τεχνολογίας & Επικοινωνίας",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Μυτιλήνη",
+    "fields": "I,IV",
+    "capacity": 138,
+    "base_2025": 8355,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 355,
+    "name": "Διεθνών & Ευρωπαϊκών Σπουδών",
+    "university": "Πειραιά",
+    "link": "http://career.unipi.gr/",
+    "city": "Πειραιάς",
+    "fields": "I,IV",
+    "capacity": 124,
+    "base_2025": 18990,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.22",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 357,
+    "name": "Πολιτικών Επιστημών",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 115,
+    "base_2025": 14410,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 362,
+    "name": "Θεατρικών Σπουδών",
+    "university": "Πελοποννήσου",
+    "link": "http://www.uop.gr/",
+    "city": "Ναύπλιον",
+    "fields": "I",
+    "capacity": 112,
+    "base_2025": 9075,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 367,
+    "name": "Τεχνών Ήχου & Εικόνας",
+    "university": "Ιονίου",
+    "link": "http://www.ionio.gr/",
+    "city": "Κέρκυρα",
+    "fields": "I,II,III,IV",
+    "capacity": 86,
+    "base_2025": 9410,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 373,
+    "name": "Πολιτικής Επιστήμης",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Κομοτηνή",
+    "fields": "I",
+    "capacity": 146,
+    "base_2025": 10660,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 35
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 384,
+    "name": "Θεωρίας & Ιστορίας της Τέχνης",
+    "university": "ΑΣΚΤ",
+    "link": "http://www.asfa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 67,
+    "base_2025": 10210,
+    "eve_coefficient": 0.85,
+    "eve_score": "09.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 35
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 385,
+    "name": "Ξένων Γλωσσών Μετάφρασης & Διερμηνείας",
+    "university": "Ιονίου",
+    "link": "http://www.ionio.gr/",
+    "city": "Κέρκυρα",
+    "fields": "I",
+    "capacity": 91,
+    "base_2025": 14300,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.92",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 401,
+    "name": "Επιστήμης Φυσικής Αγωγής & Αθλητισμού",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 111,
+    "base_2025": 17399,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 402,
+    "name": "Επιστήμης Φυσικής Αγωγής & Αθλητισμού (Εισ. Κατ.)",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Σέρρες",
+    "fields": "I,II,III,IV",
+    "capacity": 113,
+    "base_2025": 13729,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 403,
+    "name": "Επιστήμης Φυσικής Αγωγής & Αθλητισμού (Εισ. Κατ.)",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 112,
+    "base_2025": 17161,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 404,
+    "name": "Επιστήμης Φυσικής Αγωγής & Αθλητισμού",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Κομοτηνή",
+    "fields": "I,II,III,IV",
+    "capacity": 332,
+    "base_2025": 13219,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 405,
+    "name": "Επιστήμης Φυσικής Αγωγής & Αθλητισμού",
+    "university": "Θεσσαλίας",
+    "link": "http://www.uth.gr/",
+    "city": "Τρίκαλα",
+    "fields": "I,II,III,IV",
+    "capacity": 151,
+    "base_2025": 15134,
+    "eve_coefficient": 1,
+    "eve_score": "10.69",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 406,
+    "name": "Μουσικών Σπουδών",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 61,
+    "base_2025": 14590,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.91",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Μουσική",
+        "weight": 55
+      }
+    ]
+  },
+  {
+    "code": 407,
+    "name": "Μουσικών Σπουδών",
+    "university": "Ιονίου",
+    "link": "http://www.ionio.gr/",
+    "city": "Κέρκυρα",
+    "fields": "I,II,III,IV",
+    "capacity": 102,
+    "base_2025": 13440,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.91",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Μουσική",
+        "weight": 60
+      }
+    ]
+  },
+  {
+    "code": 408,
+    "name": "Μουσικών Σπουδών",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 70,
+    "base_2025": 15050,
+    "eve_coefficient": 0.9,
+    "eve_score": "11.15",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Μουσική",
+        "weight": 50
+      }
+    ]
+  },
+  {
+    "code": 409,
+    "name": "Μουσικής Επιστήμης & Τέχνης",
+    "university": "Μακεδονίας",
+    "link": "http://www.uom.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 78,
+    "base_2025": 15600,
+    "eve_coefficient": 1.2,
+    "eve_score": "14.86",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Μουσική",
+        "weight": 60
+      }
+    ]
+  },
+  {
+    "code": 411,
+    "name": "Πολιτικής Επιστήμης & Διεθνών Σχέσεων",
+    "university": "Πελοποννήσου",
+    "link": "http://www.uop.gr/",
+    "city": "Κόρινθος",
+    "fields": "I",
+    "capacity": 110,
+    "base_2025": 11530,
+    "eve_coefficient": 0.95,
+    "eve_score": "10.73",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 413,
+    "name": "Πρόγραμμα Ιερατικών Σπουδών",
+    "university": "Αν. Εκκλ. Ακαδ. Αθήνας",
+    "link": "http://www.aeaa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 35,
+    "base_2025": 9130,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 416,
+    "name": "Πρόγραμμα Ιερατικών Σπουδών",
+    "university": "Αν. Εκκλ. Ακαδ. Κρήτης",
+    "link": "http://www.aeahk.gr/joomla/index.php/",
+    "city": "Ηράκλειο",
+    "fields": "I",
+    "capacity": 36,
+    "base_2025": null,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 613,
+    "name": "Ανώτερη Σχολή Τουριστικής Εκπαίδευσης Ρόδου (Α.Σ.Τ.Ε.Ρ.)",
+    "university": "",
+    "link": "http://www.mintour.edu.gr/",
+    "city": "Ρόδος",
+    "fields": "I,IV",
+    "capacity": 86,
+    "base_2025": 11312,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.81",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 24
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 24
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 24
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 28
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 614,
+    "name": "Ανώτερη Σχολή Τουριστικής Εκπαίδευσης Κρήτης (Α.Σ.Τ.Ε.Κ.)",
+    "university": "",
+    "link": "http://astecrete.edu.gr/",
+    "city": "Αγ. Νικόλαος",
+    "fields": "I,IV",
+    "capacity": 86,
+    "base_2025": 11706,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.81",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 24
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 24
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 24
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 28
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 668,
+    "name": "Αρχειονομίας, Βιβλιοθηκονομίας & Συστημάτων Πληροφόρησης",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "I,IV",
+    "capacity": 78,
+    "base_2025": 10730,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 671,
+    "name": "Κοινωνικής Εργασίας",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "I",
+    "capacity": 99,
+    "base_2025": 15420,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 673,
+    "name": "Αγωγής & Φροντίδας στην Πρώιμη Παιδική Ηλικία",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "I,II,III,IV",
+    "capacity": 112,
+    "base_2025": 13120,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 677,
+    "name": "Φωτογραφίας & Οπτικοακουστικών Τεχνών",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "I,II,IV",
+    "capacity": 91,
+    "base_2025": 11540,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 35
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 780,
+    "name": "Μουσουλμανικών Σπουδών (Εισ. Κατ.)",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 45,
+    "base_2025": 9125,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 866,
+    "name": "Νομικό (ΣΣΑΣ)",
+    "university": "",
+    "link": "http://www.geetha.mil.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 9,
+    "base_2025": 18040,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 869,
+    "name": "Αξιωματικών Ελληνικής Αστυνομίας",
+    "university": "",
+    "link": "http://www.astynomia.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,IV",
+    "capacity": 37,
+    "base_2025": 17590,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 870,
+    "name": "Αστυφυλάκων",
+    "university": "",
+    "link": "http://www.astynomia.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,IV",
+    "capacity": 687,
+    "base_2025": 11710,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 871,
+    "name": "Αξιωματικών Πυροσβεστικής Ακαδημίας (Πυροσβέστες)",
+    "university": "",
+    "link": "http://www.fireservice.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 10,
+    "base_2025": 9940,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 872,
+    "name": "Αξιωματικών Ελληνικής Αστυνομίας (Αστυνομικοί)",
+    "university": "",
+    "link": "http://www.astynomia.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,IV",
+    "capacity": 26,
+    "base_2025": 17370,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 875,
+    "name": "Ψυχολόγων (ΣΣΑΣ)",
+    "university": "",
+    "link": "http://www.geetha.mil.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I",
+    "capacity": 2,
+    "base_2025": 18155,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 35
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 876,
+    "name": "Πυροσβεστών",
+    "university": "",
+    "link": "http://www.fireservice.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 189,
+    "base_2025": 14460,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 877,
+    "name": "Αξιωματικών Πυροσβεστικής Ακαδημίας",
+    "university": "",
+    "link": "http://www.fireservice.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 41,
+    "base_2025": 17460,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 881,
+    "name": "Δοκίμων Σημαιοφόρων Λιμενικού Σώματος - Ελληνικής Ακτοφυλακής (Σ.Δ.Σ.Λ.Σ. -ΕΛ.ΑΚΤ.)",
+    "university": "",
+    "link": "https://www.hcg.gr/el/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 19,
+    "base_2025": 16650,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 882,
+    "name": "Δοκίμων Λιμενοφυλάκων",
+    "university": "",
+    "link": "https://www.hcg.gr/el/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 74,
+    "base_2025": 13970,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 883,
+    "name": "Σχολή Δοκίμων Σημαιοφόρων Λιμενικού Σώματος (Μόνο για Στελέχη ΛΣ - ΕΛ.ΑΚΤ.)",
+    "university": "ΛΙΜΕΝΙΚΟ ΣΩΜΑ. - ΕΛΛΗΝΙΚΗ ΑΚΤΟΦΥΛΑΚΗ",
+    "link": "",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": null,
+    "base_2025": null,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1006,
+    "name": "Κοινωνιολογίας",
+    "university": "ΕΚΠΑ",
+    "link": "https://www.soc.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 80,
+    "base_2025": 13270,
+    "eve_coefficient": 1,
+    "eve_score": "11.29",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1007,
+    "name": "Παιδαγωγικό Δευτεροβάθμιας Εκπαίδευσης",
+    "university": "ΕΚΠΑ",
+    "link": "https://www.eds.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 135,
+    "base_2025": 11495,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1010,
+    "name": "Φιλοσοφίας",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I",
+    "capacity": 113,
+    "base_2025": 11365,
+    "eve_coefficient": 1,
+    "eve_score": "11.29",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 35
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1011,
+    "name": "Ψηφιακών Τεχνών & Κινηματογράφου",
+    "university": "ΕΚΠΑ",
+    "link": "https://www.dcarts.uoa.gr/",
+    "city": "Ψαχνά",
+    "fields": "I,II,III,IV",
+    "capacity": 81,
+    "base_2025": 10520,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1241,
+    "name": "Αγωγής & Φροντίδας στην Πρώιμη Παιδική Ηλικία",
+    "university": "Ιωαννίνων",
+    "link": "http://www.teiep.gr/",
+    "city": "Ιωάννινα",
+    "fields": "I,II,III,IV",
+    "capacity": 138,
+    "base_2025": 10914,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 34
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 22
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 22
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 22
+      }
+    ]
+  },
+  {
+    "code": 1248,
+    "name": "Μουσικών Σπουδών",
+    "university": "Ιωαννίνων",
+    "link": "https://music.uoi.gr/",
+    "city": "Αρτα",
+    "fields": "I,II,III,IV",
+    "capacity": 137,
+    "base_2025": 11660,
+    "eve_coefficient": 0.9,
+    "eve_score": "11.15",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Μουσική",
+        "weight": 50
+      }
+    ]
+  },
+  {
+    "code": 1251,
+    "name": "Ψυχολογίας",
+    "university": "Ιωαννίνων",
+    "link": "https://uoi.gr/tmimata/tmima-psychologias/",
+    "city": "Ιωάννινα",
+    "fields": "I",
+    "capacity": 135,
+    "base_2025": 16575,
+    "eve_coefficient": 1,
+    "eve_score": "11.29",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1284,
+    "name": "Ιστορίας - Αρχαιολογίας",
+    "university": "Πατρών",
+    "link": "https://ha.upatras.gr/",
+    "city": "Πάτρα",
+    "fields": "I",
+    "capacity": 109,
+    "base_2025": 8760,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 40
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1286,
+    "name": "Επιστημών της Εκπαίδευσης & Κοινωνικής Εργασίας",
+    "university": "Πατρών",
+    "link": "http://www.upatras.gr/",
+    "city": "Πάτρα",
+    "fields": "I,II,III,IV",
+    "capacity": 228,
+    "base_2025": 14422,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 28
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 26
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 26
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1301,
+    "name": "Κοινωνικής Εργασίας",
+    "university": "ΔΠΘ",
+    "link": "https://sw.duth.gr/",
+    "city": "Κομοτηνή",
+    "fields": "I",
+    "capacity": 97,
+    "base_2025": 14640,
+    "eve_coefficient": 1.1,
+    "eve_score": "12.42",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1302,
+    "name": "Κοινωνικής Πολιτικής",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Κομοτηνή",
+    "fields": "I,IV",
+    "capacity": 105,
+    "base_2025": 10820,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1423,
+    "name": "Γλωσσικών & Διαπολιτισμικών Σπουδών",
+    "university": "Θεσσαλίας",
+    "link": "https://gdia.uth.gr/",
+    "city": "Βόλος",
+    "fields": "I",
+    "capacity": 91,
+    "base_2025": 9410,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.04",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1435,
+    "name": "Πολιτισμού & Δημιουργικών Μέσων & Βιομηχανιών",
+    "university": "Θεσσαλίας",
+    "link": "https://cult.uth.gr/",
+    "city": "Βόλος",
+    "fields": "I,IV",
+    "capacity": 81,
+    "base_2025": 9410,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1456,
+    "name": "Ψηφιακών Μέσων & Επικοινωνίας",
+    "university": "Ιονίου",
+    "link": "https://dmc.ionio.gr/",
+    "city": "Αργοστόλι",
+    "fields": "I,IV",
+    "capacity": 211,
+    "base_2025": 8550,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 30
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1517,
+    "name": "Παραστατικών & Ψηφιακών Τεχνών",
+    "university": "Πελοποννήσου",
+    "link": "https://pda.uop.gr/",
+    "city": "Ναύπλιον",
+    "fields": "I,II,III,IV",
+    "capacity": 113,
+    "base_2025": 9200,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1550,
+    "name": "Ψυχολογίας",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "https://psy.uowm.gr/",
+    "city": "Φλώρινα",
+    "fields": "I",
+    "capacity": 137,
+    "base_2025": 15905,
+    "eve_coefficient": 1,
+    "eve_score": "11.29",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 35
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1551,
+    "name": "Επικοινωνίας & Ψηφιακών Μέσων",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "http://www.teiwm.gr/",
+    "city": "Καστοριά",
+    "fields": "I,IV",
+    "capacity": 146,
+    "base_2025": 11020,
+    "eve_coefficient": 0.86,
+    "eve_score": "09.48",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 20
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 20
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 20
+      },
+      {
+        "subject": "ΕΙΔΙΚΟ ή ΜΟΥΣΙΚΟΜΑΘΗΜΑ",
+        "weight": 10
+      }
+    ]
+  },
+  {
+    "code": 1609,
+    "name": "Βιβλιοθηκονομίας, Αρχειονομίας & Συστημάτων Πληροφόρησης",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teithe.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,IV",
+    "capacity": 96,
+    "base_2025": 9300,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1610,
+    "name": "Αγωγής & Φροντίδας στην Πρώιμη Παιδική Ηλικία",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teithe.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 112,
+    "base_2025": 11250,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1627,
+    "name": "Δημιουργικού Σχεδιασμού & Ένδυσης",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teithe.gr/",
+    "city": "Κιλκίς",
+    "fields": "I,II,IV",
+    "capacity": 120,
+    "base_2025": 8650,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1652,
+    "name": "Κοινωνικής Εργασίας",
+    "university": "ΕΛ.ΜΕ.ΠΑ.",
+    "link": "https://www.teicrete.gr/",
+    "city": "Ηράκλειο",
+    "fields": "I",
+    "capacity": 125,
+    "base_2025": 13500,
+    "eve_coefficient": 1,
+    "eve_score": "11.29",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1668,
+    "name": "Ψυχολογίας, ΔΠΘ",
+    "university": "ΝΕΟ",
+    "link": "http://www.duth.gr/",
+    "city": "Διδυμότειχο",
+    "fields": "I",
+    "capacity": 113,
+    "base_2025": 15450,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1669,
+    "name": "Ανθρωπιστικών Σπουδών",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Κομοτηνή",
+    "fields": "I,IV",
+    "capacity": 310,
+    "base_2025": 8650,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Αρχαία Ελληνικά",
+        "weight": 25
+      },
+      {
+        "subject": "Ιστορία",
+        "weight": 25
+      },
+      {
+        "subject": "Λατινικά",
+        "weight": 25
+      }
+    ]
+  }
+]

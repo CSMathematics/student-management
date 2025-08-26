@@ -33,6 +33,7 @@ function ParentPortal({ db, appId, user, userProfile }) {
     const [allDailyLogs, setAllDailyLogs] = useState([]);
     const [allCourses, setAllCourses] = useState([]);
     const [allTeachers, setAllTeachers] = useState([]);
+    const [submissions, setSubmissions] = useState([]); // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
     const [loading, setLoading] = useState(true);
 
     const childIds = userProfile?.childIds || [];
@@ -56,7 +57,6 @@ function ParentPortal({ db, appId, user, userProfile }) {
                 if (!selectedChildId && kidsData.length > 0) {
                     setSelectedChildId(kidsData[0].id);
                 } else if (kidsData.length > 0 && !kidsData.some(k => k.id === selectedChildId)) {
-                    // If the previously selected child is not in the new year's data, select the first one
                     setSelectedChildId(kidsData[0].id);
                 } else if (kidsData.length === 0) {
                     setSelectedChildId('');
@@ -68,12 +68,14 @@ function ParentPortal({ db, appId, user, userProfile }) {
             grades: query(collection(db, `${yearPath}/grades`), where("studentId", "in", childIds)),
             absences: query(collection(db, `${yearPath}/absences`), where("studentId", "in", childIds)),
             payments: query(collection(db, `${yearPath}/payments`), where("studentId", "in", childIds)),
+            submissions: query(collection(db, `${yearPath}/submissions`), where("studentId", "in", childIds)), // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
             assignments: query(collection(db, `${yearPath}/assignments`)),
             dailyLogs: query(collection(db, `${yearPath}/dailyLogs`)),
             courses: query(collection(db, `${yearPath}/courses`)),
         };
         const setters = {
             grades: setGrades, absences: setAbsences, payments: setPayments,
+            submissions: setSubmissions, // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
             assignments: setAllAssignments, dailyLogs: setAllDailyLogs, courses: setAllCourses,
         };
         for (const [key, q] of Object.entries(queries)) {
@@ -118,7 +120,7 @@ function ParentPortal({ db, appId, user, userProfile }) {
     const dataForSelectedChild = useMemo(() => {
         if (!selectedChildData) return {
             childData: null, grades: [], absences: [], payments: [],
-            enrolledClassrooms: [], assignments: []
+            enrolledClassrooms: [], assignments: [], submissions: []
         };
         const childEnrolledClassroomIds = selectedChildData.enrolledClassrooms || [];
         return {
@@ -126,10 +128,11 @@ function ParentPortal({ db, appId, user, userProfile }) {
             grades: grades.filter(g => g.studentId === selectedChildId),
             absences: absences.filter(a => a.studentId === selectedChildId),
             payments: payments.filter(p => p.studentId === selectedChildId),
+            submissions: submissions.filter(s => s.studentId === selectedChildId), // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
             enrolledClassrooms: enrolledClassrooms.filter(c => childEnrolledClassroomIds.includes(c.id)),
             assignments: allAssignments.filter(a => childEnrolledClassroomIds.includes(a.classroomId)),
         };
-    }, [selectedChildId, selectedChildData, grades, absences, payments, enrolledClassrooms, allAssignments]);
+    }, [selectedChildId, selectedChildData, grades, absences, payments, enrolledClassrooms, allAssignments, submissions]);
 
 
     if (loading || loadingYears) {

@@ -1,0 +1,5602 @@
+[
+  {
+    "code": 97,
+    "name": "Οικονομικών Επιστημών",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Κομοτηνή",
+    "fields": "IV",
+    "capacity": 266,
+    "base_2025": 9696,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 28
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 32
+      }
+    ]
+  },
+  {
+    "code": 98,
+    "name": "Πληροφορικής & Τηλεπικοινωνιών",
+    "university": "Πελοποννήσου",
+    "link": "http://www.uop.gr/",
+    "city": "Τρίπολη",
+    "fields": "II,IV",
+    "capacity": 195,
+    "base_2025": 11550,
+    "eve_coefficient": 1.1,
+    "eve_score": "11.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 99,
+    "name": "Πληροφορικής & Τηλεπικοινωνιών",
+    "university": "Θεσσαλίας",
+    "link": "http://www.uth.gr/",
+    "city": "Λαμία",
+    "fields": "II,IV",
+    "capacity": 243,
+    "base_2025": 10500,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 124,
+    "name": "Δημόσιας Διοίκησης",
+    "university": "Παντείου",
+    "link": "http://www.panteion.gr/",
+    "city": "Αθήνα",
+    "fields": "I,IV",
+    "capacity": 254,
+    "base_2025": 13075,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 128,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 162,
+    "base_2025": 16250,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 130,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "Ιωαννίνων",
+    "link": "http://www.uoi.gr/",
+    "city": "Ιωάννινα",
+    "fields": "I,II,III,IV",
+    "capacity": 206,
+    "base_2025": 14575,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 132,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "Κρήτης",
+    "link": "http://www.uoc.gr/",
+    "city": "Ρέθυμνο",
+    "fields": "I,II,III,IV",
+    "capacity": 166,
+    "base_2025": 13375,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 134,
+    "name": "Επιστημών Προσχολικής Αγωγής & Εκπ/σης",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 120,
+    "base_2025": 13875,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 136,
+    "name": "Επιστημών της Εκπαίδευσης & της Αγωγής στην Προσχολική Ηλικία",
+    "university": "Πατρών",
+    "link": "http://www.upatras.gr/",
+    "city": "Πάτρα",
+    "fields": "I,II,III,IV",
+    "capacity": 138,
+    "base_2025": 13000,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 140,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 162,
+    "base_2025": 15950,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 142,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Αλεξ/πολη",
+    "fields": "I,II,III,IV",
+    "capacity": 218,
+    "base_2025": 13000,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 143,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Ρόδος",
+    "fields": "I,II,III,IV",
+    "capacity": 309,
+    "base_2025": 11875,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 144,
+    "name": "Οικονομίας & Βιώσιμης Ανάπτυξης",
+    "university": "Χαροκοπείου",
+    "link": "http://www.hua.gr/",
+    "city": "Αθήνα",
+    "fields": "IV",
+    "capacity": 71,
+    "base_2025": 12556,
+    "eve_coefficient": 1.1,
+    "eve_score": "11.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 23
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 27
+      }
+    ]
+  },
+  {
+    "code": 150,
+    "name": "Διεθνών & Ευρωπαϊκών Οικονομικών Σπουδών",
+    "university": "Ο.Π.Α.",
+    "link": "http://www.aueb.gr/",
+    "city": "Αθήνα",
+    "fields": "IV",
+    "capacity": 108,
+    "base_2025": 15150,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 152,
+    "name": "Οικονομικής & Περιφερειακής Ανάπτυξης",
+    "university": "Παντείου",
+    "link": "http://www.panteion.gr/",
+    "city": "Αθήνα",
+    "fields": "IV",
+    "capacity": 188,
+    "base_2025": 12675,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 154,
+    "name": "Εκπαίδευσης & Αγωγής στην Προσχολική Ηλικία",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 95,
+    "base_2025": 14800,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 155,
+    "name": "Χρηματοοικονομικής & Τραπεζικής Διοικητικής",
+    "university": "Πειραιά",
+    "link": "http://career.unipi.gr/",
+    "city": "Πειραιάς",
+    "fields": "II,IV",
+    "capacity": 152,
+    "base_2025": 14850,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 156,
+    "name": "Παιδαγωγικό Νηπιαγωγών",
+    "university": "Ιωαννίνων",
+    "link": "http://www.uoi.gr/",
+    "city": "Ιωάννινα",
+    "fields": "I,II,III,IV",
+    "capacity": 223,
+    "base_2025": 11905,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 157,
+    "name": "Ναυτιλιακών Σπουδών",
+    "university": "Πειραιά",
+    "link": "http://career.unipi.gr/",
+    "city": "Πειραιάς",
+    "fields": "IV",
+    "capacity": 196,
+    "base_2025": 19210,
+    "eve_coefficient": 1,
+    "eve_score": "11.02",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 158,
+    "name": "Παιδαγωγικό Προσχολικής Εκπ/σης",
+    "university": "Κρήτης",
+    "link": "http://www.uoc.gr/",
+    "city": "Ρέθυμνο",
+    "fields": "I,II,III,IV",
+    "capacity": 152,
+    "base_2025": 11600,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 159,
+    "name": "Κοινωνικής Πολιτικής",
+    "university": "Παντείου",
+    "link": "http://www.panteion.gr/",
+    "city": "Αθήνα",
+    "fields": "I,IV",
+    "capacity": 127,
+    "base_2025": 12430,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 160,
+    "name": "Επιστημών της Εκπαίδευσης στην Προσχολική Ηλικία",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Αλεξ/πολη",
+    "fields": "I,II,III,IV",
+    "capacity": 192,
+    "base_2025": 10750,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 161,
+    "name": "Διεθνών & Ευρωπαϊκών Σπουδών",
+    "university": "Μακεδονίας",
+    "link": "http://www.uom.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,IV",
+    "capacity": 121,
+    "base_2025": 19295,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.22",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 35
+      }
+    ]
+  },
+  {
+    "code": 162,
+    "name": "Επιστημών της Προσχολικής Αγωγής & του Εκπαιδευτικού Σχεδιασμού",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Ρόδος",
+    "fields": "I,II,III,IV",
+    "capacity": 259,
+    "base_2025": 10150,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 163,
+    "name": "Κινηματογράφου",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 72,
+    "base_2025": 13125,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 164,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "Θεσσαλίας",
+    "link": "http://www.uth.gr/",
+    "city": "Βόλος",
+    "fields": "I,II,III,IV",
+    "capacity": 139,
+    "base_2025": 15125,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 166,
+    "name": "Παιδαγωγικό Προσχολικής Εκπ/σης",
+    "university": "Θεσσαλίας",
+    "link": "http://www.uth.gr/",
+    "city": "Βόλος",
+    "fields": "I,II,III,IV",
+    "capacity": 122,
+    "base_2025": 12425,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 168,
+    "name": "Θεάτρου",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 62,
+    "base_2025": 11425,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 173,
+    "name": "Ιστορίας & Φιλοσοφίας της Επιστήμης",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 114,
+    "base_2025": 10810,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 28
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 28
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 22
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 22
+      }
+    ]
+  },
+  {
+    "code": 176,
+    "name": "Βαλκανικών, Σλαβικών & Ανατολικών Σπουδών",
+    "university": "Μακεδονίας",
+    "link": "http://www.uom.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,IV",
+    "capacity": 172,
+    "base_2025": 12240,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 178,
+    "name": "Παιδαγωγικό Ειδικής Αγωγής",
+    "university": "Θεσσαλίας",
+    "link": "http://www.uth.gr/",
+    "city": "Βόλος",
+    "fields": "I,II,III,IV",
+    "capacity": 115,
+    "base_2025": 13050,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 179,
+    "name": "Διεθνών & Ευρωπαϊκών Σπουδών",
+    "university": "Παντείου",
+    "link": "http://www.panteion.gr/",
+    "city": "Αθήνα",
+    "fields": "I,IV",
+    "capacity": 131,
+    "base_2025": 17040,
+    "eve_coefficient": 1,
+    "eve_score": "11.02",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 180,
+    "name": "Ναυτιλίας & Επιχειρηματικών Υπηρεσιών",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Χίος",
+    "fields": "IV",
+    "capacity": 188,
+    "base_2025": 9890,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 181,
+    "name": "Μεσογειακών Σπουδών: Αρχαιολογία, Γλωσσολογία, Διεθνείς Σχέσεις",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Ρόδος",
+    "fields": "I,IV",
+    "capacity": 120,
+    "base_2025": 8798,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 212,
+    "name": "Δασολογίας & Διαχείρισης Περιβάλλοντος & Φυσικών Πόρων",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Ορεστιάδα",
+    "fields": "II,III,IV",
+    "capacity": 146,
+    "base_2025": 8640,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 35
+      }
+    ]
+  },
+  {
+    "code": 216,
+    "name": "Επιστήμης Υπολογιστών",
+    "university": "Κρήτης",
+    "link": "http://www.uoc.gr/",
+    "city": "Ηράκλειο",
+    "fields": "II,IV",
+    "capacity": 147,
+    "base_2025": 15646,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 26
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 27
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 27
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 218,
+    "name": "Στατιστικής & Αναλογιστικών-Χρηματοοικονομικών Μαθηματικών",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Σάμος",
+    "fields": "II,IV",
+    "capacity": 162,
+    "base_2025": 8550,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 222,
+    "name": "Μηχανικών Οικονομίας & Διοίκησης",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Χίος",
+    "fields": "II,IV",
+    "capacity": 129,
+    "base_2025": 9050,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 224,
+    "name": "Μηχανικών Παραγωγής & Διοίκησης",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Ξάνθη",
+    "fields": "II,IV",
+    "capacity": 118,
+    "base_2025": 11590,
+    "eve_coefficient": 1.1,
+    "eve_score": "11.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 230,
+    "name": "Μηχανικών Παραγωγής & Διοίκησης",
+    "university": "Πολυτ. Κρήτης",
+    "link": "http://www.tuc.gr/",
+    "city": "Χανιά",
+    "fields": "II,IV",
+    "capacity": 127,
+    "base_2025": 12290,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 238,
+    "name": "Μηχανικών Σχεδίασης Προϊόντων & Συστημάτων",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Σύρος",
+    "fields": "II,IV",
+    "capacity": 113,
+    "base_2025": 10330,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 240,
+    "name": "Διοικητικής Επιστήμης & Τεχνολογίας",
+    "university": "Ο.Π.Α.",
+    "link": "http://www.aueb.gr/",
+    "city": "Αθήνα",
+    "fields": "II,IV",
+    "capacity": 131,
+    "base_2025": 18400,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 262,
+    "name": "Ψηφιακών Συστημάτων",
+    "university": "Πειραιώς",
+    "link": "http://career.unipi.gr/",
+    "city": "Πειραιάς",
+    "fields": "II,IV",
+    "capacity": 156,
+    "base_2025": 15940,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 276,
+    "name": "Περιβάλλοντος",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Μυτιλήνη",
+    "fields": "II,III,IV",
+    "capacity": 122,
+    "base_2025": 8550,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 309,
+    "name": "Οικονομικών Επιστημών",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "IV",
+    "capacity": 292,
+    "base_2025": 13896,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 22
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 34
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 24
+      }
+    ]
+  },
+  {
+    "code": 310,
+    "name": "Γεωγραφίας",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Μυτιλήνη",
+    "fields": "II,IV",
+    "capacity": 120,
+    "base_2025": 7740,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 311,
+    "name": "Οικονομικών Επιστημών",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "IV",
+    "capacity": 312,
+    "base_2025": 13240,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 312,
+    "name": "Οικονομικής Επιστήμης",
+    "university": "Ο.Π.Α.",
+    "link": "http://www.aueb.gr/",
+    "city": "Αθήνα",
+    "fields": "IV",
+    "capacity": 195,
+    "base_2025": 15900,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 313,
+    "name": "Οργάνωσης & Διοίκησης Επιχειρήσεων",
+    "university": "ΟΠΑ",
+    "link": "http://www.aueb.gr/",
+    "city": "Αθήνα",
+    "fields": "IV",
+    "capacity": 202,
+    "base_2025": 17425,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 314,
+    "name": "Μάρκετινγκ & Επικοινωνίας",
+    "university": "ΟΠΑ",
+    "link": "http://www.aueb.gr/",
+    "city": "Αθήνα",
+    "fields": "IV",
+    "capacity": 148,
+    "base_2025": 16350,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 315,
+    "name": "Οικονομικής Επιστήμης",
+    "university": "Πειραιά",
+    "link": "http://career.unipi.gr/",
+    "city": "Πειραιάς",
+    "fields": "IV",
+    "capacity": 255,
+    "base_2025": 15100,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 316,
+    "name": "Οργάνωσης & Διοίκησης Επιχειρήσεων",
+    "university": "Πειραιά",
+    "link": "http://career.unipi.gr/",
+    "city": "Πειραιάς",
+    "fields": "IV",
+    "capacity": 233,
+    "base_2025": 16620,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 317,
+    "name": "Οικονομικών Επιστημών",
+    "university": "Μακεδονίας",
+    "link": "http://www.uom.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "IV",
+    "capacity": 239,
+    "base_2025": 14460,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 318,
+    "name": "Στατιστικής & Ασφαλιστικής Επιστήμης",
+    "university": "Πειραιώς",
+    "link": "http://career.unipi.gr/",
+    "city": "Πειραιάς",
+    "fields": "II,IV",
+    "capacity": 139,
+    "base_2025": 13070,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 319,
+    "name": "Οικονομικών Επιστημών",
+    "university": "Πατρών",
+    "link": "http://www.upatras.gr/",
+    "city": "Πάτρα",
+    "fields": "IV",
+    "capacity": 243,
+    "base_2025": 12426,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 26
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 26
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 28
+      }
+    ]
+  },
+  {
+    "code": 320,
+    "name": "Διοίκησης Επιχειρήσεων",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Χίος",
+    "fields": "IV",
+    "capacity": 203,
+    "base_2025": 8630,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 321,
+    "name": "Οικονομικών Επιστημών",
+    "university": "Κρήτης",
+    "link": "http://www.uoc.gr/",
+    "city": "Ρέθυμνο",
+    "fields": "IV",
+    "capacity": 200,
+    "base_2025": 10415,
+    "eve_coefficient": 1.05,
+    "eve_score": "11.02",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 322,
+    "name": "Οργάνωσης & Διοίκησης Επιχειρήσεων",
+    "university": "Μακεδονίας",
+    "link": "http://www.uom.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "IV",
+    "capacity": 195,
+    "base_2025": 15532,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 23
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 22
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 326,
+    "name": "Αγροτικής Οικονομίας & Ανάπτυξης",
+    "university": "Γεωπονικού",
+    "link": "http://www.aua.gr/",
+    "city": "Αθήνα",
+    "fields": "III,IV",
+    "capacity": 56,
+    "base_2025": 12310,
+    "eve_coefficient": 0.85,
+    "eve_score": "08.92",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 329,
+    "name": "Στατιστικής",
+    "university": "Ο.Π.Α.",
+    "link": "http://www.aueb.gr/",
+    "city": "Αθήνα",
+    "fields": "II,IV",
+    "capacity": 96,
+    "base_2025": 14440,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 22
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 34
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 22
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 22
+      }
+    ]
+  },
+  {
+    "code": 330,
+    "name": "Πληροφορικής & Τηλεπικοινωνιών",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "II,IV",
+    "capacity": 172,
+    "base_2025": 16955,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 35
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 333,
+    "name": "Πληροφορικής",
+    "university": "Ο.Π.Α.",
+    "link": "http://www.aueb.gr/",
+    "city": "Αθήνα",
+    "fields": "II,IV",
+    "capacity": 179,
+    "base_2025": 17590,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 334,
+    "name": "Παιδαγωγικό Δημοτικής Εκπ/σης",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "http://www.uowm.gr/",
+    "city": "Φλώρινα",
+    "fields": "I,II,III,IV",
+    "capacity": 182,
+    "base_2025": 12860,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 336,
+    "name": "Βιομηχανικής Διοίκησης & Τεχνολογίας",
+    "university": "Πειραιά",
+    "link": "http://career.unipi.gr/",
+    "city": "Πειραιάς",
+    "fields": "II,IV",
+    "capacity": 168,
+    "base_2025": 13465,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 35
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 337,
+    "name": "Λογιστικής & Χρηματοοικονομικής",
+    "university": "Μακεδονίας",
+    "link": "http://www.uom.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "IV",
+    "capacity": 256,
+    "base_2025": 13525,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 338,
+    "name": "Πληροφορικής",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "II,IV",
+    "capacity": 116,
+    "base_2025": 17720,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 339,
+    "name": "Πληροφορικής",
+    "university": "Πειραιά",
+    "link": "http://career.unipi.gr/",
+    "city": "Πειραιάς",
+    "fields": "II,IV",
+    "capacity": 155,
+    "base_2025": 16935,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 341,
+    "name": "Παιδαγωγικό Νηπιαγωγών",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "http://www.uowm.gr/",
+    "city": "Φλώρινα",
+    "fields": "I,II,III,IV",
+    "capacity": 178,
+    "base_2025": 10975,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 342,
+    "name": "Αρχειονομίας, Βιβλιοθηκονομίας & Μουσειολογίας",
+    "university": "Ιονίου",
+    "link": "http://www.ionio.gr/",
+    "city": "Κέρκυρα",
+    "fields": "I,IV",
+    "capacity": 64,
+    "base_2025": 8525,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 344,
+    "name": "Μηχανικών Πληροφοριακών & Επικοινωνιακών Συστημάτων",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Σάμος",
+    "fields": "II,IV",
+    "capacity": 212,
+    "base_2025": 9660,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 345,
+    "name": "Οικονομικών Επιστημών",
+    "university": "Ιωαννίνων",
+    "link": "http://www.uoi.gr/",
+    "city": "Ιωάννινα",
+    "fields": "IV",
+    "capacity": 228,
+    "base_2025": 11450,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 347,
+    "name": "Λογιστικής & Χρηματοοικονομικής",
+    "university": "ΟΠΑ",
+    "link": "http://www.aueb.gr/",
+    "city": "Αθήνα",
+    "fields": "IV",
+    "capacity": 164,
+    "base_2025": 15775,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 350,
+    "name": "Οικονομικών Επιστημών",
+    "university": "Θεσσαλίας",
+    "link": "http://www.uth.gr/",
+    "city": "Βόλος",
+    "fields": "IV",
+    "capacity": 203,
+    "base_2025": 11851,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 27
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 23
+      }
+    ]
+  },
+  {
+    "code": 352,
+    "name": "Διοίκησης Επιχειρήσεων",
+    "university": "Πατρών",
+    "link": "http://www.upatras.gr/",
+    "city": "Πάτρα",
+    "fields": "IV",
+    "capacity": 266,
+    "base_2025": 11900,
+    "eve_coefficient": 1.1,
+    "eve_score": "11.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 353,
+    "name": "Αγροτικής Ανάπτυξης",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Ορεστιάδα",
+    "fields": "II,III,IV",
+    "capacity": 162,
+    "base_2025": 9125,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 354,
+    "name": "Πολιτισμικής Τεχνολογίας & Επικοινωνίας",
+    "university": "Αιγαίου",
+    "link": "http://www.aegean.gr/",
+    "city": "Μυτιλήνη",
+    "fields": "I,IV",
+    "capacity": 138,
+    "base_2025": 8355,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 355,
+    "name": "Διεθνών & Ευρωπαϊκών Σπουδών",
+    "university": "Πειραιά",
+    "link": "http://career.unipi.gr/",
+    "city": "Πειραιάς",
+    "fields": "I,IV",
+    "capacity": 124,
+    "base_2025": 18990,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.22",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 356,
+    "name": "Γεωγραφίας",
+    "university": "Χαροκοπείου",
+    "link": "http://www.hua.gr/",
+    "city": "Αθήνα",
+    "fields": "II,IV",
+    "capacity": 59,
+    "base_2025": 10725,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 361,
+    "name": "Οικονομικών Επιστημών",
+    "university": "Πελοποννήσου",
+    "link": "http://www.uop.gr/",
+    "city": "Τρίπολη",
+    "fields": "IV",
+    "capacity": 160,
+    "base_2025": 10030,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 366,
+    "name": "Πληροφορικής",
+    "university": "Ιονίου",
+    "link": "http://www.ionio.gr/",
+    "city": "Κέρκυρα",
+    "fields": "II,IV",
+    "capacity": 203,
+    "base_2025": 8640,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 367,
+    "name": "Τεχνών Ήχου & Εικόνας",
+    "university": "Ιονίου",
+    "link": "http://www.ionio.gr/",
+    "city": "Κέρκυρα",
+    "fields": "I,II,III,IV",
+    "capacity": 86,
+    "base_2025": 9410,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 369,
+    "name": "Πληροφορικής με Εφαρμογές στη Βιοϊατρική",
+    "university": "Θεσσαλίας",
+    "link": "http://www.uth.gr/",
+    "city": "Λαμία",
+    "fields": "II,III,IV",
+    "capacity": 167,
+    "base_2025": 12515,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 375,
+    "name": "Τουριστικών Σπουδών",
+    "university": "Πειραιά",
+    "link": "http://tourism.unipi.gr/",
+    "city": "Πειραιάς",
+    "fields": "IV",
+    "capacity": 72,
+    "base_2025": 14785,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.22",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 389,
+    "name": "Μηχανικών Βιομηχανικής Σχεδίασης & Παραγωγής",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "II,IV",
+    "capacity": 255,
+    "base_2025": 12032,
+    "eve_coefficient": 1.18,
+    "eve_score": "12.39",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 28
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 28
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 24
+      }
+    ]
+  },
+  {
+    "code": 390,
+    "name": "Μηχανικών Πληροφορικής & Υπολογιστών",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "II,IV",
+    "capacity": 224,
+    "base_2025": 15336,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 24
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 28
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 28
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 400,
+    "name": "Οργάνωσης & Διαχείρισης Αθλητισμού",
+    "university": "Πελοποννήσου",
+    "link": "http://www.uop.gr/",
+    "city": "Σπάρτη",
+    "fields": "IV",
+    "capacity": 97,
+    "base_2025": 8940,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 401,
+    "name": "Επιστήμης Φυσικής Αγωγής & Αθλητισμού",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 111,
+    "base_2025": 17399,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 402,
+    "name": "Επιστήμης Φυσικής Αγωγής & Αθλητισμού (Εισ. Κατ.)",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Σέρρες",
+    "fields": "I,II,III,IV",
+    "capacity": 113,
+    "base_2025": 13729,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 403,
+    "name": "Επιστήμης Φυσικής Αγωγής & Αθλητισμού (Εισ. Κατ.)",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 112,
+    "base_2025": 17161,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 404,
+    "name": "Επιστήμης Φυσικής Αγωγής & Αθλητισμού",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Κομοτηνή",
+    "fields": "I,II,III,IV",
+    "capacity": 332,
+    "base_2025": 13219,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 405,
+    "name": "Επιστήμης Φυσικής Αγωγής & Αθλητισμού",
+    "university": "Θεσσαλίας",
+    "link": "http://www.uth.gr/",
+    "city": "Τρίκαλα",
+    "fields": "I,II,III,IV",
+    "capacity": 151,
+    "base_2025": 15134,
+    "eve_coefficient": 1,
+    "eve_score": "10.69",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 406,
+    "name": "Μουσικών Σπουδών",
+    "university": "ΑΠΘ",
+    "link": "http://www.auth.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 61,
+    "base_2025": 14590,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.91",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 407,
+    "name": "Μουσικών Σπουδών",
+    "university": "Ιονίου",
+    "link": "http://www.ionio.gr/",
+    "city": "Κέρκυρα",
+    "fields": "I,II,III,IV",
+    "capacity": 102,
+    "base_2025": 13440,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.91",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 408,
+    "name": "Μουσικών Σπουδών",
+    "university": "ΕΚΠΑ",
+    "link": "http://www.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 70,
+    "base_2025": 15050,
+    "eve_coefficient": 0.9,
+    "eve_score": "11.15",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 409,
+    "name": "Μουσικής Επιστήμης & Τέχνης",
+    "university": "Μακεδονίας",
+    "link": "http://www.uom.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 78,
+    "base_2025": 15600,
+    "eve_coefficient": 1.2,
+    "eve_score": "14.86",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 412,
+    "name": "Πληροφορικής & Τηλεματικής",
+    "university": "Χαροκοπείου",
+    "link": "https://www.dit.hua.gr/index.php/el/",
+    "city": "Αθήνα",
+    "fields": "II,IV",
+    "capacity": 88,
+    "base_2025": 16320,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 612,
+    "name": "Οικονομικής & Διοίκησης Τουρισμού",
+    "university": "Αιγαίου",
+    "link": "https://www.mixanografiko.gr/www.aegean.gr",
+    "city": "Χίος",
+    "fields": "IV",
+    "capacity": 89,
+    "base_2025": 11550,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.81",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 613,
+    "name": "Ανώτερη Σχολή Τουριστικής Εκπαίδευσης Ρόδου (Α.Σ.Τ.Ε.Ρ.)",
+    "university": "",
+    "link": "http://www.mintour.edu.gr/",
+    "city": "Ρόδος",
+    "fields": "I,IV",
+    "capacity": 86,
+    "base_2025": 11312,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.81",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 22
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 22
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 28
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 28
+      }
+    ]
+  },
+  {
+    "code": 614,
+    "name": "Ανώτερη Σχολή Τουριστικής Εκπαίδευσης Κρήτης (Α.Σ.Τ.Ε.Κ.)",
+    "university": "",
+    "link": "http://astecrete.edu.gr/",
+    "city": "Αγ. Νικόλαος",
+    "fields": "I,IV",
+    "capacity": 86,
+    "base_2025": 11706,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.81",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 22
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 22
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 28
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 28
+      }
+    ]
+  },
+  {
+    "code": 668,
+    "name": "Αρχειονομίας, Βιβλιοθηκονομίας & Συστημάτων Πληροφόρησης",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "I,IV",
+    "capacity": 78,
+    "base_2025": 10730,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 669,
+    "name": "Διοίκησης Επιχειρήσεων",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "IV",
+    "capacity": 280,
+    "base_2025": 12920,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 670,
+    "name": "Διοίκησης Τουρισμού",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "IV",
+    "capacity": 266,
+    "base_2025": 15850,
+    "eve_coefficient": 1.2,
+    "eve_score": "13.22",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 672,
+    "name": "Λογιστικής & Χρηματοοικονομικής",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "IV",
+    "capacity": 144,
+    "base_2025": 12765,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 33
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 27
+      }
+    ]
+  },
+  {
+    "code": 673,
+    "name": "Αγωγής & Φροντίδας στην Πρώιμη Παιδική Ηλικία",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "I,II,III,IV",
+    "capacity": 112,
+    "base_2025": 13120,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 40
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 674,
+    "name": "Γραφιστικής & Οπτικής Επικοινωνίας",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "II,IV",
+    "capacity": 96,
+    "base_2025": 13745,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.09",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 675,
+    "name": "Εσωτερικής Αρχιτεκτονικής",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "II,IV",
+    "capacity": 93,
+    "base_2025": 14405,
+    "eve_coefficient": 1.15,
+    "eve_score": "13.06",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 35
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 677,
+    "name": "Φωτογραφίας & Οπτικοακουστικών Τεχνών",
+    "university": "ΠΑ.Δ.Α.",
+    "link": "http://www.uniwa.gr/",
+    "city": "Αιγάλεω",
+    "fields": "I,II,IV",
+    "capacity": 91,
+    "base_2025": 11540,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 35
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 817,
+    "name": "Σχολή Πλοιάρχων Εμπορικού Ναυτικού",
+    "university": "",
+    "link": "http://www.yen.gr/",
+    "city": "Διάφορες",
+    "fields": "II,IV",
+    "capacity": 421,
+    "base_2025": 8400,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 818,
+    "name": "Σχολή Μηχανικών Εμπορικού Ναυτικού",
+    "university": "",
+    "link": "http://www.yen.gr/",
+    "city": "Διάφορες",
+    "fields": "II,IV",
+    "capacity": 419,
+    "base_2025": 8400,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 863,
+    "name": "Μονίμων Υπαξ/κών Στρατού (Σ.Μ.Υ.) - Σώματα",
+    "university": "",
+    "link": "http://www.army.gr/",
+    "city": "Τρίκαλα",
+    "fields": "II,IV",
+    "capacity": 39,
+    "base_2025": 13080,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 864,
+    "name": "Μονίμων Υπαξ/κών Ναυτικού (Σ.Μ.Υ.Ν.)",
+    "university": "",
+    "link": "http://www.hellenicnavy.gr/",
+    "city": "Αθήνα",
+    "fields": "II,IV",
+    "capacity": 104,
+    "base_2025": 8940,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 867,
+    "name": "Οικονομικό (ΣΣΑΣ)",
+    "university": "",
+    "link": "http://www.geetha.mil.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "IV",
+    "capacity": 22,
+    "base_2025": 17735,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 869,
+    "name": "Αξιωματικών Ελληνικής Αστυνομίας",
+    "university": "",
+    "link": "http://www.astynomia.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,IV",
+    "capacity": 37,
+    "base_2025": 17590,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 870,
+    "name": "Αστυφυλάκων",
+    "university": "",
+    "link": "http://www.astynomia.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,IV",
+    "capacity": 687,
+    "base_2025": 11710,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 871,
+    "name": "Αξιωματικών Πυροσβεστικής Ακαδημίας (Πυροσβέστες)",
+    "university": "",
+    "link": "http://www.fireservice.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 10,
+    "base_2025": 9940,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 872,
+    "name": "Αξιωματικών Ελληνικής Αστυνομίας (Αστυνομικοί)",
+    "university": "",
+    "link": "http://www.astynomia.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,IV",
+    "capacity": 26,
+    "base_2025": 17370,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 876,
+    "name": "Πυροσβεστών",
+    "university": "",
+    "link": "http://www.fireservice.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 189,
+    "base_2025": 14460,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 877,
+    "name": "Αξιωματικών Πυροσβεστικής Ακαδημίας",
+    "university": "",
+    "link": "http://www.fireservice.gr/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 41,
+    "base_2025": 17460,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 880,
+    "name": "ΣΜΥΑ - Κατεύθυνση Διοικητικής & Εφοδιαστικής Υποστήριξης",
+    "university": "",
+    "link": "https://www.haf.gr/career/academies/syd/",
+    "city": "Αθήνα",
+    "fields": "II,IV",
+    "capacity": 15,
+    "base_2025": 16030,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 881,
+    "name": "Δοκίμων Σημαιοφόρων Λιμενικού Σώματος - Ελληνικής Ακτοφυλακής (Σ.Δ.Σ.Λ.Σ. -ΕΛ.ΑΚΤ.)",
+    "university": "",
+    "link": "https://www.hcg.gr/el/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 19,
+    "base_2025": 16650,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 882,
+    "name": "Δοκίμων Λιμενοφυλάκων",
+    "university": "",
+    "link": "https://www.hcg.gr/el/",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": 74,
+    "base_2025": 13970,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 883,
+    "name": "Σχολή Δοκίμων Σημαιοφόρων Λιμενικού Σώματος (Μόνο για Στελέχη ΛΣ - ΕΛ.ΑΚΤ.)",
+    "university": "ΛΙΜΕΝΙΚΟ ΣΩΜΑ. - ΕΛΛΗΝΙΚΗ ΑΚΤΟΦΥΛΑΚΗ",
+    "link": "",
+    "city": "Αθήνα",
+    "fields": "I,II,III,IV",
+    "capacity": null,
+    "base_2025": null,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 886,
+    "name": "Ικάρων (ΣΙ) - Διοικητικών",
+    "university": "",
+    "link": "http://www.haf.gr/",
+    "city": "Αθήνα",
+    "fields": "IV",
+    "capacity": 5,
+    "base_2025": 17260,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 35
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 887,
+    "name": "Ικάρων (ΣΙ) - Εφοδιαστών",
+    "university": "",
+    "link": "http://www.haf.gr/",
+    "city": "Αθήνα",
+    "fields": "IV",
+    "capacity": 5,
+    "base_2025": 17465,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 889,
+    "name": "Πληροφορικής (ΣΣΑΣ)",
+    "university": "",
+    "link": "http://www.geetha.mil.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "II,IV",
+    "capacity": 10,
+    "base_2025": 18240,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 35
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1001,
+    "name": "Αγροτικής Ανάπτυξης, Αγροδιατροφής & Διαχείρισης Φυσικών Πόρων",
+    "university": "ΕΚΠΑ",
+    "link": "https://agro.uoa.gr/",
+    "city": "Ψαχνά",
+    "fields": "II,III,IV",
+    "capacity": 65,
+    "base_2025": 9870,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1004,
+    "name": "Διαχείρισης Λιμένων & Ναυτιλίας",
+    "university": "ΕΚΠΑ",
+    "link": "https://www.pms.uoa.gr/",
+    "city": "Ψαχνά",
+    "fields": "IV",
+    "capacity": 130,
+    "base_2025": 12600,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1005,
+    "name": "Διοίκησης Επιχειρήσεων & Οργανισμών",
+    "university": "ΕΚΠΑ",
+    "link": "https://ba.uoa.gr/",
+    "city": "Αθήνα",
+    "fields": "IV",
+    "capacity": 72,
+    "base_2025": 16220,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1008,
+    "name": "Τεχνολογιών Ψηφιακής Βιομηχανίας",
+    "university": "ΕΚΠΑ",
+    "link": "https://www.dind.uoa.gr/",
+    "city": "Ψαχνά",
+    "fields": "II,IV",
+    "capacity": 186,
+    "base_2025": 9830,
+    "eve_coefficient": 0.85,
+    "eve_score": "08.92",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1011,
+    "name": "Ψηφιακών Τεχνών & Κινηματογράφου",
+    "university": "ΕΚΠΑ",
+    "link": "https://www.dcarts.uoa.gr/",
+    "city": "Ψαχνά",
+    "fields": "I,II,III,IV",
+    "capacity": 81,
+    "base_2025": 10520,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1063,
+    "name": "Διοίκησης Γεωργικών Επιχειρήσεων & Συστημάτων Εφοδιασμού",
+    "university": "Γεωπονικού",
+    "link": "http://www.teiste.gr/",
+    "city": "Θήβα",
+    "fields": "IV",
+    "capacity": 97,
+    "base_2025": 9095,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1064,
+    "name": "Περιφερειακής & Οικονομικής Ανάπτυξης",
+    "university": "Γεωπονικού",
+    "link": "https://w1.aua.gr/poa/%CE%B3%CE%BD%CF%89%CF%81%CE%AF%CE%B6%CE%B5%CF%84%CE%B5-%CF%8C%CF%84%CE%B9/",
+    "city": "Άμφισσα",
+    "fields": "IV",
+    "capacity": 80,
+    "base_2025": 7040,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 40
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1211,
+    "name": "Επιστήμη & Τεχνολογία Υπολογιστών (Εισ. Κατ.)",
+    "university": "Μακεδονίας",
+    "link": "http://www.uom.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "II,IV",
+    "capacity": 107,
+    "base_2025": 16915,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1212,
+    "name": "Πληροφοριακά Συστήματα (Εισ. Κατ.)",
+    "university": "Μακεδονίας",
+    "link": "https://www.uom.gr/dai/plhroforiaka-systhmata",
+    "city": "Θεσσαλονίκη",
+    "fields": "II,IV",
+    "capacity": 107,
+    "base_2025": 16705,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1241,
+    "name": "Αγωγής & Φροντίδας στην Πρώιμη Παιδική Ηλικία",
+    "university": "Ιωαννίνων",
+    "link": "http://www.teiep.gr/",
+    "city": "Ιωάννινα",
+    "fields": "I,II,III,IV",
+    "capacity": 138,
+    "base_2025": 10914,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 34
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 22
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 22
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 22
+      }
+    ]
+  },
+  {
+    "code": 1244,
+    "name": "Λογιστικής & Χρηματοοικονομικής",
+    "university": "Ιωαννίνων",
+    "link": "http://www.teiep.gr/",
+    "city": "Πρέβεζα",
+    "fields": "IV",
+    "capacity": 160,
+    "base_2025": 7890,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1248,
+    "name": "Μουσικών Σπουδών",
+    "university": "Ιωαννίνων",
+    "link": "https://music.uoi.gr/",
+    "city": "Αρτα",
+    "fields": "I,II,III,IV",
+    "capacity": 137,
+    "base_2025": 11660,
+    "eve_coefficient": 0.9,
+    "eve_score": "11.15",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1250,
+    "name": "Πληροφορικής & Τηλεπικοινωνιών",
+    "university": "Ιωαννίνων",
+    "link": "http://www.teiep.gr/",
+    "city": "Άρτα",
+    "fields": "II,IV",
+    "capacity": 214,
+    "base_2025": 8911,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 23
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 23
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 31
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 23
+      }
+    ]
+  },
+  {
+    "code": 1276,
+    "name": "Αλιείας & Υδατοκαλλιεργειών",
+    "university": "Πατρών",
+    "link": "http://www.teiwest.gr/",
+    "city": "Μεσολόγγι",
+    "fields": "II,III,IV",
+    "capacity": 80,
+    "base_2025": 8335,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 27
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 27
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 26
+      }
+    ]
+  },
+  {
+    "code": 1282,
+    "name": "Διοικητικής Επιστήμης & Τεχνολογίας",
+    "university": "Πατρών",
+    "link": "https://dept.upatras.gr/",
+    "city": "Πάτρα",
+    "fields": "II,IV",
+    "capacity": 176,
+    "base_2025": 12150,
+    "eve_coefficient": 1.1,
+    "eve_score": "11.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1283,
+    "name": "Διοίκησης Τουρισμού",
+    "university": "Πατρών",
+    "link": "http://www.teiwest.gr/",
+    "city": "Πάτρα",
+    "fields": "IV",
+    "capacity": 162,
+    "base_2025": 13275,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.81",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1286,
+    "name": "Επιστημών της Εκπαίδευσης & Κοινωνικής Εργασίας",
+    "university": "Πατρών",
+    "link": "http://www.upatras.gr/",
+    "city": "Πάτρα",
+    "fields": "I,II,III,IV",
+    "capacity": 228,
+    "base_2025": 14422,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 28
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 28
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 24
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1302,
+    "name": "Κοινωνικής Πολιτικής",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Κομοτηνή",
+    "fields": "I,IV",
+    "capacity": 105,
+    "base_2025": 10820,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1424,
+    "name": "Δασολογίας, Επιστημών Ξύλου & Σχεδιασμού",
+    "university": "Θεσσαλίας",
+    "link": "http://www.teilar.gr/",
+    "city": "Καρδίτσα",
+    "fields": "II,III,IV",
+    "capacity": 186,
+    "base_2025": 8605,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1427,
+    "name": "Διοίκησης Επιχειρήσεων",
+    "university": "Θεσσαλίας",
+    "link": "http://www.teilar.gr/",
+    "city": "Λάρισα",
+    "fields": "IV",
+    "capacity": 264,
+    "base_2025": 9825,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1430,
+    "name": "Λογιστικής & Χρηματοοικονομικής",
+    "university": "Θεσσαλίας",
+    "link": "http://www.teilar.gr/",
+    "city": "Λάρισα",
+    "fields": "IV",
+    "capacity": 162,
+    "base_2025": 8867,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 27
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 27
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 23
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 23
+      }
+    ]
+  },
+  {
+    "code": 1434,
+    "name": "Περιβάλλοντος",
+    "university": "Θεσσαλίας",
+    "link": "https://env.uth.gr/",
+    "city": "Λάρισα",
+    "fields": "II,III,IV",
+    "capacity": 81,
+    "base_2025": 9590,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1435,
+    "name": "Πολιτισμού & Δημιουργικών Μέσων & Βιομηχανιών",
+    "university": "Θεσσαλίας",
+    "link": "https://cult.uth.gr/",
+    "city": "Βόλος",
+    "fields": "I,IV",
+    "capacity": 81,
+    "base_2025": 9410,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1436,
+    "name": "Συστημάτων Ενέργειας",
+    "university": "Θεσσαλίας",
+    "link": "https://www.energy.uth.gr/www/index.php/el/",
+    "city": "Λάρισα",
+    "fields": "II,IV",
+    "capacity": 64,
+    "base_2025": 8990,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1439,
+    "name": "Ψηφιακών Συστημάτων",
+    "university": "Θεσσαλίας",
+    "link": "http://www.teilar.gr/",
+    "city": "Λάρισα",
+    "fields": "II,IV",
+    "capacity": 227,
+    "base_2025": 10445,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1453,
+    "name": "Περιβάλλοντος",
+    "university": "Ιονίου",
+    "link": "http://www.teiion.gr/",
+    "city": "Ζάκυνθος",
+    "fields": "II,III,IV",
+    "capacity": 122,
+    "base_2025": 8670,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1455,
+    "name": "Τουρισμού",
+    "university": "Ιονίου",
+    "link": "http://www.teiion.gr/",
+    "city": "Κέρκυρα",
+    "fields": "IV",
+    "capacity": 105,
+    "base_2025": 9820,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.81",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1456,
+    "name": "Ψηφιακών Μέσων & Επικοινωνίας",
+    "university": "Ιονίου",
+    "link": "https://dmc.ionio.gr/",
+    "city": "Αργοστόλι",
+    "fields": "I,IV",
+    "capacity": 211,
+    "base_2025": 8550,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1513,
+    "name": "Λογιστικής & Χρηματοοικονομικής",
+    "university": "Πελοποννήσου",
+    "link": "http://www.teipel.gr/",
+    "city": "Καλαμάτα",
+    "fields": "IV",
+    "capacity": 154,
+    "base_2025": 9250,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1514,
+    "name": "Διοίκησης Επιχειρήσεων & Οργανισμών",
+    "university": "Πελοποννήσου",
+    "link": "http://www.teipel.gr/",
+    "city": "Καλαμάτα",
+    "fields": "IV",
+    "capacity": 203,
+    "base_2025": 9715,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 35
+      }
+    ]
+  },
+  {
+    "code": 1517,
+    "name": "Παραστατικών & Ψηφιακών Τεχνών",
+    "university": "Πελοποννήσου",
+    "link": "https://pda.uop.gr/",
+    "city": "Ναύπλιον",
+    "fields": "I,II,III,IV",
+    "capacity": 113,
+    "base_2025": 9200,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1518,
+    "name": "Διοικητικής Επιστήμης & Τεχνολογίας",
+    "university": "Πελοποννήσου",
+    "link": "https://www.uop.gr/tmima-dioikitikis-epistimis-kai-tehnologias",
+    "city": "Τρίπολη",
+    "fields": "II,IV",
+    "capacity": 122,
+    "base_2025": 10075,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1519,
+    "name": "Ψηφιακών Συστημάτων",
+    "university": "Πελοποννήσου",
+    "link": "http://www.teipel.gr/",
+    "city": "Σπάρτη",
+    "fields": "II,IV",
+    "capacity": 162,
+    "base_2025": 9040,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 22
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 22
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 28
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 28
+      }
+    ]
+  },
+  {
+    "code": 1542,
+    "name": "Μηχανικών Σχεδίασης Προϊόντων & Συστημάτων",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "https://ide.uowm.gr/",
+    "city": "Κοζάνη",
+    "fields": "II,IV",
+    "capacity": 172,
+    "base_2025": 9225,
+    "eve_coefficient": 0.85,
+    "eve_score": "08.92",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1544,
+    "name": "Διοικητικής Επιστήμης & Τεχνολογίας",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "http://www.teiwm.gr/",
+    "city": "Κοζάνη",
+    "fields": "II,IV",
+    "capacity": 176,
+    "base_2025": 8920,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1545,
+    "name": "Λογιστικής & Χρηματοοικονομικής",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "http://www.teiwm.gr/",
+    "city": "Κοζάνη",
+    "fields": "IV",
+    "capacity": 240,
+    "base_2025": 7310,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1546,
+    "name": "Οργάνωσης & Διοίκησης Επιχειρήσεων",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "http://www.teiwm.gr/",
+    "city": "Γρεβενά",
+    "fields": "IV",
+    "capacity": 256,
+    "base_2025": 7840,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 35
+      }
+    ]
+  },
+  {
+    "code": 1547,
+    "name": "Στατιστικής",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "https://stat.uowm.gr/#",
+    "city": "Γρεβενά",
+    "fields": "II,IV",
+    "capacity": 240,
+    "base_2025": 7280,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 35
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1548,
+    "name": "Οικονομικών Επιστημών",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "http://www.teiwm.gr/",
+    "city": "Καστοριά",
+    "fields": "IV",
+    "capacity": 128,
+    "base_2025": 10330,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 35
+      }
+    ]
+  },
+  {
+    "code": 1549,
+    "name": "Διεθνών & Ευρωπαϊκών Οικονομικών Σπουδών",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "https://iees.uowm.gr/",
+    "city": "Κοζάνη",
+    "fields": "IV",
+    "capacity": 256,
+    "base_2025": 8400,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1551,
+    "name": "Επικοινωνίας & Ψηφιακών Μέσων",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "http://www.teiwm.gr/",
+    "city": "Καστοριά",
+    "fields": "I,IV",
+    "capacity": 146,
+    "base_2025": 11020,
+    "eve_coefficient": 0.86,
+    "eve_score": "09.48",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1554,
+    "name": "Πληροφορικής",
+    "university": "Δυτ. Μακεδονίας",
+    "link": "http://www.teiwm.gr/",
+    "city": "Καστοριά",
+    "fields": "II,IV",
+    "capacity": 200,
+    "base_2025": 10340,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 40
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1601,
+    "name": "Οργάνωσης & Διοίκησης Επιχειρήσεων",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teicm.gr/",
+    "city": "Σέρρες",
+    "fields": "IV",
+    "capacity": 203,
+    "base_2025": 8950,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1602,
+    "name": "Οικονομικών Επιστημών",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teicm.gr/",
+    "city": "Σέρρες",
+    "fields": "IV",
+    "capacity": 227,
+    "base_2025": 9555,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 35
+      }
+    ]
+  },
+  {
+    "code": 1603,
+    "name": "Διοίκησης Εφοδιαστικής Αλυσίδας",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teicm.gr/",
+    "city": "Κατερίνη",
+    "fields": "II,IV",
+    "capacity": 146,
+    "base_2025": 9660,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1604,
+    "name": "Λογιστικής & Χρηματοοικονομικής",
+    "university": "ΔΠΘ",
+    "link": "http://af.ihu.gr/",
+    "city": "Καβάλα",
+    "fields": "IV",
+    "capacity": 200,
+    "base_2025": 8300,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 35
+      }
+    ]
+  },
+  {
+    "code": 1605,
+    "name": "Διοίκησης Οργανισμών, Μάρκετινγκ & Τουρισμού",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teithe.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "IV",
+    "capacity": 256,
+    "base_2025": 12170,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1606,
+    "name": "Λογιστικής & Πληροφοριακών Συστημάτων",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teithe.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "IV",
+    "capacity": 136,
+    "base_2025": 12360,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1607,
+    "name": "Διοικητικής Επιστήμης & Τεχνολογίας",
+    "university": "ΔΠΘ",
+    "link": "http://www.teikav.edu.gr/",
+    "city": "Καβάλα",
+    "fields": "II,IV",
+    "capacity": 120,
+    "base_2025": 9530,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1609,
+    "name": "Βιβλιοθηκονομίας, Αρχειονομίας & Συστημάτων Πληροφόρησης",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teithe.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,IV",
+    "capacity": 96,
+    "base_2025": 9300,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1610,
+    "name": "Αγωγής & Φροντίδας στην Πρώιμη Παιδική Ηλικία",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teithe.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "I,II,III,IV",
+    "capacity": 112,
+    "base_2025": 11250,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1622,
+    "name": "Μηχανικών Πληροφορικής, Υπολογιστών & Τηλεπικοινωνιών",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teicm.gr/",
+    "city": "Σέρρες",
+    "fields": "II,IV",
+    "capacity": 138,
+    "base_2025": 13450,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1624,
+    "name": "Μηχανικών Παραγωγής & Διοίκησης",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "https://www.iem.ihu.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "II,IV",
+    "capacity": 119,
+    "base_2025": 12585,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1625,
+    "name": "Μηχανικών Πληροφορικής & Ηλεκτρονικών Συστημάτων",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teithe.gr/",
+    "city": "Θεσσαλονίκη",
+    "fields": "II,IV",
+    "capacity": 170,
+    "base_2025": 14740,
+    "eve_coefficient": 1.2,
+    "eve_score": "12.60",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1626,
+    "name": "Εσωτερικής Αρχιτεκτονικής",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teicm.gr/",
+    "city": "Σέρρες",
+    "fields": "II,IV",
+    "capacity": 94,
+    "base_2025": 13545,
+    "eve_coefficient": 0.8,
+    "eve_score": "09.09",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1627,
+    "name": "Δημιουργικού Σχεδιασμού & Ένδυσης",
+    "university": "ΔΙ.ΠΑ.Ε.",
+    "link": "http://www.teithe.gr/",
+    "city": "Κιλκίς",
+    "fields": "I,II,IV",
+    "capacity": 120,
+    "base_2025": 8650,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1630,
+    "name": "Πληροφορικής",
+    "university": "ΔΠΘ",
+    "link": "http://www.teikav.edu.gr/",
+    "city": "Καβάλα",
+    "fields": "II,IV",
+    "capacity": 192,
+    "base_2025": 12880,
+    "eve_coefficient": 1.1,
+    "eve_score": "11.55",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1654,
+    "name": "Λογιστικής & Χρηματοοικονομικής",
+    "university": "ΕΛ.ΜΕ.ΠΑ.",
+    "link": "https://www.teicrete.gr/",
+    "city": "Ηράκλειο",
+    "fields": "IV",
+    "capacity": 160,
+    "base_2025": 8780,
+    "eve_coefficient": 0.9,
+    "eve_score": "09.45",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 30
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1655,
+    "name": "Διοίκησης Επιχειρήσεων & Τουρισμού",
+    "university": "ΕΛ.ΜΕ.ΠΑ.",
+    "link": "https://www.teicrete.gr/",
+    "city": "Ηράκλειο",
+    "fields": "IV",
+    "capacity": 160,
+    "base_2025": 10088,
+    "eve_coefficient": 1,
+    "eve_score": "10.50",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 24
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 28
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 20
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 28
+      }
+    ]
+  },
+  {
+    "code": 1656,
+    "name": "Διοικητικής Επιστήμης & Τεχνολογίας",
+    "university": "ΕΛ.ΜΕ.ΠΑ.",
+    "link": "http://www.teicrete.gr/",
+    "city": "Αγ. Νικόλαος",
+    "fields": "II,IV",
+    "capacity": 104,
+    "base_2025": 8875,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 20
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 30
+      }
+    ]
+  },
+  {
+    "code": 1662,
+    "name": "Ηλεκτρονικών Μηχανικών",
+    "university": "ΕΛ.ΜΕ.ΠΑ.",
+    "link": "https://www.teicrete.gr/",
+    "city": "Χανιά",
+    "fields": "II,IV",
+    "capacity": 160,
+    "base_2025": 10071,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 30
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 20
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 30
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "code": 1664,
+    "name": "Μουσικής Τεχνολογίας & Ακουστικής",
+    "university": "ΕΛ.ΜΕ.ΠΑ.",
+    "link": "https://www.teicrete.gr/",
+    "city": "Ρέθυμνο",
+    "fields": "II,IV",
+    "capacity": 80,
+    "base_2025": 8400,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  },
+  {
+    "code": 1669,
+    "name": "Ανθρωπιστικών Σπουδών",
+    "university": "ΔΠΘ",
+    "link": "http://www.duth.gr/",
+    "city": "Κομοτηνή",
+    "fields": "I,IV",
+    "capacity": 310,
+    "base_2025": 8650,
+    "eve_coefficient": 0.8,
+    "eve_score": "08.40",
+    "coefficients": [
+      {
+        "subject": "Νεοελληνική Γλώσσα και Λογοτεχνία",
+        "weight": 25
+      },
+      {
+        "subject": "Μαθηματικά",
+        "weight": 25
+      },
+      {
+        "subject": "Πληροφορική",
+        "weight": 25
+      },
+      {
+        "subject": "Οικονομία",
+        "weight": 25
+      }
+    ]
+  }
+]

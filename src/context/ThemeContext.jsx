@@ -35,8 +35,8 @@ export const darkPalette = {
   drawerText: '#eef6fb',
   drawerHoverBg: '#333333',
   drawerHoverText: '#64b5f6',
-  chartPaperBg: '#1e1e1e',
-  chartPlotBg: '#1e1e1e',
+  chartPaperBg: '#303030',
+  chartPlotBg: '#303030',
   chartFontColor: '#ffffff',
   chartGridColor: '#444444',
 };

@@ -3,8 +3,9 @@ import React, { useMemo, useEffect } from 'react';
 import { Container, Paper, Typography, Grid, Box, Tooltip, CircularProgress, Avatar, List, ListItem, ListItemText } from '@mui/material';
 import { keyframes } from '@mui/system';
 import dayjs from 'dayjs';
-import { writeBatch, doc } from 'firebase/firestore'; // Προσθήκη imports
+import { writeBatch, doc } from 'firebase/firestore';
 
+// Animation for new badges
 const tadaAnimation = keyframes`
   from { transform: scale3d(1, 1, 1); }
   10%, 20% { transform: scale3d(0.9, 0.9, 0.9) rotate3d(0, 0, 1, -3deg); }
@@ -13,6 +14,7 @@ const tadaAnimation = keyframes`
   to { transform: scale3d(1, 1, 1); }
 `;
 
+// Definition of all available badges in the platform
 export const allBadges = [
     {
         id: 'high_flyer',
@@ -21,6 +23,7 @@ export const allBadges = [
         icon: 'fas fa-rocket',
         color: '#e53935',
         xp: 50,
+        category: 'Ακαδημαϊκή Επίδοση'
     },
     {
         id: 'perfect_attendance_month',
@@ -29,6 +32,7 @@ export const allBadges = [
         icon: 'fas fa-calendar-check',
         color: '#1e88e5',
         xp: 100,
+        category: 'Συνέπεια & Επιμέλεια'
     },
     {
         id: 'subject_master',
@@ -37,6 +41,7 @@ export const allBadges = [
         icon: 'fas fa-crown',
         color: '#fdd835',
         xp: 150,
+        category: 'Ακαδημαϊκή Επίδοση'
     },
     {
         id: 'consistent_performer',
@@ -45,6 +50,7 @@ export const allBadges = [
         icon: 'fas fa-chart-line',
         color: '#43a047',
         xp: 75,
+        category: 'Γενικά'
     },
     {
         id: 'comeback_king',
@@ -53,6 +59,7 @@ export const allBadges = [
         icon: 'fas fa-chart-line',
         color: '#ff7043',
         xp: 40,
+        category: 'Ακαδημαϊκή Επίδοση'
     },
     {
         id: 'marathon_runner',
@@ -61,6 +68,7 @@ export const allBadges = [
         icon: 'fas fa-running',
         color: '#26a69a',
         xp: 60,
+        category: 'Ακαδημαϊκή Επίδοση'
     },
     {
         id: 'team_player',
@@ -69,6 +77,7 @@ export const allBadges = [
         icon: 'fas fa-users',
         color: '#ab47bc',
         xp: 30,
+        category: 'Γενικά'
     },
     {
         id: 'active_citizen',
@@ -77,6 +86,7 @@ export const allBadges = [
         icon: 'fas fa-comment-dots',
         color: '#5c6bc0',
         xp: 20,
+        category: 'Γενικά'
     },
     {
         id: 'on_time_submitter',
@@ -85,6 +95,7 @@ export const allBadges = [
         icon: 'fas fa-clock',
         color: '#5ba85f',
         xp: 10,
+        category: 'Συνέπεια & Επιμέλεια'
     },
     {
         id: 'explorer',
@@ -93,6 +104,7 @@ export const allBadges = [
         icon: 'fas fa-compass',
         color: '#78909c',
         xp: 15,
+        category: 'Εξερεύνηση & Περιέργεια'
     },
     {
         id: 'flawless_victory',
@@ -168,7 +180,7 @@ export const allBadges = [
     }
 ];
 
-
+// Tooltip content component
 const BadgeTooltipContent = ({ badge }) => {
     if (!badge.isEarned) {
         return <Typography variant="caption">{badge.description} (+{badge.xp} XP)</Typography>;
@@ -176,12 +188,15 @@ const BadgeTooltipContent = ({ badge }) => {
     return (
         <Box>
             <Typography sx={{ fontWeight: 'bold', mb: 1 }}>{badge.title} ({badge.count} φορές)</Typography>
-            <List dense sx={{ p: 0 }}>
+            <List dense sx={{ pl: 0 }}>
                 {badge.allInstances.slice(0, 5).map(instance => (
-                    <ListItem key={instance.id} sx={{ p: 0 }}>
+                    <ListItem key={instance.id} sx={{ p: 0,marginLeft:-2 }}>
                         <ListItemText 
                             primary={`- ${instance.earnedAt && instance.earnedAt.toDate ? dayjs(instance.earnedAt.toDate()).format('DD/MM/YYYY') : '...'}`} 
                             secondary={instance.details}
+                            sx={{color:'white',
+                                '& .MuiListItemText-secondary': { color: 'white'}
+                            }}
                         />
                     </ListItem>
                 ))}
@@ -191,6 +206,7 @@ const BadgeTooltipContent = ({ badge }) => {
     );
 };
 
+// Corrected Badge component
 const Badge = ({ badge }) => (
     <Tooltip title={<BadgeTooltipContent badge={badge} />} placement="top" arrow>
         <Paper
@@ -202,7 +218,7 @@ const Badge = ({ badge }) => (
                 filter: badge.isEarned ? 'none' : 'grayscale(80%)',
                 transition: 'all 0.3s ease',
                 transform: badge.isEarned ? 'scale(1.0)' : 'scale(0.95)',
-                animation: badge.isEarned && badge.isNew ? `${tadaAnimation} 1s ease` : 'none',
+                animation: badge.isEarned && badge.allInstances.some(b => !b.seenByUser) ? `${tadaAnimation} 1s ease` : 'none',
                 position: 'relative',
                 '&:hover': {
                     transform: 'scale(1.05)',
@@ -216,7 +232,8 @@ const Badge = ({ badge }) => (
                     width: 28, height: 28,
                     bgcolor: 'secondary.main', color: 'white',
                     border: '2px solid white',
-                    fontSize: '0.8rem', fontWeight: 'bold'
+                    fontSize: '0.9rem',
+                    fontWeight: 'bold'
                 }}>
                     {badge.count}
                 </Avatar>
@@ -239,17 +256,15 @@ const Badge = ({ badge }) => (
     </Tooltip>
 );
 
+// Main component for the MyBadges page
 function MyBadges({ earnedBadges, loading, db, appId, selectedYear, studentData }) {
     
-    // --- BUG FIX: useEffect για την επισήμανση των παρασήμων ως "διαβασμένα" ---
+    // Effect to mark unseen badges as "seen"
     useEffect(() => {
-        // Έξοδος αν δεν υπάρχουν τα απαραίτητα δεδομένα
         if (!earnedBadges || earnedBadges.length === 0 || !studentData?.id || !selectedYear) return;
 
-        // Βρίσκουμε τα παράσημα που δεν έχει δει ο χρήστης
         const unreadBadges = earnedBadges.filter(b => b.seenByUser === false);
 
-        // Αν υπάρχουν, τα ενημερώνουμε στη βάση
         if (unreadBadges.length > 0) {
             const batch = writeBatch(db);
             const badgeCollectionPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}/students/${studentData.id}/badges`;
@@ -259,14 +274,13 @@ function MyBadges({ earnedBadges, loading, db, appId, selectedYear, studentData 
                 batch.update(badgeRef, { seenByUser: true });
             });
 
-            // Εκτελούμε τη μαζική εγγραφή
             batch.commit().catch(error => {
                 console.error("Error marking badges as seen:", error);
             });
         }
-    }, [earnedBadges, db, appId, selectedYear, studentData]); // Εξαρτήσεις του effect
+    }, [earnedBadges, db, appId, selectedYear, studentData]);
 
-
+    // Memoized calculation to process and group badges for display
     const badgesToDisplay = useMemo(() => {
         const earnedGrouped = earnedBadges.reduce((acc, b) => {
             if (!acc[b.badgeId]) {
@@ -293,8 +307,8 @@ function MyBadges({ earnedBadges, loading, db, appId, selectedYear, studentData 
         });
     }, [earnedBadges]);
 
+    // Memoized calculation to group badges by category
     const groupedBadgesForDisplay = useMemo(() => {
-        const categories = ['Ακαδημαϊκή Επίδοση', 'Συνέπεια & Επιμέλεια', 'Εξερεύνηση & Περιέργεια', undefined];
         const grouped = {};
         
         badgesToDisplay.forEach(badge => {
@@ -307,11 +321,12 @@ function MyBadges({ earnedBadges, loading, db, appId, selectedYear, studentData 
         return grouped;
     }, [badgesToDisplay]);
 
-
+    // Loading state
     if (loading) {
         return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}><CircularProgress /></Box>;
     }
 
+    // Render the page
     return (
         <Container maxWidth="lg" sx={{ mt: 4 }}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: '12px' }}>

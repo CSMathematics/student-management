@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useParams } from 'react-router-dom';
 import { collection, query, onSnapshot } from 'firebase/firestore';
-import { Box, Dialog, DialogContent, DialogTitle, IconButton, CircularProgress } from '@mui/material';
+import { Box, Dialog, DialogContent, DialogTitle, IconButton, CircularProgress, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useAcademicYear } from '../context/AcademicYearContext.jsx';
 
@@ -27,7 +27,16 @@ import GradeSummary from '../pages/GradeSummary.jsx';
 import MyAssignmentsManager from '../portals/teacher/MyAssignmentsManager.jsx';
 import AcademicYearManager from '../pages/AcademicYearsManager.jsx';
 import UsersManager from '../pages/UsersManager.jsx';
-import Library from '../pages/Library.jsx'; // Προσθήκη import
+import Library from '../pages/Library.jsx';
+
+// --- Εισαγωγή των σελίδων του Οδηγού Σπουδών ---
+import FacultiesPage from '../pages/FacultiesPage.jsx';
+import PointsCalculatorPage from '../pages/PointsCalculatorPage.jsx';
+
+// Placeholder components για τις υπόλοιπες σελίδες
+const StudyGuideDocs = () => <Box p={3}><Typography variant="h5">Χρήσιμα Έγγραφα και Πληροφορίες</Typography></Box>;
+const StudyGuideSimulation = () => <Box p={3}><Typography variant="h5">Προσομοίωση Μηχανογραφικού</Typography></Box>;
+
 
 // Wrappers για την επεξεργασία συγκεκριμένων εγγραφών
 const StudentFormWrapper = (props) => {
@@ -58,7 +67,7 @@ function AdminPortal({ db, appId, user }) {
         payments: [], courses: [], teachers: [], announcements: [],
         assignments: [], expenses: []
     });
-    const [allUsers, setAllUsers] = useState([]); // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
+    const [allUsers, setAllUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -74,14 +83,12 @@ function AdminPortal({ db, appId, user }) {
         setLoading(true);
         const unsubscribes = [];
         
-        // --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Ανάκτηση χρηστών ---
         const usersRef = collection(db, 'users');
         unsubscribes.push(onSnapshot(usersRef, (snapshot) => {
             if (isMounted) {
                 setAllUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             }
         }));
-        // --- ΤΕΛΟΣ ΝΕΑΣ ΠΡΟΣΘΗΚΗΣ ---
 
         const collectionsToFetch = [
             'classrooms', 'students', 'grades', 'absences', 'payments', 
@@ -127,7 +134,7 @@ function AdminPortal({ db, appId, user }) {
         allAnnouncements: allData.announcements, 
         allAssignments: allData.assignments, 
         allExpenses: allData.expenses, 
-        allUsers: allUsers, // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
+        allUsers: allUsers,
         loading 
     };
 
@@ -159,6 +166,12 @@ function AdminPortal({ db, appId, user }) {
                 <Route path="/assignments" element={<MyAssignmentsManager {...commonProps} />} />
                 <Route path="/academicYear" element={<AcademicYearManager {...commonProps} />} />
                 <Route path="/users-management" element={<UsersManager {...commonProps} />} />
+
+                {/* --- ΑΛΛΑΓΗ: Routes για τον Οδηγό Σπουδών --- */}
+                <Route path="/study-guide/faculties" element={<FacultiesPage {...commonProps} />} />
+                <Route path="/study-guide/points-calculator" element={<PointsCalculatorPage {...commonProps} />} />
+                <Route path="/study-guide/documents" element={<StudyGuideDocs {...commonProps} />} />
+                <Route path="/study-guide/simulation" element={<StudyGuideSimulation {...commonProps} />} />
             </Routes>
 
             <Dialog open={isModalOpen} onClose={closeModal} maxWidth="md" fullWidth>

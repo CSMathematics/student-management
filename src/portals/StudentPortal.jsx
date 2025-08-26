@@ -16,7 +16,6 @@ import MyProfile from './student/MyProfile.jsx';
 import StudentCalendar from './student/StudentCalendar.jsx';
 import MyBadges, { allBadges } from './student/MyBadges.jsx';
 import MyCourses from './student/MyCourses.jsx';
-import Leaderboard from './student/Leaderboard.jsx';
 
 // Το Dashboard component τώρα δέχεται τα δεδομένα ως props
 const StudentDashboard = ({ studentData, enrolledClassrooms, grades, assignments, earnedBadges, levelInfo }) => {
@@ -54,15 +53,15 @@ const StudentDashboard = ({ studentData, enrolledClassrooms, grades, assignments
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', background: 'linear-gradient(45deg, #1e88e5 30%, #64b5f6 90%)', color: 'white' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <LevelIcon />
+                                <i class="fa-solid fa-trophy"></i>
                                 <Typography variant="h6">Η Πρόοδός σου</Typography>
                             </Box>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{levelInfo.currentLevel.title}</Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{levelInfo.currentLevel.title}</Typography>
                         </Box>
                         <Box sx={{ my: 2 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                <Typography variant="body2">Level {levelInfo.currentLevel.level}</Typography>
-                                <Typography variant="body2">{levelInfo.totalXp} / {levelInfo.nextLevel.xpRequired} XP</Typography>
+                                <Typography variant="h5">Level {levelInfo.currentLevel.level}</Typography>
+                                <Typography variant="h5">{levelInfo.totalXp} / {levelInfo.nextLevel.xpRequired} XP</Typography>
                             </Box>
                             <LinearProgress
                                 variant="determinate"
@@ -194,7 +193,6 @@ const StudentPortalContent = () => {
             <Route path="/my-profile" element={<MyProfile {...studentProps} />} />
             <Route path="/my-badges" element={<MyBadges {...studentProps} />} />
             <Route path="/my-courses" element={<MyCourses {...studentProps} />} />
-            <Route path="/leaderboard" element={<Leaderboard {...studentProps} />} />
             <Route path="/communication" element={
                 <Communication 
                     db={studentProps.db} 
