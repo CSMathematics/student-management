@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Container, Paper, Typography, Box, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, CircularProgress, Chip,
-    FormControl, Select, MenuItem, Button, Alert, Tooltip, IconButton
+    FormControl, Select, MenuItem, Button, Alert, Tooltip, IconButton, OutlinedInput
 } from '@mui/material';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import dayjs from 'dayjs';
@@ -26,6 +26,8 @@ const roleLabels = {
     pending_approval: 'Εν Αναμονή'
 };
 
+const allRoles = ['admin', 'teacher', 'student', 'parent', 'pending_approval'];
+
 function UsersManager({ db, allStudents }) {
     const [allUsers, setAllUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -45,13 +47,20 @@ function UsersManager({ db, allStudents }) {
         return () => unsubscribe();
     }, [db]);
 
-    const handleRoleChange = async (userId, newRole) => {
+    const handleRoleChange = async (userId, newRoles) => {
+        // Ensure newRoles is always an array
+        const rolesToUpdate = typeof newRoles === 'string' ? newRoles.split(',') : newRoles;
+
         try {
             const userRef = doc(db, 'users', userId);
-            await updateDoc(userRef, { role: newRole });
-            setFeedback({ type: 'success', message: 'Ο ρόλος του χρήστη ενημερώθηκε.' });
+            // Update the 'roles' field. We also set 'role' to the first role for legacy compatibility.
+            await updateDoc(userRef, { 
+                roles: rolesToUpdate,
+                role: rolesToUpdate[0] || 'unknown' 
+            });
+            setFeedback({ type: 'success', message: 'Οι ρόλοι του χρήστη ενημερώθηκαν.' });
         } catch (error) {
-            console.error("Error updating user role:", error);
+            console.error("Error updating user roles:", error);
             setFeedback({ type: 'error', message: 'Σφάλμα κατά την ενημέρωση.' });
         }
     };
@@ -92,39 +101,48 @@ function UsersManager({ db, allStudents }) {
                             </TableHead>
                             <TableBody>
                                 {allUsers.map(user => {
-                                    const finalRole = user.requestedRole || user.role;
-                                    const canBeLinked = (finalRole === 'student' && !user.profileId) ||
-                                                        (finalRole === 'parent' && (!user.childIds || user.childIds.length === 0));
+                                    // Use 'roles' array primarily, fallback to 'role' field
+                                    const userRoles = user.roles || (user.role ? [user.role] : []);
+                                    const primaryRole = user.requestedRole || userRoles[0];
+                                    const canBeLinked = (primaryRole === 'student' && !user.profileId) ||
+                                                        (primaryRole === 'parent' && (!user.childIds || user.childIds.length === 0));
 
                                     return (
                                         <TableRow key={user.id} hover>
                                             <TableCell>{user.firstName} {user.lastName}</TableCell>
                                             <TableCell>{user.email}</TableCell>
                                             <TableCell>
-                                                <FormControl size="small" sx={{minWidth: 150}}>
+                                                <FormControl size="small" sx={{minWidth: 200}}>
                                                     <Select
-                                                        value={user.role}
+                                                        multiple
+                                                        value={userRoles}
                                                         onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                                                        input={<OutlinedInput label="Ρόλοι" />}
                                                         renderValue={(selected) => (
-                                                            <Chip 
-                                                                label={roleLabels[selected] || selected} 
-                                                                color={roleColors[selected] || 'default'} 
-                                                                size="small" 
-                                                            />
+                                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                                {selected.map((value) => (
+                                                                    <Chip 
+                                                                        key={value}
+                                                                        label={roleLabels[value] || value} 
+                                                                        color={roleColors[value] || 'default'} 
+                                                                        size="small" 
+                                                                    />
+                                                                ))}
+                                                            </Box>
                                                         )}
                                                     >
-                                                        <MenuItem value="pending_approval">Εν Αναμονή</MenuItem>
-                                                        <MenuItem value="student">Μαθητής</MenuItem>
-                                                        <MenuItem value="teacher">Καθηγητής</MenuItem>
-                                                        <MenuItem value="parent">Γονέας</MenuItem>
-                                                        <MenuItem value="admin">Διαχειριστής</MenuItem>
+                                                        {allRoles.map((role) => (
+                                                            <MenuItem key={role} value={role}>
+                                                                {roleLabels[role] || role}
+                                                            </MenuItem>
+                                                        ))}
                                                     </Select>
                                                 </FormControl>
                                             </TableCell>
                                             <TableCell>{user.createdAt?.toDate ? dayjs(user.createdAt.toDate()).format('DD/MM/YYYY') : '-'}</TableCell>
                                             <TableCell align="center">
                                                 {canBeLinked && (
-                                                    <Tooltip title="Σύνδεση με προφίλ μαθητή">
+                                                    <Tooltip title="Σύνδεση με προφίλ μαθητή/γονέα">
                                                         <IconButton color="primary" onClick={() => handleOpenLinker(user)}>
                                                             <LinkIcon />
                                                         </IconButton>
