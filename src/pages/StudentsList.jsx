@@ -5,12 +5,12 @@ import {
     Box, Container, Grid, Paper, Typography, TextField, Table, TableBody,
     TableCell, TableContainer, TableHead, TableRow, TablePagination,
     IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, CircularProgress,
-    Tabs, Tab, Divider, FormControl, InputLabel, Select, MenuItem, Chip, List, ListItem, ListItemText, Alert, Collapse, InputAdornment
+    Tabs, Tab, Divider, FormControl, InputLabel, Select, MenuItem, Chip, List, ListItem, ListItemText, Alert, Collapse, InputAdornment, Avatar
 } from '@mui/material';
 import { 
     Edit, Delete, Payment as PaymentIcon, Save as SaveIcon, Add as AddIcon, UploadFile, 
     Download, DeleteForever, KeyboardArrowDown, KeyboardArrowUp, PeopleAlt, Clear, Assessment as ReportIcon, Link as LinkIcon,
-    GetApp as ImportIcon
+    GetApp as ImportIcon, Person as PersonIcon
 } from '@mui/icons-material';
 import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, collection, onSnapshot, writeBatch, addDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -598,17 +598,29 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                                 </Tabs>
                                                             </Box>
                                                             <TabPanel value={activeTab} index={0}>
-                                                                <Grid container spacing={2}>
-                                                                    <Grid item xs={12} sm={6}><DetailItem label="Όνομα" value={selectedStudent.firstName} /></Grid>
-                                                                    <Grid item xs={12} sm={6}><DetailItem label="Επώνυμο" value={selectedStudent.lastName} /></Grid>
-                                                                    <Grid item xs={12} sm={6}><DetailItem label="Τάξη" value={selectedStudent.grade} /></Grid>
-                                                                    <Grid item xs={12} sm={6}><DetailItem label="Κατεύθυνση" value={selectedStudent.specialization} /></Grid>
-                                                                    <Grid item xs={12} sm={6}><DetailItem label="Μέσος Όρος" value={averageGrade} /></Grid>
-                                                                    <Grid item xs={12} sm={6}><DetailItem label="Σύνολο Απουσιών" value={studentAbsences.total} /></Grid>
-                                                                    <Grid item xs={12} sm={6}><DetailItem label="Ημερομηνία Εγγραφής" value={selectedStudent.createdAt ? dayjs(getDateFromFirestoreTimestamp(selectedStudent.createdAt)).format('DD/MM/YYYY') : '-'} /></Grid>
-                                                                    <Grid item xs={12} sm={6}><DetailItem label="Διεύθυνση" value={selectedStudent.address} /></Grid>
-                                                                    <Grid item xs={12} sm={6}><DetailItem label="Τηλέφωνο" value={selectedStudent.studentPhone} /></Grid>
-                                                                    <Grid item xs={12} sm={6}><DetailItem label="Email" value={selectedStudent.email} /></Grid>
+                                                                <Grid container spacing={3} alignItems="center">
+                                                                    <Grid item xs={12} md={3} sx={{ textAlign: 'center' }}>
+                                                                        <Avatar
+                                                                            src={selectedStudent.profileImageUrl}
+                                                                            sx={{ width: 120, height: 120, margin: 'auto', mb: 2, fontSize: '3rem' }}
+                                                                        >
+                                                                            <PersonIcon fontSize="inherit" />
+                                                                        </Avatar>
+                                                                    </Grid>
+                                                                    <Grid item xs={12} md={9}>
+                                                                        <Grid container spacing={2}>
+                                                                            <Grid item xs={12} sm={6}><DetailItem label="Όνομα" value={selectedStudent.firstName} /></Grid>
+                                                                            <Grid item xs={12} sm={6}><DetailItem label="Επώνυμο" value={selectedStudent.lastName} /></Grid>
+                                                                            <Grid item xs={12} sm={6}><DetailItem label="Τάξη" value={selectedStudent.grade} /></Grid>
+                                                                            <Grid item xs={12} sm={6}><DetailItem label="Κατεύθυνση" value={selectedStudent.specialization} /></Grid>
+                                                                            <Grid item xs={12} sm={6}><DetailItem label="Μέσος Όρος" value={averageGrade} /></Grid>
+                                                                            <Grid item xs={12} sm={6}><DetailItem label="Σύνολο Απουσιών" value={studentAbsences.total} /></Grid>
+                                                                            <Grid item xs={12} sm={6}><DetailItem label="Ημερομηνία Εγγραφής" value={selectedStudent.createdAt ? dayjs(getDateFromFirestoreTimestamp(selectedStudent.createdAt)).format('DD/MM/YYYY') : '-'} /></Grid>
+                                                                            <Grid item xs={12} sm={6}><DetailItem label="Διεύθυνση" value={selectedStudent.address} /></Grid>
+                                                                            <Grid item xs={12} sm={6}><DetailItem label="Τηλέφωνο" value={selectedStudent.studentPhone} /></Grid>
+                                                                            <Grid item xs={12} sm={6}><DetailItem label="Email" value={selectedStudent.email} /></Grid>
+                                                                        </Grid>
+                                                                    </Grid>
                                                                 </Grid>
                                                                 <Divider sx={{ my: 2 }} />
                                                                 <Typography variant="h6" sx={{ mb: 1.5, fontSize: '1.1rem' }}>Στοιχεία Γονέων</Typography>

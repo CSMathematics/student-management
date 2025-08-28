@@ -8,6 +8,7 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { doc, setDoc, deleteDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import dayjs from 'dayjs';
+import { useAcademicYear } from '../context/AcademicYearContext.jsx'; // Προσθέστε αυτό το import
 
 const AnnouncementForm = ({ open, onClose, onSave, announcement }) => {
     const [title, setTitle] = useState('');
@@ -64,8 +65,8 @@ const AnnouncementForm = ({ open, onClose, onSave, announcement }) => {
     );
 };
 
-
-function Announcements({ allAnnouncements, loading, db, appId, selectedYear }) {
+function Announcements({ allAnnouncements, loading, db, appId }) {
+    const { selectedYear } = useAcademicYear();
     const [openForm, setOpenForm] = useState(false);
     const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
     const [announcementToDelete, setAnnouncementToDelete] = useState(null);

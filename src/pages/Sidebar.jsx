@@ -190,13 +190,10 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRole }) {
 
     const drawerContent = (
         <div>
-            <Toolbar sx={{ backgroundColor: '#1e86cc', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography variant="h6" noWrap component="div">
-                    <i className="fas fa-graduation-cap" style={{ marginRight: '12px' }}></i>
-                    Φιλομάθεια
-                </Typography>
+            <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border : 'none' }}>
+                <img src="../public/Logo_full.svg" alt="Φιλομάθεια" style={{ height: '45px' }} />
             </Toolbar>
-            <Divider />
+            
             <List>
                 {navItems.map((item, index) => (
                     <React.Fragment key={index}>

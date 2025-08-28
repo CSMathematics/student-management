@@ -2,6 +2,7 @@
 
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall } = require("firebase-functions/v2/https");
+const { onDocumentWritten } = require("firebase-functions/v2/firestore"); // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ (v2)
 const { logger } = require("firebase-functions");
 const admin = require("firebase-admin");
 const dayjs = require("dayjs");
@@ -373,3 +374,58 @@ exports.logUserEvent = onCall(async (request) => {
         throw new functions.https.HttpsError('internal', 'Failed to log event.');
     }
 });
+
+// --- START: ΕΝΗΜΕΡΩΜΕΝΗ ΣΥΝΑΡΤΗΣΗ (v2) ---
+/**
+ * Cloud Function που ενεργοποιείται κάθε φορά που αλλάζει ένα έγγραφο
+ * στη συλλογή 'users'. Παίρνει τον ρόλο από το έγγραφο και τον
+ * προσθέτει ως custom claim στο token του χρήστη.
+ */
+exports.addUserRole = onDocumentWritten("users/{userId}", async (event) => {
+    const userId = event.params.userId;
+    const afterData = event.data.after.exists ? event.data.after.data() : null;
+
+    // Αν ο χρήστης διαγράφηκε, δεν κάνουμε τίποτα.
+    if (!afterData) {
+      logger.info(`User ${userId} deleted.`);
+      return null;
+    }
+
+    const role = afterData.role;
+
+    // Βεβαιωνόμαστε ότι ο ρόλος είναι ένας από τους επιτρεπτούς.
+    const validRoles = ["admin", "teacher", "student", "parent", "pending_approval"];
+    if (!validRoles.includes(role)) {
+      logger.warn(`User ${userId} has an invalid role: ${role}. Skipping.`);
+      return null;
+    }
+
+    try {
+      // Παίρνουμε τα τρέχοντα claims του χρήστη για να μην τα χάσουμε.
+      const userRecord = await admin.auth().getUser(userId);
+      const currentClaims = userRecord.customClaims || {};
+
+      // Αν ο ρόλος είναι ήδη σωστά ορισμένος, δεν χρειάζεται να κάνουμε κάτι.
+      if (currentClaims[role] === true && Object.keys(currentClaims).length === 1) {
+         logger.info(`User ${userId} already has the correct claim for role: ${role}. No update needed.`);
+         return null;
+      }
+
+      // Δημιουργούμε το νέο αντικείμενο claims.
+      // Θέτουμε μόνο τον τρέχοντα ρόλο σε true.
+      const newClaims = {
+          [role]: true
+      };
+      
+      logger.info(`Setting custom claims for user ${userId}:`, newClaims);
+      await admin.auth().setCustomUserClaims(userId, newClaims);
+      
+      return {
+        result: `Custom claims for ${userId} have been updated.`,
+      };
+    } catch (error) {
+      logger.error(`Error setting custom claims for ${userId}:`, error);
+      return { error: error.message };
+    }
+  });
+// --- END: ΕΝΗΜΕΡΩΜΕΝΗ ΣΥΝΑΡΤΗΣΗ ---

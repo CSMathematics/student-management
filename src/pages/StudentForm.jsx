@@ -4,10 +4,10 @@ import {
     Box, Button, Container, Grid, Paper, Typography, TextField,
     FormControl, InputLabel, Select, MenuItem, FormGroup, FormControlLabel,
     Checkbox, IconButton, CircularProgress, Alert, ListItemText, RadioGroup, Radio, Divider, FormLabel,
-    List, ListItem, Link, Tooltip
+    List, ListItem, Link, Tooltip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions
 } from '@mui/material';
 import { Delete, Add, UploadFile, Download, DeleteForever } from '@mui/icons-material';
-import { doc, updateDoc, collection, writeBatch, arrayUnion, arrayRemove, addDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, writeBatch, arrayUnion, arrayRemove, addDoc, setDoc, getDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { SUBJECTS_BY_GRADE_AND_CLASS, getSubjects, getSpecializations } from '../data/subjects.js';
 import { useNavigate } from 'react-router-dom';
@@ -53,6 +53,9 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
     const [feedback, setFeedback] = useState({ type: '', message: '' });
     const [isUploading, setIsUploading] = useState(false);
     const [documentType, setDocumentType] = useState('certificate');
+    
+    const [documentToDelete, setDocumentToDelete] = useState(null);
+    const [openDocDeleteConfirm, setOpenDocDeleteConfirm] = useState(false);
 
     useEffect(() => {
         if (isEditMode) {
@@ -207,6 +210,54 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
             setIsUploading(false);
         }
     };
+    
+    const handleDeleteDocument = (docItem) => {
+        setDocumentToDelete(docItem);
+        setOpenDocDeleteConfirm(true);
+    };
+
+    const handleConfirmDocDelete = async () => {
+        if (!documentToDelete || !initialData?.id || !selectedYear) return;
+
+        const storage = getStorage(db.app);
+        const fileRef = ref(storage, documentToDelete.path);
+        const studentRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/students`, initialData.id);
+
+        try {
+            // Step 1: Delete the file from Storage.
+            await deleteObject(fileRef);
+
+            // Step 2: Get the current student document to safely update the array.
+            const studentDocSnap = await getDoc(studentRef);
+            if (!studentDocSnap.exists()) {
+                throw new Error("Student document not found in Firestore.");
+            }
+            const currentDocuments = studentDocSnap.data().documents || [];
+
+            // Step 3: Filter the array locally to remove the desired document.
+            const newDocuments = currentDocuments.filter(doc => doc.path !== documentToDelete.path);
+
+            // Step 4: Update the document in Firestore with the new, filtered array.
+            await updateDoc(studentRef, {
+                documents: newDocuments
+            });
+
+            // Step 5: Update the local state to match.
+            setFormData(prev => ({
+                ...prev,
+                documents: newDocuments
+            }));
+
+            setFeedback({ type: 'info', message: `Το έγγραφο '${documentToDelete.name}' διαγράφηκε.` });
+
+        } catch (error) {
+            console.error("Detailed error during document deletion:", error);
+            setFeedback({ type: 'error', message: 'Σφάλμα κατά τη διαγραφή του εγγράφου. Ελέγξτε την κονσόλα για λεπτομέρειες.' });
+        } finally {
+            setOpenDocDeleteConfirm(false);
+            setDocumentToDelete(null);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -238,16 +289,30 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
             relationship: parent.relationship
         })).filter(parent => parent.name);
 
-        const studentData = { ...formData, parents: cleanedParents, enrolledClassrooms: finalEnrolledClassrooms };
-        delete studentData.id;
 
         try {
             const batch = writeBatch(db);
             const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
 
             if (isEditMode) {
+                const dataToUpdate = {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    dob: formData.dob,
+                    studentPhone: formData.studentPhone,
+                    address: formData.address,
+                    email: formData.email,
+                    gender: formData.gender,
+                    parents: cleanedParents,
+                    grade: formData.grade,
+                    specialization: formData.specialization,
+                    payment: formData.payment,
+                    debt: formData.debt,
+                    enrolledClassrooms: finalEnrolledClassrooms,
+                };
+
                 const studentRef = doc(db, `${yearPath}/students`, initialData.id);
-                batch.update(studentRef, studentData);
+                batch.update(studentRef, dataToUpdate);
 
                 const originalClassroomIds = new Set(initialData.enrolledClassrooms || []);
                 const newClassroomIds = new Set(finalEnrolledClassrooms);
@@ -268,6 +333,8 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                 setFeedback({ type: 'success', message: 'Οι αλλαγές αποθηκεύτηκαν επιτυχώς!' });
 
             } else {
+                 const studentData = { ...formData, parents: cleanedParents, enrolledClassrooms: finalEnrolledClassrooms };
+                 delete studentData.id;
                 studentData.createdAt = new Date();
                 const newStudentRef = doc(collection(db, `${yearPath}/students`));
                 batch.set(newStudentRef, studentData);
@@ -473,7 +540,9 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                                     <ListItem key={docItem.path} secondaryAction={
                                         <>
                                             <Tooltip title="Λήψη"><IconButton href={docItem.url} target="_blank"><Download /></IconButton></Tooltip>
-                                            <Tooltip title="Διαγραφή"><IconButton color="error"><DeleteForever /></IconButton></Tooltip>
+                                            {/* --- START: ΕΝΕΡΓΟΠΟΙΗΣΗ ΤΟΥ ΚΟΥΜΠΙΟΥ ΔΙΑΓΡΑΦΗΣ --- */}
+                                            <Tooltip title="Διαγραφή"><IconButton color="error" onClick={() => handleDeleteDocument(docItem)}><DeleteForever /></IconButton></Tooltip>
+                                            {/* --- END: ΕΝΕΡΓΟΠΟΙΗΣΗ ΤΟΥ ΚΟΥΜΠΙΟΥ ΔΙΑΓΡΑΦΗΣ --- */}
                                         </>
                                     }>
                                         <ListItemText primary={docItem.name} secondary={`Μεταφορτώθηκε: ${dayjs(docItem.uploadedAt.toDate()).format('DD/MM/YYYY')}`} />
@@ -494,6 +563,22 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                 </Box>
                 {feedback.message && (<Alert severity={feedback.type} sx={{ mt: 2 }}>{feedback.message}</Alert>)}
             </Box>
+            
+            {/* --- START: ΝΕΟ ΠΑΡΑΘΥΡΟ ΕΠΙΒΕΒΑΙΩΣΗΣ --- */}
+            <Dialog open={openDocDeleteConfirm} onClose={() => setOpenDocDeleteConfirm(false)}>
+                <DialogTitle>Επιβεβαίωση Διαγραφής Εγγράφου</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Είστε σίγουροι ότι θέλετε να διαγράψετε το έγγραφο "{documentToDelete?.name}"; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenDocDeleteConfirm(false)}>Ακύρωση</Button>
+                    <Button onClick={handleConfirmDocDelete} color="error">Διαγραφή</Button>
+                </DialogActions>
+            </Dialog>
+            {/* --- END: ΝΕΟ ΠΑΡΑΘΥΡΟ ΕΠΙΒΕΒΑΙΩΣΗΣ --- */}
+
         </Container>
     );
 }

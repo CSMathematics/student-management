@@ -121,6 +121,12 @@ function TeacherPortal({ db, appId, user, userProfile }) {
         return allAssignments.filter(a => classroomIds.includes(a.classroomId));
     }, [allAssignments, assignedClassrooms]);
 
+    // ΔΙΟΡΘΩΣΗ: Δημιουργία λίστας με τους διαχειριστές
+    const allAdmins = useMemo(() => {
+        if (!allUsers) return [];
+        return allUsers.filter(u => u.role === 'admin');
+    }, [allUsers]);
+
     if (loading || loadingYears) {
         return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}><CircularProgress /></Box>;
     }
@@ -139,7 +145,7 @@ function TeacherPortal({ db, appId, user, userProfile }) {
         classrooms: assignedClassrooms,
         allTeachers,
         allUsers,
-        teacherData, selectedYear,
+        teacherData,
         assignedClassrooms,
         studentsInClassrooms,
         assignments: teacherAssignments,
@@ -150,7 +156,8 @@ function TeacherPortal({ db, appId, user, userProfile }) {
         allAbsences,
         allPayments,
         allSubmissions,
-        loading
+        loading,
+        allAdmins // ΔΙΟΡΘΩΣΗ: Προσθήκη των admins στα commonProps
     };
 
     return (
@@ -167,7 +174,7 @@ function TeacherPortal({ db, appId, user, userProfile }) {
             <Route path="/teacher-stats" element={<TeacherStats {...commonProps} />} />
             <Route path="/my-students" element={<MyStudents {...commonProps} />} />
             <Route path="/student/report/:studentId" element={<StudentReport {...commonProps} />} />
-            <Route path="/communication" element={<Communication {...commonProps} />} />
+            <Route path="/communication" element={<Communication {...commonProps} currentYearId={selectedYear} />} />
         </Routes>
     );
 }

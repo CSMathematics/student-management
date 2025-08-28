@@ -33,87 +33,111 @@ function ParentPortal({ db, appId, user, userProfile }) {
     const [allDailyLogs, setAllDailyLogs] = useState([]);
     const [allCourses, setAllCourses] = useState([]);
     const [allTeachers, setAllTeachers] = useState([]);
-    const [submissions, setSubmissions] = useState([]); // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
+    const [submissions, setSubmissions] = useState([]);
+    const [allUsers, setAllUsers] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const childIds = userProfile?.childIds || [];
 
     useEffect(() => {
-        if (!db || !appId || childIds.length === 0 || !selectedYear) {
+        if (!db || !appId || !selectedYear) {
             if (!loadingYears) setLoading(false);
             return;
         }
 
-        const unsubscribes = [];
-        setLoading(true);
         let isMounted = true;
+        setLoading(true);
+
         const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
+        const unsubscribes = [];
 
-        const childrenQuery = query(collection(db, `${yearPath}/students`), where('__name__', 'in', childIds));
-        unsubscribes.push(onSnapshot(childrenQuery, (snapshot) => {
-            if (isMounted) {
-                const kidsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setChildrenData(kidsData);
-                if (!selectedChildId && kidsData.length > 0) {
-                    setSelectedChildId(kidsData[0].id);
-                } else if (kidsData.length > 0 && !kidsData.some(k => k.id === selectedChildId)) {
-                    setSelectedChildId(kidsData[0].id);
-                } else if (kidsData.length === 0) {
-                    setSelectedChildId('');
+        // Fetch data that is not dependent on specific children first
+        const globalCollections = {
+            users: setAllUsers,
+            teachers: setAllTeachers,
+            announcements: setAnnouncements,
+            assignments: setAllAssignments,
+            dailyLogs: setAllDailyLogs,
+            courses: setAllCourses,
+        };
+
+        for (const [name, setter] of Object.entries(globalCollections)) {
+            const ref = collection(db, name === 'users' ? 'users' : `${yearPath}/${name}`);
+            unsubscribes.push(onSnapshot(ref, (snapshot) => {
+                if (isMounted) {
+                    setter(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
                 }
-            }
-        }));
-
-        const queries = {
-            grades: query(collection(db, `${yearPath}/grades`), where("studentId", "in", childIds)),
-            absences: query(collection(db, `${yearPath}/absences`), where("studentId", "in", childIds)),
-            payments: query(collection(db, `${yearPath}/payments`), where("studentId", "in", childIds)),
-            submissions: query(collection(db, `${yearPath}/submissions`), where("studentId", "in", childIds)), // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
-            assignments: query(collection(db, `${yearPath}/assignments`)),
-            dailyLogs: query(collection(db, `${yearPath}/dailyLogs`)),
-            courses: query(collection(db, `${yearPath}/courses`)),
-        };
-        const setters = {
-            grades: setGrades, absences: setAbsences, payments: setPayments,
-            submissions: setSubmissions, // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
-            assignments: setAllAssignments, dailyLogs: setAllDailyLogs, courses: setAllCourses,
-        };
-        for (const [key, q] of Object.entries(queries)) {
-            unsubscribes.push(onSnapshot(q, (snapshot) => {
-                if (isMounted) setters[key](snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
             }));
         }
 
-        unsubscribes.push(onSnapshot(query(collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`)), (snapshot) => {
-            if(isMounted) setAllTeachers(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-        }));
-        unsubscribes.push(onSnapshot(query(collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/announcements`)), (snapshot) => {
-            if(isMounted) setAnnouncements(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-        }));
+        // Fetch children data
+        if (childIds.length > 0) {
+            const childrenQuery = query(collection(db, `${yearPath}/students`), where('__name__', 'in', childIds));
+            unsubscribes.push(onSnapshot(childrenQuery, (snapshot) => {
+                if (isMounted) {
+                    const kidsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setChildrenData(kidsData);
+                    
+                    // Set selected child or update if selection is no longer valid
+                    if (!selectedChildId && kidsData.length > 0) {
+                        setSelectedChildId(kidsData[0].id);
+                    } else if (kidsData.length > 0 && !kidsData.some(k => k.id === selectedChildId)) {
+                        setSelectedChildId(kidsData[0].id);
+                    } else if (kidsData.length === 0) {
+                        setSelectedChildId('');
+                    }
 
+                    // Fetch child-specific data only after children are loaded
+                    const childSpecificQueries = {
+                        grades: query(collection(db, `${yearPath}/grades`), where("studentId", "in", childIds)),
+                        absences: query(collection(db, `${yearPath}/absences`), where("studentId", "in", childIds)),
+                        payments: query(collection(db, `${yearPath}/payments`), where("studentId", "in", childIds)),
+                        submissions: query(collection(db, `${yearPath}/submissions`), where("studentId", "in", childIds)),
+                    };
+                    const setters = { grades: setGrades, absences: setAbsences, payments: setPayments, submissions: setSubmissions };
+                    for (const [key, q] of Object.entries(childSpecificQueries)) {
+                        unsubscribes.push(onSnapshot(q, (snapshot) => {
+                            if (isMounted) setters[key](snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+                        }));
+                    }
+                }
+            }));
+        } else {
+             setLoading(false);
+        }
 
         return () => { isMounted = false; unsubscribes.forEach(unsub => unsub()); };
-    }, [db, appId, userProfile, selectedYear, loadingYears, selectedChildId]);
+    }, [db, appId, userProfile, selectedYear, loadingYears]);
 
     useEffect(() => {
         if (childrenData.length === 0) {
-            setLoading(false);
+            setLoading(false); // Stop loading if there are no children for this year
             return;
         }
+        let isMounted = true;
         const allEnrolledClassroomIds = [...new Set(childrenData.flatMap(c => c.enrolledClassrooms || []))];
+        
         if (allEnrolledClassroomIds.length === 0) {
-            setLoading(false);
+            setEnrolledClassrooms([]);
+            setLoading(false); // Stop loading if children are not in any class
             return;
         }
+
         const yearPath = `artifacts/${appId}/public/data/academicYears/${selectedYear}`;
         const classroomsQuery = query(collection(db, `${yearPath}/classrooms`), where('__name__', 'in', allEnrolledClassroomIds));
         const unsubClassrooms = onSnapshot(classroomsQuery, (snapshot) => {
-            setEnrolledClassrooms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            setLoading(false);
+            if (isMounted) {
+                setEnrolledClassrooms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                setLoading(false); // Final loading state update
+            }
         });
-        return () => unsubClassrooms();
+        return () => { isMounted = false; unsubClassrooms(); }
     }, [db, appId, childrenData, selectedYear]);
 
+    const allAdmins = useMemo(() => {
+        if (!allUsers) return [];
+        return allUsers.filter(u => u.role === 'admin');
+    }, [allUsers]);
 
     const selectedChildData = useMemo(() => childrenData.find(c => c.id === selectedChildId), [childrenData, selectedChildId]);
     
@@ -128,7 +152,7 @@ function ParentPortal({ db, appId, user, userProfile }) {
             grades: grades.filter(g => g.studentId === selectedChildId),
             absences: absences.filter(a => a.studentId === selectedChildId),
             payments: payments.filter(p => p.studentId === selectedChildId),
-            submissions: submissions.filter(s => s.studentId === selectedChildId), // <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
+            submissions: submissions.filter(s => s.studentId === selectedChildId),
             enrolledClassrooms: enrolledClassrooms.filter(c => childEnrolledClassroomIds.includes(c.id)),
             assignments: allAssignments.filter(a => childEnrolledClassroomIds.includes(a.classroomId)),
         };
@@ -149,7 +173,7 @@ function ParentPortal({ db, appId, user, userProfile }) {
     }
     
     const commonProps = { 
-        db, appId, user, selectedYear,
+        db, appId, user,
         announcements, allDailyLogs, allCourses, allTeachers,
         ...dataForSelectedChild
     };
@@ -202,6 +226,8 @@ function ParentPortal({ db, appId, user, userProfile }) {
                                 allStudents={childrenData} 
                                 classrooms={enrolledClassrooms}
                                 allTeachers={allTeachers}
+                                allAdmins={allAdmins}
+                                currentYearId={selectedYear}
                             />
                         } />
                     </Routes>

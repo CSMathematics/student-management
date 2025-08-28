@@ -1,5 +1,5 @@
 // src/pages/Communication.jsx
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
     Box, Grid, Paper, Typography, List, Divider, ListSubheader,
@@ -14,10 +14,10 @@ import {
     People as PeopleIcon, Person as PersonIcon, Class as ClassIcon, Email as EmailIcon, Phone as PhoneIcon,
     PhotoCamera as PhotoCameraIcon, Delete as DeleteIcon, Send as SendIcon, ExpandLess, ExpandMore,
     AttachFile as AttachFileIcon, Reply as ReplyIcon, Close as CloseIcon, InsertDriveFile as FileIcon,
-    Done as DoneIcon, DoneAll as DoneAllIcon, School as TeacherIcon
+    Done as DoneIcon, DoneAll as DoneAllIcon, School as TeacherIcon, AdminPanelSettings as AdminPanelSettingsIcon
 } from '@mui/icons-material';
 import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, updateDoc, deleteField, writeBatch, arrayUnion, deleteDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject, uploadBytes } from "firebase/storage";
+import { getStorage, ref, getDownloadURL, deleteObject, uploadBytes, uploadBytesResumable } from "firebase/storage";
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
 import { blue, green } from '@mui/material/colors';
@@ -26,7 +26,6 @@ import { SystemMessage } from 'react-chat-elements';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
-// ... (Όλα τα helper components όπως StyledBadge, InfoCard, ReadReceipts, ChatMessage παραμένουν ίδια) ...
 const StyledBadge = styled(Badge)(({ theme, isOnline }) => ({
   '& .MuiBadge-badge': {
     backgroundColor: isOnline ? '#44b700' : theme.palette.action.disabled,
@@ -55,7 +54,8 @@ const StyledBadge = styled(Badge)(({ theme, isOnline }) => ({
     },
   },
 }));
-const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClick, db, appId }) => {
+
+const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClick, db, appId, currentYearId }) => {
     const fileInputRef = useRef(null);
     const imgRef = useRef(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -126,7 +126,8 @@ const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClic
     };
 
     const handleSaveCrop = async () => {
-        if (!completedCrop || !imgRef.current || !originalFile) {
+        if (!completedCrop || !imgRef.current || !originalFile || !currentYearId) {
+             setUploadError('Δεν έχει επιλεγεί ακαδημαϊκό έτος.');
             return;
         }
 
@@ -169,7 +170,7 @@ const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClic
             try {
                 const snapshot = await uploadBytes(storageRef, blob);
                 const downloadURL = await getDownloadURL(snapshot.ref);
-                const docRef = doc(db, `artifacts/${appId}/public/data/${collectionName}`, docId);
+                const docRef = doc(db, `artifacts/${appId}/public/data/academicYears/${currentYearId}/${collectionName}`, docId);
                 await updateDoc(docRef, { profileImageUrl: downloadURL });
             } catch (error) {
                 console.error("Upload failed:", error);
@@ -183,6 +184,10 @@ const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClic
     };
 
     const handleDeleteImage = async () => {
+        if (!currentYearId) {
+            console.error("Current year ID is missing.");
+            return;
+        }
         setOpenConfirmDelete(false);
         const collectionName = channel.type === 'personal' ? 'students' : 'classrooms';
         const docId = channel.id;
@@ -191,7 +196,7 @@ const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClic
             const storage = getStorage(db.app);
             const imageRef = ref(storage, imageUrlToDelete);
             await deleteObject(imageRef);
-            const docRef = doc(db, `artifacts/${appId}/public/data/${collectionName}`, docId);
+            const docRef = doc(db, `artifacts/${appId}/public/data/academicYears/${currentYearId}/${collectionName}`, docId);
             await updateDoc(docRef, { profileImageUrl: deleteField() });
         } catch (error) {
             console.error("Error deleting image:", error);
@@ -245,7 +250,7 @@ const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClic
                             <List dense sx={{ maxHeight: 'calc(100vh - 550px)', overflowY: 'auto' }}>
                                 {enrolledStudents.map(s => {
                                     if (!s) return null;
-                                    const isOnline = Math.random() > 0.5; 
+                                    const isOnline = s.isOnline || false; 
                                     const studentName = (s.firstName && s.lastName) ? `${s.firstName} ${s.lastName}` : 'Άγνωστος Μαθητής';
                                     const avatarInitial = s.firstName ? s.firstName.charAt(0) : '?';
 
@@ -308,6 +313,7 @@ const InfoCard = ({ channel, student, classroom, enrolledStudents, onStudentClic
         </>
     );
 };
+
 const ReadReceipts = ({ msg, currentUser, participants = [] }) => {
     if (msg.senderId !== currentUser.id) {
         return null;
@@ -334,6 +340,7 @@ const ReadReceipts = ({ msg, currentUser, participants = [] }) => {
         </Box>
     );
 };
+
 const ChatMessage = ({ msg, onReplyClick, onDeleteClick, currentUser, participants }) => {
     const { mode } = useTheme();
     const isMe = msg.position === 'right';
@@ -410,6 +417,18 @@ const ChatMessage = ({ msg, onReplyClick, onDeleteClick, currentUser, participan
             }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography variant="caption" sx={{ fontWeight: 'bold' }}>{isMe ? 'Me' : msg.title}</Typography>
+                    
+                    {!isMe && msg.senderRole === 'admin' && (
+                        <Tooltip title="Διαχειριστής">
+                            <AdminPanelSettingsIcon sx={{ fontSize: '1rem', color: 'error.main' }} />
+                        </Tooltip>
+                    )}
+                    {!isMe && msg.senderRole === 'teacher' && (
+                        <Tooltip title="Καθηγητής">
+                            <TeacherIcon sx={{ fontSize: '1rem', color: 'info.main' }} />
+                        </Tooltip>
+                    )}
+
                     <Typography variant="caption" color="text.secondary">
                         {msg.date ? dayjs(msg.date).format('DD MMM, HH:mm') : ''}
                     </Typography>
@@ -462,8 +481,7 @@ const ChatMessage = ({ msg, onReplyClick, onDeleteClick, currentUser, participan
 };
 
 
-// --- ΔΙΟΡΘΩΣΗ: Προσθήκη προεπιλεγμένων τιμών στα props για αποφυγή σφαλμάτων ---
-function Communication({ db, appId, allStudents = [], classrooms = [], allTeachers = [], userId }) {
+function Communication({ db, appId, allStudents = [], classrooms = [], allTeachers = [], allAdmins = [], userId, currentYearId, allUsers = [] }) {
     const location = useLocation();
     const { mode } = useTheme();
     const [selectedChannel, setSelectedChannel] = useState({ id: 'global', type: 'global', title: 'Γενική Ανακοίνωση' });
@@ -475,7 +493,7 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
     const [inputText, setInputText] = useState(""); 
     const messageListRef = useRef(null);
     const fileInputRef = useRef(null);
-    const [openSections, setOpenSections] = useState({ classrooms: true, students: true, teachers: true });
+    const [openSections, setOpenSections] = useState({ classrooms: true, students: true, teachers: true, admins: true });
     const [replyingTo, setReplyingTo] = useState(null);
     const [messageToDelete, setMessageToDelete] = useState(null);
 
@@ -483,24 +501,91 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
         setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
-    const currentUser = useMemo(() => ({
-        id: userId || 'admin_id',
-        name: 'Me' 
-    }), [userId]);
+    const currentUser = useMemo(() => {
+        const userProfile = allUsers.find(u => u.id === userId);
+        return {
+            id: userId || 'unknown_user',
+            name: userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : 'Me'
+        };
+    }, [userId, allUsers]);
     
+    // --- ΔΙΟΡΘΩΣΗ: Δημιουργία ενός ενιαίου "χάρτη" χρηστών με όλες τις πληροφορίες ---
     const allUsersMap = useMemo(() => {
         const map = new Map();
-        allStudents.forEach(s => map.set(s.id, { name: `${s.lastName} ${s.firstName}`, avatar: s.profileImageUrl }));
-        allTeachers.forEach(t => map.set(t.id, { name: `${t.firstName} ${t.lastName}`, avatar: t.profileImageUrl }));
-        map.set(currentUser.id, { name: currentUser.name, avatar: null });
+        // 1. Προσθέτουμε τους βασικούς χρήστες (π.χ. admins)
+        allUsers.forEach(u => {
+            if (u && u.id) {
+                map.set(u.id, { 
+                    name: u.displayName || `${u.firstName} ${u.lastName}`, 
+                    avatar: u.avatarUrl || null,
+                    role: u.role 
+                });
+            }
+        });
+
+        // 2. Εμπλουτίζουμε/Αντικαθιστούμε με δεδομένα από τα προφίλ των μαθητών
+        allStudents.forEach(s => {
+            const user = allUsers.find(u => u.profileId === s.id || u.email === s.email);
+            if (user) {
+                map.set(user.id, {
+                    name: `${s.lastName} ${s.firstName}`,
+                    avatar: s.profileImageUrl || null,
+                    role: 'student'
+                });
+            }
+        });
+        
+        // 3. Εμπλουτίζουμε/Αντικαθιστούμε με δεδομένα από τα προφίλ των καθηγητών
+        allTeachers.forEach(t => {
+            const user = allUsers.find(u => u.profileId === t.id || u.email === t.email);
+            if (user) {
+                map.set(user.id, {
+                    name: `${t.firstName} ${t.lastName}`,
+                    avatar: t.profileImageUrl || null,
+                    role: 'teacher'
+                });
+            }
+        });
+
         return map;
-    }, [allStudents, allTeachers, currentUser]);
+    }, [allUsers, allStudents, allTeachers]);
+
+    const enrichedStudents = useMemo(() => {
+        if (!allStudents || !allUsers) return [];
+        const userByProfileIdMap = new Map(allUsers.filter(u => u.profileId).map(user => [user.profileId, user]));
+        const userByEmailMap = new Map(allUsers.filter(u => u.email).map(user => [user.email, user]));
+
+        return allStudents.map(student => {
+            let correspondingUser = userByProfileIdMap.get(student.id);
+            if (!correspondingUser && student.email) {
+                correspondingUser = userByEmailMap.get(student.email);
+            }
+            return { ...student, userId: correspondingUser ? correspondingUser.id : null };
+        });
+    }, [allStudents, allUsers]);
+
+    const enrichedTeachers = useMemo(() => {
+        if (!allTeachers || !allUsers) return [];
+        const userByProfileIdMap = new Map(allUsers.filter(u => u.profileId).map(user => [user.profileId, user]));
+        const userByEmailMap = new Map(allUsers.filter(u => u.email).map(user => [user.email, user]));
+
+        return allTeachers.map(teacher => {
+            let correspondingUser = userByProfileIdMap.get(teacher.id);
+            if (!correspondingUser && teacher.email) {
+                correspondingUser = userByEmailMap.get(teacher.email);
+            }
+            return { ...teacher, userId: correspondingUser ? correspondingUser.id : null };
+        });
+    }, [allTeachers, allUsers]);
 
 
     useEffect(() => {
-        if (!db || !appId) return;
+        if (!db || !appId || !currentYearId) {
+            setLoadingMessages(false);
+            return;
+        };
         setLoadingMessages(true);
-        const messagesRef = collection(db, `artifacts/${appId}/public/data/messages`);
+        const messagesRef = collection(db, `artifacts/${appId}/public/data/academicYears/${currentYearId}/messages`);
         const q = query(messagesRef, orderBy('timestamp', 'asc'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const allMessages = snapshot.docs.map(doc => ({
@@ -513,7 +598,7 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
             setLoadingMessages(false);
         });
         return () => unsubscribe();
-    }, [db, appId]);
+    }, [db, appId, currentYearId]);
 
     useEffect(() => {
         if (messageListRef.current) {
@@ -521,63 +606,65 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
         }
     }, [messages, selectedChannel]);
 
-    const messagesForChannel = useMemo(() => {
-        if (!selectedChannel) return [];
-        return messages
-            .filter(m => m.channelId === selectedChannel.id)
-            .map(msg => {
-                const senderInfo = allUsersMap.get(msg.senderId);
-                return {
-                    ...msg,
-                    position: msg.senderId === currentUser.id ? 'right' : 'left',
-                    type: msg.type || 'text',
-                    title: senderInfo?.name || 'Unknown User',
-                    avatar: senderInfo?.avatar
-                };
-            });
-    }, [messages, selectedChannel, currentUser.id, allUsersMap]);
-
     useEffect(() => {
-        if (!db || !appId || !selectedChannel || !currentUser.id || messagesForChannel.length === 0) {
+        if (!selectedChannel || !messages.length || !currentUser.id) {
+            return;
+        }
+
+        let channelIdToFilter;
+        if (selectedChannel.type === 'personal') {
+            if (!selectedChannel.id) return;
+            channelIdToFilter = [currentUser.id, selectedChannel.id].sort().join('_');
+        } else {
+            channelIdToFilter = selectedChannel.id;
+        }
+
+        const unreadMessagesInChannel = messages.filter(msg => 
+            msg.channelId === channelIdToFilter &&
+            msg.senderId !== currentUser.id && 
+            !msg.readBy?.includes(currentUser.id)
+        );
+
+        if (unreadMessagesInChannel.length === 0) {
             return;
         }
 
         const markMessagesAsRead = async () => {
             const batch = writeBatch(db);
-            let updatesMade = false;
-
-            messagesForChannel.forEach(msg => {
-                if (msg.senderId !== currentUser.id && (!msg.readBy || !msg.readBy.includes(currentUser.id))) {
-                    const msgRef = doc(db, `artifacts/${appId}/public/data/messages`, msg.id);
-                    batch.update(msgRef, {
-                        readBy: arrayUnion(currentUser.id)
-                    });
-                    updatesMade = true;
-                }
+            unreadMessagesInChannel.forEach(msg => {
+                const msgRef = doc(db, `artifacts/${appId}/public/data/academicYears/${currentYearId}/messages`, msg.id);
+                batch.update(msgRef, {
+                    readBy: arrayUnion(currentUser.id)
+                });
             });
 
-            if (updatesMade) {
-                try {
-                    await batch.commit();
-                } catch (error) {
-                    console.error("Error marking messages as read:", error);
-                }
+            try {
+                await batch.commit();
+            } catch (error) {
+                console.error("Error marking messages as read:", error);
             }
         };
         
-        const timeoutId = setTimeout(markMessagesAsRead, 1500);
-        return () => clearTimeout(timeoutId);
+        markMessagesAsRead();
 
-    }, [db, appId, currentUser.id, selectedChannel, messagesForChannel]);
+    }, [selectedChannel, messages, currentUser.id, db, appId, currentYearId]);
 
 
     const createMessageInDb = async (messageData) => {
-        const messagesRef = collection(db, `artifacts/${appId}/public/data/messages`);
+        const messagesRef = collection(db, `artifacts/${appId}/public/data/academicYears/${currentYearId}/messages`);
+        
+        let finalChannelId;
+        if (selectedChannel.type === 'personal') {
+            finalChannelId = [currentUser.id, selectedChannel.id].sort().join('_');
+        } else {
+            finalChannelId = selectedChannel.id;
+        }
+
         await addDoc(messagesRef, {
             ...messageData,
             senderId: currentUser.id,
             timestamp: serverTimestamp(),
-            channelId: selectedChannel.id,
+            channelId: finalChannelId, 
             channelType: selectedChannel.type,
             readBy: [],
         });
@@ -585,7 +672,7 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
 
     const handleSendMessage = async () => {
         const textToSend = String(inputText || '').trim();
-        if (!textToSend || !selectedChannel) return;
+        if (!textToSend || !selectedChannel || !currentYearId) return;
         setIsSending(true);
         try {
             const messagePayload = { type: 'text', text: textToSend };
@@ -597,6 +684,19 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
                 };
             }
             await createMessageInDb(messagePayload);
+
+            if (selectedChannel.type === 'personal') {
+                const notificationsRef = collection(db, `artifacts/${appId}/public/data/academicYears/${currentYearId}/notifications`);
+                await addDoc(notificationsRef, {
+                    recipientId: selectedChannel.id,
+                    type: 'message',
+                    message: `Νέο μήνυμα από ${currentUser.name}`,
+                    link: '/communication',
+                    readBy: [],
+                    timestamp: serverTimestamp()
+                });
+            }
+            
             setInputText(""); 
             setReplyingTo(null);
         } catch (error) {
@@ -608,7 +708,7 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
 
     const handleFileSelected = (event) => {
         const file = event.target.files[0];
-        if (!file) return;
+        if (!file || !currentYearId) return;
         const storage = getStorage(db.app);
         const storagePath = `chat_attachments/${selectedChannel.id}/${Date.now()}_${file.name}`;
         const storageRef = ref(storage, storagePath);
@@ -648,7 +748,7 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
     };
 
     const handleDeleteMessage = async () => {
-        if (!messageToDelete) return;
+        if (!messageToDelete || !currentYearId) return;
 
         try {
             if ((messageToDelete.type === 'photo' || messageToDelete.type === 'file') && messageToDelete.data?.storagePath) {
@@ -656,7 +756,7 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
                 const fileRef = ref(storage, messageToDelete.data.storagePath);
                 await deleteObject(fileRef);
             }
-            await deleteDoc(doc(db, `artifacts/${appId}/public/data/messages`, messageToDelete.id));
+            await deleteDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${currentYearId}/messages`, messageToDelete.id));
 
         } catch (error) {
             console.error("Error deleting message:", error);
@@ -665,39 +765,121 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
         }
     };
 
+    const unreadCounts = useMemo(() => {
+        const counts = new Map();
+        if (!messages || !currentUser.id) return counts;
+
+        messages.forEach(msg => {
+            if (msg.senderId !== currentUser.id && !msg.readBy?.includes(currentUser.id)) {
+                const currentCount = counts.get(msg.channelId) || 0;
+                counts.set(msg.channelId, currentCount + 1);
+            }
+        });
+        return counts;
+    }, [messages, currentUser.id]);
+
     const globalChannel = useMemo(() => [{
         id: 'global', type: 'global', avatar: null, title: 'Γενική Ανακοίνωση',
-        subtitle: 'Μηνύματα προς όλους', date: null, unread: 0,
-    }], []);
+        subtitle: 'Μηνύματα προς όλους',
+        unread: unreadCounts.get('global') || 0,
+    }], [unreadCounts]);
 
-    const classroomChannels = useMemo(() => (classrooms).filter(c => c.classroomName.toLowerCase().includes(searchTerm.toLowerCase())).map(c => ({
-        id: c.id, type: 'classroom', avatar: c.profileImageUrl || null,
-        title: c.classroomName, subtitle: c.subject, date: null, unread: 0,
-    })), [classrooms, searchTerm]);
+    const adminChannels = useMemo(() => (allAdmins || [])
+        .filter(a => a && a.id && (a.displayName || '').toLowerCase().includes(searchTerm.toLowerCase()))
+        .map(a => {
+            const channelId = [currentUser.id, a.id].sort().join('_');
+            return {
+                id: a.id,
+                type: 'personal',
+                avatar: a.avatarUrl || null,
+                title: a.displayName || `Admin`,
+                subtitle: 'Διαχειριστής',
+                unread: unreadCounts.get(channelId) || 0,
+            };
+    }), [allAdmins, searchTerm, unreadCounts, currentUser.id]);
 
-    const studentChannels = useMemo(() => (allStudents).filter(s => `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())).map(s => ({
-        id: s.id, type: 'personal', avatar: s.profileImageUrl || null,
-        title: `${s.lastName} ${s.firstName}`, subtitle: s.grade, date: null, unread: 0,
-    })), [allStudents, searchTerm]);
+    const classroomChannels = useMemo(() => (classrooms || [])
+        .filter(c => c && c.id && c.classroomName.toLowerCase().includes(searchTerm.toLowerCase()))
+        .map(c => ({
+            id: c.id, 
+            type: 'classroom', 
+            avatar: c.profileImageUrl || null,
+            title: c.classroomName, 
+            subtitle: c.subject, 
+            unread: unreadCounts.get(c.id) || 0,
+    })), [classrooms, searchTerm, unreadCounts]);
+
+    const studentChannels = useMemo(() => (enrichedStudents || [])
+        .filter(s => s && `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()))
+        .map(s => {
+            const channelId = s.userId ? [currentUser.id, s.userId].sort().join('_') : null;
+            return {
+                id: s.userId,
+                profileId: s.id,
+                type: 'personal', 
+                avatar: s.profileImageUrl || null,
+                title: `${s.lastName} ${s.firstName}`, 
+                subtitle: s.grade, 
+                unread: channelId ? unreadCounts.get(channelId) || 0 : 0,
+                disabled: !s.userId
+            };
+    }), [enrichedStudents, searchTerm, unreadCounts, currentUser.id]);
     
-    const teacherChannels = useMemo(() => (allTeachers).filter(t => `${t.firstName} ${t.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())).map(t => ({
-        id: t.id, type: 'personal', avatar: t.profileImageUrl || null,
-        title: `${t.firstName} ${t.lastName}`, subtitle: t.specialty || 'Καθηγητής', date: null, unread: 0,
-    })), [allTeachers, searchTerm]);
+    const teacherChannels = useMemo(() => (enrichedTeachers || [])
+        .filter(t => t && `${t.firstName} ${t.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()))
+        .map(t => {
+            const channelId = t.userId ? [currentUser.id, t.userId].sort().join('_') : null;
+            return {
+                id: t.userId,
+                profileId: t.id,
+                type: 'personal', 
+                avatar: t.profileImageUrl || null,
+                title: `${t.firstName} ${t.lastName}`, 
+                subtitle: t.specialty || 'Καθηγητής', 
+                unread: channelId ? unreadCounts.get(channelId) || 0 : 0,
+                disabled: !t.userId
+            };
+    }), [enrichedTeachers, searchTerm, unreadCounts, currentUser.id]);
+
+    const messagesForChannel = useMemo(() => {
+        if (!selectedChannel) return [];
+        
+        let channelIdToFilter;
+        if (selectedChannel.type === 'personal') {
+            if (!selectedChannel.id) return [];
+            channelIdToFilter = [currentUser.id, selectedChannel.id].sort().join('_');
+        } else {
+            channelIdToFilter = selectedChannel.id;
+        }
+
+        return messages
+            .filter(m => m.channelId === channelIdToFilter)
+            .map(msg => {
+                const senderInfo = allUsersMap.get(msg.senderId);
+                return {
+                    ...msg,
+                    position: msg.senderId === currentUser.id ? 'right' : 'left',
+                    type: msg.type || 'text',
+                    title: senderInfo?.name || 'Unknown User',
+                    avatar: senderInfo?.avatar,
+                    senderRole: senderInfo?.role
+                };
+            });
+    }, [messages, selectedChannel, currentUser.id, allUsersMap]);
 
     useEffect(() => {
         const channelId = location.state?.selectedChannelId;
         if (channelId) {
-            const allPersonalChannels = [...studentChannels, ...teacherChannels];
+            const allPersonalChannels = [...studentChannels, ...teacherChannels, ...adminChannels];
             const channelToSelect = allPersonalChannels.find(c => c.id === channelId);
             if (channelToSelect) {
                 setSelectedChannel(channelToSelect);
             }
         }
-    }, [location.state, studentChannels, teacherChannels]);
+    }, [location.state, studentChannels, teacherChannels, adminChannels]);
 
     
-    const selectedStudentDetails = useMemo(() => (selectedChannel?.type === 'personal') ? allStudents.find(s => s.id === selectedChannel.id) : null, [selectedChannel, allStudents]);
+    const selectedStudentDetails = useMemo(() => (selectedChannel?.type === 'personal') ? enrichedStudents.find(s => s.userId === selectedChannel.id) : null, [selectedChannel, enrichedStudents]);
     const selectedClassroomDetails = useMemo(() => (selectedChannel?.type === 'classroom') ? classrooms.find(c => c.id === selectedChannel.id) : null, [selectedChannel, classrooms]);
     
     const enrolledStudentsForClassroom = useMemo(() => {
@@ -715,13 +897,13 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
             return [currentUser.id, ...(classroom?.enrolledStudents || [])];
         }
         if (selectedChannel.type === 'global') {
-            return [currentUser.id, ...allStudents.map(s => s.id)];
+            return [currentUser.id, ...enrichedStudents.map(s => s.userId).filter(Boolean)];
         }
         return [currentUser.id];
-    }, [selectedChannel, classrooms, allStudents, currentUser.id]);
+    }, [selectedChannel, classrooms, allStudents, currentUser.id, enrichedStudents]);
 
     const handleStudentClick = (student) => {
-        const studentChannel = studentChannels.find(c => c.id === student.id);
+        const studentChannel = studentChannels.find(c => c.id === student.userId);
         if (studentChannel) {
             setSelectedChannel(studentChannel);
         }
@@ -731,18 +913,29 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
         <List component="div" disablePadding>
             {channels.map(channel => (
                 <ListItemButton
-                    key={channel.id}
-                    selected={selectedChannel?.id === channel.id}
-                    onClick={() => setSelectedChannel(channel)}
+                    key={channel.profileId || channel.id}
+                    selected={selectedChannel?.id === channel.id && !!channel.id}
+                    onClick={() => !channel.disabled && setSelectedChannel(channel)}
+                    disabled={channel.disabled}
+                    sx={channel.disabled ? { opacity: 0.6 } : {}}
                 >
                     <ListItemAvatar>
                         <Avatar src={channel.avatar}>{channel.title.charAt(0)}</Avatar>
                     </ListItemAvatar>
-                    <ListItemText primary={channel.title} secondary={channel.subtitle} />
+                    <ListItemText
+                        primary={channel.title}
+                        secondary={channel.disabled ? "Chat μη διαθέσιμο" : channel.subtitle}
+                        primaryTypographyProps={channel.disabled ? { style: { fontStyle: 'italic' } } : {}}
+                    />
+                    {channel.unread > 0 && (
+                        <Badge badgeContent={channel.unread} color="error" />
+                    )}
                 </ListItemButton>
             ))}
         </List>
     );
+
+    const isChatReady = !!currentYearId;
 
     return (
         <Container maxWidth={false} sx={{ height: 'calc(100vh - 120px)', p: '0 !important' }}>
@@ -758,6 +951,19 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
                             <ListSubheader>Γενικά</ListSubheader>
                             {renderChannelList(globalChannel)}
                             
+                            {adminChannels.length > 0 && (
+                                <>
+                                    <ListItemButton onClick={() => handleToggleSection('admins')}>
+                                        <ListItemIcon><AdminPanelSettingsIcon /></ListItemIcon>
+                                        <ListItemText primary="Διαχειριστές" />
+                                        {openSections.admins ? <ExpandLess /> : <ExpandMore />}
+                                    </ListItemButton>
+                                    <Collapse in={openSections.admins} timeout="auto" unmountOnExit>
+                                        {renderChannelList(adminChannels)}
+                                    </Collapse>
+                                </>
+                            )}
+
                             <ListItemButton onClick={() => handleToggleSection('classrooms')}>
                                 <ListItemIcon><PeopleIcon /></ListItemIcon>
                                 <ListItemText primary="Τμήματα" />
@@ -820,14 +1026,21 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
                                     </Paper>
                                 )}
                                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <input type="file" ref={fileInputRef} hidden onChange={handleFileSelected} />
-                                    <IconButton onClick={() => fileInputRef.current.click()}><AttachFileIcon /></IconButton>
-                                    <MuiTextField fullWidth variant="outlined" size="small" placeholder="Γράψτε το μήνυμά σας..." multiline maxRows={4} value={inputText}
+                                    <input type="file" ref={fileInputRef} hidden onChange={handleFileSelected} disabled={!isChatReady} />
+                                    <IconButton onClick={() => fileInputRef.current.click()} disabled={!isChatReady}><AttachFileIcon /></IconButton>
+                                    <MuiTextField 
+                                        fullWidth 
+                                        variant="outlined" 
+                                        size="small" 
+                                        placeholder={isChatReady ? "Γράψτε το μήνυμά σας..." : "Επιλέξτε ακαδημαϊκό έτος για να ξεκινήσετε."}
+                                        multiline 
+                                        maxRows={4} 
+                                        value={inputText}
                                         onChange={(e) => setInputText(e.target.value)}
                                         onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
-                                        disabled={isSending}
+                                        disabled={isSending || !isChatReady}
                                     />
-                                    <Button variant="contained" onClick={handleSendMessage} disabled={isSending || !inputText.trim()}>
+                                    <Button variant="contained" onClick={handleSendMessage} disabled={isSending || !inputText.trim() || !isChatReady}>
                                         <SendIcon />
                                     </Button>
                                 </Box>
@@ -864,6 +1077,7 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
                         onStudentClick={handleStudentClick}
                         db={db}
                         appId={appId}
+                        currentYearId={currentYearId}
                     />
                 </Grid>
             </Grid>

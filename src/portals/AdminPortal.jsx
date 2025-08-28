@@ -123,7 +123,7 @@ function AdminPortal({ db, appId, user }) {
     }
 
     const commonProps = { 
-        db, appId, userId: user.uid, selectedYear,
+        db, appId, userId: user.uid,
         classrooms: allData.classrooms, 
         allStudents: allData.students, 
         allGrades: allData.grades, 
@@ -142,32 +142,35 @@ function AdminPortal({ db, appId, user }) {
         <>
             <Routes>
                 <Route path="/" element={<DashboardContent {...commonProps} />} />
-                <Route path="/students" element={<StudentsList {...commonProps} />} />
-                <Route path="/student/new" element={<StudentForm {...commonProps} openModalWithData={openModalWithData} />} />
-                <Route path="/student/edit/:studentId" element={<StudentFormWrapper {...commonProps} openModalWithData={openModalWithData} />} />
+                <Route path="/students" element={<StudentsList {...commonProps} selectedYear={selectedYear} />} />
+                
+                {/* --- START: ΔΙΟΡΘΩΣΗ --- */}
+                <Route path="/student/new" element={<StudentForm {...commonProps} selectedYear={selectedYear} openModalWithData={openModalWithData} />} />
+                <Route path="/student/edit/:studentId" element={<StudentFormWrapper {...commonProps} selectedYear={selectedYear} openModalWithData={openModalWithData} />} />
+                {/* --- END: ΔΙΟΡΘΩΣΗ --- */}
+
                 <Route path="/student/report/:studentId" element={<StudentReport {...commonProps} />} />
-                <Route path="/classrooms" element={<Classrooms {...commonProps} />} />
-                <Route path="/classroom/new" element={<NewClassroomForm {...commonProps} />} />
-                <Route path="/classroom/edit/:classroomId" element={<ClassroomFormWrapper {...commonProps} />} />
-                <Route path="/calendar" element={<WeeklyScheduleCalendar {...commonProps} />} />
-                <Route path="/payments" element={<Payments {...commonProps} />} />
-                <Route path="/courses/list" element={<Courses {...commonProps} />} />
-                <Route path="/course/new" element={<CourseForm {...commonProps} />} />
-                <Route path="/course/edit/:courseId" element={<CourseFormWrapper {...commonProps} />} />
-                <Route path="/teachers" element={<TeachersList {...commonProps} />} />
-                <Route path="/teacher/new" element={<TeacherForm {...commonProps} />} />
-                <Route path="/teacher/edit/:teacherId" element={<TeacherFormWrapper {...commonProps} />} />
+                <Route path="/classrooms" element={<Classrooms {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/classroom/new" element={<NewClassroomForm {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/classroom/edit/:classroomId" element={<ClassroomFormWrapper {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/calendar" element={<WeeklyScheduleCalendar {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/payments" element={<Payments {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/courses/list" element={<Courses {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/course/new" element={<CourseForm {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/course/edit/:courseId" element={<CourseFormWrapper {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/teachers" element={<TeachersList {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/teacher/new" element={<TeacherForm {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/teacher/edit/:teacherId" element={<TeacherFormWrapper {...commonProps} selectedYear={selectedYear} />} />
                 <Route path="/announcements" element={<Announcements {...commonProps} />} />
                 <Route path="/phonebook" element={<Phonebook {...commonProps} />} />
-                <Route path="/expenses" element={<Expenses {...commonProps} />} />
-                <Route path="/communication" element={<Communication {...commonProps} />} />
+                <Route path="/expenses" element={<Expenses {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/communication" element={<Communication {...commonProps} currentYearId={selectedYear} />} />
                 <Route path="/grades-summary" element={<GradeSummary {...commonProps} />} />
-                <Route path="/library" element={<Library {...commonProps} />} />
-                <Route path="/assignments" element={<MyAssignmentsManager {...commonProps} />} />
+                <Route path="/library" element={<Library {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/assignments" element={<MyAssignmentsManager {...commonProps} selectedYear={selectedYear} />} />
                 <Route path="/academicYear" element={<AcademicYearManager {...commonProps} />} />
                 <Route path="/users-management" element={<UsersManager {...commonProps} />} />
 
-                {/* --- ΑΛΛΑΓΗ: Routes για τον Οδηγό Σπουδών --- */}
                 <Route path="/study-guide/faculties" element={<FacultiesPage {...commonProps} />} />
                 <Route path="/study-guide/points-calculator" element={<PointsCalculatorPage {...commonProps} />} />
                 <Route path="/study-guide/documents" element={<StudyGuideDocs {...commonProps} />} />
@@ -187,6 +190,7 @@ function AdminPortal({ db, appId, user }) {
                         onSaveSuccess={closeModal} 
                         onCancel={closeModal} 
                         {...commonProps} 
+                        selectedYear={selectedYear}
                     />
                 </DialogContent>
             </Dialog>

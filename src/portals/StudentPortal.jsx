@@ -1,11 +1,11 @@
 // src/portals/StudentPortal.jsx
-import React from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Typography, Grid, Paper, List, ListItem, ListItemIcon, ListItemText, Button, Divider, LinearProgress } from '@mui/material';
-import { Event as EventIcon, Grade as GradeIcon, Assignment as AssignmentIcon, EmojiEvents as BadgeIcon, MilitaryTech as LevelIcon } from '@mui/icons-material';
+import { Event as EventIcon, Grade as GradeIcon, Assignment as AssignmentIcon, EmojiEvents as BadgeIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
-import { useAcademicYear } from '../context/AcademicYearContext.jsx';
 import { StudentDataProvider, useStudentData } from '../context/StudentDataContext.jsx';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 // Εισαγωγή των σελίδων του μαθητή
 import Communication from '../pages/Communication.jsx';
@@ -16,6 +16,15 @@ import MyProfile from './student/MyProfile.jsx';
 import StudentCalendar from './student/StudentCalendar.jsx';
 import MyBadges, { allBadges } from './student/MyBadges.jsx';
 import MyCourses from './student/MyCourses.jsx';
+
+// ΔΙΟΡΘΩΣΗ: Εισαγωγή των σελίδων του Οδηγού Σπουδών
+import FacultiesPage from '../pages/FacultiesPage.jsx';
+import PointsCalculatorPage from '../pages/PointsCalculatorPage.jsx';
+
+// Placeholder components
+const StudyGuideDocs = () => <Box p={3}><Typography variant="h5">Χρήσιμα Έγγραφα και Πληροφορίες</Typography></Box>;
+const StudyGuideSimulation = () => <Box p={3}><Typography variant="h5">Προσομοίωση Μηχανογραφικού</Typography></Box>;
+
 
 // Το Dashboard component τώρα δέχεται τα δεδομένα ως props
 const StudentDashboard = ({ studentData, enrolledClassrooms, grades, assignments, earnedBadges, levelInfo }) => {
@@ -53,7 +62,7 @@ const StudentDashboard = ({ studentData, enrolledClassrooms, grades, assignments
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', background: 'linear-gradient(45deg, #1e88e5 30%, #64b5f6 90%)', color: 'white' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <i class="fa-solid fa-trophy"></i>
+                                <i className="fa-solid fa-trophy"></i>
                                 <Typography variant="h6">Η Πρόοδός σου</Typography>
                             </Box>
                             <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{levelInfo.currentLevel.title}</Typography>
@@ -154,6 +163,22 @@ const StudentDashboard = ({ studentData, enrolledClassrooms, grades, assignments
 const StudentPortalContent = () => {
     const studentProps = useStudentData();
     const { loading, studentId, studentData, selectedYear } = studentProps;
+    
+    const [allUsers, setAllUsers] = useState([]);
+    useEffect(() => {
+        if (!studentProps.db) return;
+        const usersRef = collection(studentProps.db, 'users');
+        const unsubscribe = onSnapshot(usersRef, (snapshot) => {
+            setAllUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+        return () => unsubscribe();
+    }, [studentProps.db]);
+
+    const allAdmins = useMemo(() => {
+        if (!allUsers) return [];
+        return allUsers.filter(u => u.role === 'admin');
+    }, [allUsers]);
+
 
     if (loading) {
         return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
@@ -181,7 +206,6 @@ const StudentPortalContent = () => {
         );
     }
 
-    // --- ΔΙΟΡΘΩΣΗ: Περνάμε όλα τα props από το context σε κάθε Route ---
     return (
         <Routes>
             <Route path="/" element={<StudentDashboard {...studentProps} />} />
@@ -201,8 +225,17 @@ const StudentPortalContent = () => {
                     allStudents={studentProps.classmates} 
                     classrooms={studentProps.enrolledClassrooms}
                     allTeachers={studentProps.allTeachers}
+                    allAdmins={allAdmins}
+                    currentYearId={selectedYear}
+                    allUsers={allUsers} 
                 />
             } />
+
+            {/* ΔΙΟΡΘΩΣΗ: Προσθήκη των routes για τον Οδηγό Σπουδών */}
+            <Route path="/study-guide/faculties" element={<FacultiesPage {...studentProps} />} />
+            <Route path="/study-guide/points-calculator" element={<PointsCalculatorPage {...studentProps} />} />
+            <Route path="/study-guide/documents" element={<StudyGuideDocs {...studentProps} />} />
+            <Route path="/study-guide/simulation" element={<StudyGuideSimulation {...studentProps} />} />
         </Routes>
     );
 };

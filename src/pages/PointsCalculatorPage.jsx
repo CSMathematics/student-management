@@ -4,17 +4,29 @@ import {
     Box, Paper, Typography, Grid, TextField, Button, Select, MenuItem,
     FormControl, InputLabel, Card, CardContent, Divider, Alert, Tooltip, Chip,
     Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    IconButton, ToggleButtonGroup, ToggleButton, List, ListItem, ListItemText
+    IconButton, ToggleButtonGroup, ToggleButton, List, ListItem, ListItemText, Snackbar, TableSortLabel
 } from '@mui/material';
+import { visuallyHidden } from '@mui/utils';
 import CalculateIcon from '@mui/icons-material/Calculate';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import SaveIcon from '@mui/icons-material/Save';
+import PrintIcon from '@mui/icons-material/Print';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 
 // Firebase Imports
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+
+// PDF Export Libraries
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+import filomatheiaLogo from '../../public/Logo_full.png'; 
+import filomatheiaInfo from '../../public/info.png'; 
 
 // Εισαγωγή δεδομένων
 import facultiesData1 from '../data/universities/1oPedio_Full.json';
@@ -36,6 +48,91 @@ const subjectNameMap = {
     'αρχαία ελληνικά': 'Αρχαία Ελληνικά', 'ιστορία': 'Ιστορία', 'λατινικά': 'Λατινικά', 'μαθηματικά': 'Μαθηματικά', 'φυσική': 'Φυσική', 'χημεία': 'Χημεία', 'βιολογία': 'Βιολογία',
 };
 
+let robotoFontBytes = null;
+const arrayBufferToBase64 = (buffer) => {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+};
+
+// **ΝΕΟ**: Λογική ταξινόμησης πίνακα
+function descendingComparator(a, b, orderBy) {
+    const valA = a[orderBy] ?? (typeof a[orderBy] === 'number' ? 0 : '');
+    const valB = b[orderBy] ?? (typeof b[orderBy] === 'number' ? 0 : '');
+    if (valB < valA) return -1;
+    if (valB > valA) return 1;
+    return 0;
+}
+
+function getComparator(order, orderBy) {
+    return order === 'desc'
+        ? (a, b) => descendingComparator(a, b, orderBy)
+        : (a, b) => -descendingComparator(a, b, orderBy);
+}
+
+function stableSort(array, comparator) {
+    const stabilizedThis = array.map((el, index) => [el, index]);
+    stabilizedThis.sort((a, b) => {
+        const order = comparator(a[0], b[0]);
+        if (order !== 0) return order;
+        return a[1] - b[1];
+    });
+    return stabilizedThis.map((el) => el[0]);
+}
+
+const headCells = [
+    { id: 'name', numeric: false, label: 'Σχολή' },
+    { id: 'university', numeric: false, label: 'Ίδρυμα' },
+    { id: 'city', numeric: false, label: 'Πόλη' },
+    { id: 'calculatedPoints', numeric: true, label: 'Μόρια/Βάση' },
+    { id: 'studentEBEForFaculty', numeric: true, label: 'ΕΒΕ' },
+    { id: 'action', numeric: false, label: '', sortable: false },
+];
+
+function EnhancedTableHead(props) {
+    const { order, orderBy, onRequestSort } = props;
+    const createSortHandler = (property) => (event) => {
+        onRequestSort(event, property);
+    };
+
+    return (
+        <TableHead>
+            <TableRow>
+                {headCells.map((headCell) => (
+                    <TableCell
+                        key={headCell.id}
+                        align={headCell.numeric ? 'right' : 'left'}
+                        sortDirection={orderBy === headCell.id ? order : false}
+                        sx={{ fontWeight: 'bold', minWidth: headCell.id === 'name' ? 200 : 'auto' }}
+                    >
+                        {headCell.sortable === false ? (
+                            headCell.label
+                        ) : (
+                            <TableSortLabel
+                                active={orderBy === headCell.id}
+                                direction={orderBy === headCell.id ? order : 'asc'}
+                                onClick={createSortHandler(headCell.id)}
+                            >
+                                {headCell.label}
+                                {orderBy === headCell.id ? (
+                                    <Box component="span" sx={visuallyHidden}>
+                                        {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                                    </Box>
+                                ) : null}
+                            </TableSortLabel>
+                        )}
+                    </TableCell>
+                ))}
+            </TableRow>
+        </TableHead>
+    );
+}
+
+
 export default function PointsCalculatorPage({ db, appId, userId }) {
     // State για τον υπολογισμό
     const [selectedField, setSelectedField] = useState(1);
@@ -49,10 +146,14 @@ export default function PointsCalculatorPage({ db, appId, userId }) {
     const [searchText, setSearchText] = useState('');
     const [selectedCity, setSelectedCity] = useState('');
     const [selectedUniversity, setSelectedUniversity] = useState('');
+    const [order, setOrder] = useState('desc');
+    const [orderBy, setOrderBy] = useState('calculatedPoints');
 
 
     // State για το Μηχανογραφικό
     const [mechanografiko, setMechanografiko] = useState([]);
+    const [isSaving, setIsSaving] = useState(false);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     
     // Drag-and-drop state
     const [draggedItem, setDraggedItem] = useState(null);
@@ -68,23 +169,28 @@ export default function PointsCalculatorPage({ db, appId, userId }) {
             }).catch(err => console.error("Failed to load mechanografiko:", err));
         }
     }, [userId, db, appId]);
-
-    // Αποθήκευση μηχανογραφικού σε κάθε αλλαγή (με debounce)
-    useEffect(() => {
-        if (userId && db && appId && results) {
-            const handler = setTimeout(() => {
-                const docRef = doc(db, `artifacts/${appId}/users/${userId}/mechanografiko`, 'main');
-                const fullData = mechanografiko.map(schoolCode => 
-                    results.allFaculties.find(f => f.code === schoolCode)
-                ).filter(Boolean);
-
-                setDoc(docRef, { schools: mechanografiko, fullData: fullData })
-                    .catch(err => console.error("Failed to save mechanografiko:", err));
-            }, 1000); 
-
-            return () => clearTimeout(handler);
+    
+    const handleSaveMechanografiko = async () => {
+        if (!userId || !db || !appId || !results) {
+            setSnackbar({ open: true, message: 'Η αποθήκευση απέτυχε. Δεν υπάρχει σύνδεση.', severity: 'error' });
+            return;
         }
-    }, [mechanografiko, userId, db, appId, results]);
+        setIsSaving(true);
+        try {
+            const docRef = doc(db, `artifacts/${appId}/users/${userId}/mechanografiko`, 'main');
+            const fullData = mechanografiko.map(schoolCode => 
+                results.allFaculties.find(f => f.code === schoolCode)
+            ).filter(Boolean);
+
+            await setDoc(docRef, { schools: mechanografiko, fullData: fullData });
+            setSnackbar({ open: true, message: 'Το μηχανογραφικό αποθηκεύτηκε!', severity: 'success' });
+        } catch (err) {
+            console.error("Failed to save mechanografiko:", err);
+            setSnackbar({ open: true, message: 'Σφάλμα αποθήκευσης.', severity: 'error' });
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
 
     const handleCalculate = () => {
@@ -184,7 +290,6 @@ export default function PointsCalculatorPage({ db, appId, userId }) {
         });
     }, [results, filterStatus, searchText, selectedCity, selectedUniversity]);
     
-    // **ΝΕΟ**: Υπολογισμός πλήθους για εμφάνιση
     const facultyCounts = useMemo(() => {
         const total = filteredFaculties.length;
         const successes = filteredFaculties.filter(f => f.status === 'pass').length;
@@ -206,6 +311,17 @@ export default function PointsCalculatorPage({ db, appId, userId }) {
     };
     const removeFromMechanografiko = (schoolCode) => {
         setMechanografiko(prev => prev.filter(code => code !== schoolCode));
+    };
+
+    const handleClearMechanografiko = () => {
+        setMechanografiko([]);
+        setSnackbar({ open: true, message: 'Η λίστα εκκαθαρίστηκε.', severity: 'info' });
+    };
+
+    const handleRequestSort = (event, property) => {
+        const isAsc = orderBy === property && order === 'asc';
+        setOrder(isAsc ? 'desc' : 'asc');
+        setOrderBy(property);
     };
 
     const handleDragStart = (e, index) => {
@@ -232,9 +348,76 @@ export default function PointsCalculatorPage({ db, appId, userId }) {
         if (pointsDifference >= -500) return { color: 'warning.main', label: 'Πιθανή Επιλογή' };
         return { color: 'error.main', label: 'Δύσκολη Επιλογή' };
     };
+    
+    const handlePrint = () => {
+        window.print();
+    };
+
+    const handleExportPDF = async () => {
+        const doc = new jsPDF();
+        
+        try {
+            if (!robotoFontBytes) {
+                const fontUrl = 'https://raw.githubusercontent.com/googlefonts/roboto/main/src/hinted/Roboto-Regular.ttf';
+                robotoFontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
+            }
+            const robotoBase64 = arrayBufferToBase64(robotoFontBytes);
+            doc.addFileToVFS('Roboto-Regular.ttf', robotoBase64);
+            doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+            doc.setFont('Roboto');
+        } catch (e) {
+            console.error("Font loading failed, falling back to default font.", e);
+        }
+
+        doc.addImage(filomatheiaLogo, 'PNG', 14, 10, 63, 15);
+        doc.addImage(filomatheiaInfo, 'PNG', doc.internal.pageSize.getWidth() - 65, 12, 51, 18);
+
+        doc.setFontSize(16);
+        doc.text("Μηχανογραφικό Δελτίο", 14, 45);
+        
+        autoTable(doc, {
+            startY: 50,
+            head: [['#', 'Σχολή', 'Ίδρυμα', 'Πόλη', 'Μόρια Σου', 'Βάση']],
+            body: mechanografikoDetails.map((f, index) => [
+                index + 1,
+                f.name,
+                f.university,
+                f.city,
+                f.calculatedPoints,
+                f.base_2025
+            ]),
+            styles: {
+                font: 'Roboto',
+                fontStyle: 'normal',
+            },
+            headStyles: {
+                font: 'Roboto',
+                fontStyle: 'normal',
+            },
+        });
+        doc.save('mechanografiko.pdf');
+    };
 
     return (
         <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+            <style>
+                {`
+                    @media print {
+                        body * {
+                            visibility: hidden;
+                        }
+                        #print-area, #print-area * {
+                            visibility: visible;
+                        }
+                        #print-area {
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            width: 100%;
+                        }
+                    }
+                `}
+            </style>
             <Grid container spacing={3}>
                 <Grid item xs={12} md={4} lg={3}>
                     <Paper sx={{ p: 2, position: 'sticky', top: 20 }}>
@@ -297,7 +480,6 @@ export default function PointsCalculatorPage({ db, appId, userId }) {
                                             </ToggleButtonGroup>
                                         </Grid>
                                     </Grid>
-                                    {/* **ΝΕΟ**: Εμφάνιση πλήθους */}
                                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2, mb: 1, px:1 }}>
                                         <Typography variant="caption">
                                             Εμφανίζονται: <strong>{facultyCounts.total}</strong>
@@ -307,23 +489,17 @@ export default function PointsCalculatorPage({ db, appId, userId }) {
                                     </Box>
                                     <TableContainer sx={{ maxHeight: 600 }}>
                                         <Table stickyHeader size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell sx={{ minWidth: 200 }}>Σχολή</TableCell>
-                                                    <TableCell>Ίδρυμα</TableCell>
-                                                    <TableCell>Πόλη</TableCell>
-                                                    <TableCell align="right">Μόρια/Βάση</TableCell>
-                                                    <TableCell align="right">ΕΒΕ</TableCell>
-                                                    <TableCell></TableCell>
-                                                </TableRow>
-                                            </TableHead>
+                                            <EnhancedTableHead
+                                                order={order}
+                                                orderBy={orderBy}
+                                                onRequestSort={handleRequestSort}
+                                            />
                                             <TableBody>
-                                                {filteredFaculties.map(f => (
+                                                {stableSort(filteredFaculties, getComparator(order, orderBy)).map(f => (
                                                     <TableRow key={f.code} hover sx={{ opacity: f.status === 'fail' ? 0.7 : 1 }}>
                                                         <TableCell>
-                                                            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{f.name}</Typography>
-                                                            {/* **ΝΕΟ**: Εμφάνιση κωδικού */}
-                                                            <Typography variant="caption" color="text.secondary" fontSize= '0.9rem'>Κωδικός: {f.code}</Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{f.name}</Typography>
+                                                            <Typography variant="caption" color="text.secondary">Κωδικός: {f.code}</Typography>
                                                         </TableCell>
                                                         <TableCell><Typography variant="body2" color="text.secondary">{f.university}</Typography></TableCell>
                                                         <TableCell><Typography variant="body2" color="text.secondary">{f.city}</Typography></TableCell>
@@ -342,7 +518,6 @@ export default function PointsCalculatorPage({ db, appId, userId }) {
                                                                         size="small" 
                                                                         onClick={() => addToMechanografiko(f.code)} 
                                                                         disabled={mechanografiko.includes(f.code) || f.status === 'fail'}
-                                                                        color='success'
                                                                     >
                                                                         <AddCircleOutlineIcon />
                                                                     </IconButton>
@@ -360,34 +535,59 @@ export default function PointsCalculatorPage({ db, appId, userId }) {
                                     {mechanografikoDetails.length === 0 ? (
                                         <Alert severity="info">Προσθέστε σχολές από τον πίνακα "Αναλυτικά Αποτελέσματα" για να φτιάξετε το μηχανογραφικό σας.</Alert>
                                     ) : (
-                                        <List>
-                                            {mechanografikoDetails.map((f, index) => {
-                                                const indicator = getStatusIndicator(f.pointsDifference);
-                                                return (
-                                                    <ListItem 
-                                                        key={f.code} 
-                                                        divider
-                                                        draggable
-                                                        onDragStart={(e) => handleDragStart(e, index)}
-                                                        onDragOver={(e) => handleDragOver(e, index)}
-                                                        onDragEnd={handleDragEnd}
-                                                        sx={{ cursor: 'move', userSelect: 'none', backgroundColor: draggedItem === index ? 'action.hover' : 'transparent' }}
-                                                    >
-                                                        <DragIndicatorIcon sx={{ mr: 1, color: 'text.disabled' }}/>
-                                                        <Tooltip title={indicator.label}>
-                                                            <Box sx={{ width: 8, height: 32, backgroundColor: indicator.color, mr: 2, borderRadius: 1 }} />
-                                                        </Tooltip>
-                                                        <ListItemText
-                                                            primary={`${index + 1}. ${f.name}`}
-                                                            secondary={`${f.university} - ${f.city} | Βάση: ${f.base_2025} - Τα μόρια σου: ${f.calculatedPoints}`}
-                                                        />
-                                                        <IconButton size="small" color = 'error' onClick={() => removeFromMechanografiko(f.code)}>
-                                                            <RemoveCircleOutlineIcon />
-                                                        </IconButton>
-                                                    </ListItem>
-                                                );
-                                            })}
-                                        </List>
+                                        <>
+                                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 2 }}>
+                                                <Button 
+                                                    variant="contained" 
+                                                    startIcon={<SaveIcon />} 
+                                                    onClick={handleSaveMechanografiko}
+                                                    disabled={isSaving}
+                                                >
+                                                    {isSaving ? 'Αποθήκευση...' : 'Αποθήκευση'}
+                                                </Button>
+                                                {/* **ΝΕΟ**: Κουμπί εκκαθάρισης */}
+                                                <Tooltip title="Εκκαθάριση Λίστας">
+                                                    <IconButton onClick={handleClearMechanografiko}><DeleteSweepIcon /></IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Εκτύπωση">
+                                                    <IconButton onClick={handlePrint}><PrintIcon /></IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Εξαγωγή σε PDF">
+                                                    <IconButton onClick={handleExportPDF}><PictureAsPdfIcon /></IconButton>
+                                                </Tooltip>
+                                            </Box>
+                                            <Box id="print-area">
+                                                <Typography variant="h6" gutterBottom>Οι επιλογές μου</Typography>
+                                                <List>
+                                                    {mechanografikoDetails.map((f, index) => {
+                                                        const indicator = getStatusIndicator(f.pointsDifference);
+                                                        return (
+                                                            <ListItem 
+                                                                key={f.code} 
+                                                                divider
+                                                                draggable
+                                                                onDragStart={(e) => handleDragStart(e, index)}
+                                                                onDragOver={(e) => handleDragOver(e, index)}
+                                                                onDragEnd={handleDragEnd}
+                                                                sx={{ cursor: 'move', userSelect: 'none', backgroundColor: draggedItem === index ? 'action.hover' : 'transparent' }}
+                                                            >
+                                                                <DragIndicatorIcon sx={{ mr: 1, color: 'text.disabled' }}/>
+                                                                <Tooltip title={indicator.label}>
+                                                                    <Box sx={{ width: 8, height: 32, backgroundColor: indicator.color, mr: 2, borderRadius: 1 }} />
+                                                                </Tooltip>
+                                                                <ListItemText
+                                                                    primary={`${index + 1}. ${f.name}`}
+                                                                    secondary={`${f.university} - ${f.city} | Βάση: ${f.base_2025} - Τα μόρια σου: ${f.calculatedPoints}`}
+                                                                />
+                                                                <IconButton size="small" onClick={() => removeFromMechanografiko(f.code)}>
+                                                                    <RemoveCircleOutlineIcon />
+                                                                </IconButton>
+                                                            </ListItem>
+                                                        );
+                                                    })}
+                                                </List>
+                                            </Box>
+                                        </>
                                     )}
                                 </Box>
                             </>
@@ -395,6 +595,16 @@ export default function PointsCalculatorPage({ db, appId, userId }) {
                     </Paper>
                 </Grid>
             </Grid>
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            >
+                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }
