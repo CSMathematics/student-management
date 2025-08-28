@@ -26,21 +26,19 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
     const [anchorElUser, setAnchorElUser] = useState(null);
     const [anchorElNotifications, setAnchorElNotifications] = useState(null);
     const [anchorElMessages, setAnchorElMessages] = useState(null);
-    
-    // --- START: New state for the complete user profile with image ---
     const [fullUserProfile, setFullUserProfile] = useState(userProfile);
-    // --- END: New state ---
     
     const { academicYears, selectedYear, setSelectedYear, loadingYears } = useAcademicYear();
+    
+    const userRoles = useMemo(() => userProfile?.roles || [userProfile?.role].filter(Boolean), [userProfile]);
 
-    // --- START: Effect to fetch detailed profile (with image URL) ---
     useEffect(() => {
-        if (!db || !userProfile?.profileId || !userProfile?.role || !selectedYear) {
-            setFullUserProfile(userProfile); // Fallback to the basic profile
+        if (!db || !userProfile?.profileId || userRoles.length === 0 || !selectedYear) {
+            setFullUserProfile(userProfile);
             return;
         }
 
-        const collectionName = userProfile.role === 'student' ? 'students' : userProfile.role === 'teacher' ? 'teachers' : null;
+        const collectionName = userRoles.includes('student') ? 'students' : userRoles.includes('teacher') ? 'teachers' : null;
         if (!collectionName) {
             setFullUserProfile(userProfile);
             return;
@@ -50,20 +48,18 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
 
         const unsubscribe = onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
-                // Merge the base user profile with the detailed profile data
                 setFullUserProfile({ ...userProfile, ...docSnap.data() });
             } else {
-                setFullUserProfile(userProfile); // Fallback if detailed profile not found
+                setFullUserProfile(userProfile);
             }
         }, (error) => {
             console.error(`Error fetching detailed user profile:`, error);
-            setFullUserProfile(userProfile); // Fallback on error
+            setFullUserProfile(userProfile);
         });
 
         return () => unsubscribe();
 
-    }, [db, appId, userProfile, selectedYear]);
-    // --- END: Effect to fetch detailed profile ---
+    }, [db, appId, userProfile, selectedYear, userRoles]);
 
     const messageNotifications = useMemo(() => 
         notifications.filter(n => n.type === 'message'), 
@@ -83,12 +79,14 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
     const handleCloseMessagesMenu = () => setAnchorElMessages(null);
     
     const handleProfileClick = () => {
-        const profilePathMap = {
-            student: '/my-profile',
-            teacher: '/teacher/edit/' + userProfile?.profileId,
-            admin: '/users-management'
-        };
-        const profilePath = profilePathMap[userProfile?.role] || '/';
+        let profilePath = '/';
+        if (userRoles.includes('student')) {
+            profilePath = '/my-profile';
+        } else if (userRoles.includes('teacher')) {
+            profilePath = '/my-profile';
+        } else if (userRoles.includes('admin')) {
+            profilePath = '/users-management';
+        }
         navigate(profilePath);
         handleCloseUserMenu();
     };
@@ -98,7 +96,7 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
     }, [selectedYear]);
 
     useEffect(() => {
-        if (userProfile?.role !== 'student' || !userProfile.profileId || !selectedYear || !db) {
+        if (!userRoles.includes('student') || !userProfile.profileId || !selectedYear || !db) {
             setNewBadgeCount(0);
             return;
         }
@@ -121,7 +119,7 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
             isMounted = false;
             unsubscribe();
         };
-    }, [db, appId, userProfile, selectedYear]);
+    }, [db, appId, userProfile, selectedYear, userRoles]);
 
     useEffect(() => {
         if (!db || !user?.uid) return;
@@ -130,7 +128,7 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
 
         if (selectedYear) {
             const recipientIds = ['global', user.uid];
-            if (userProfile?.role === 'parent' && userProfile.childIds) {
+            if (userRoles.includes('parent') && userProfile.childIds) {
                 recipientIds.push(...userProfile.childIds);
             }
 
@@ -161,7 +159,7 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
             unsubscribes.push(yearUnsubscribe);
         }
 
-        if (userProfile?.role === 'admin') {
+        if (userRoles.includes('admin')) {
             const adminNotificationsQuery = query(
                 collection(db, `artifacts/${appId}/public/data/adminNotifications`),
                 where('recipientId', '==', 'admin'),
@@ -189,7 +187,7 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
         }
 
         return () => unsubscribes.forEach(unsub => unsub());
-    }, [db, appId, user, userProfile, selectedYear]);
+    }, [db, appId, user, userProfile, selectedYear, userRoles]);
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
@@ -243,7 +241,7 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
             <Sidebar 
                 handleDrawerToggle={handleDrawerToggle} 
                 mobileOpen={mobileOpen}
-                userRole={userProfile?.role || 'unknown'}
+                userRoles={userRoles}
             />
             <Box 
                 component="main" 
@@ -283,15 +281,15 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
                                     onChange={(e) => setSelectedYear(e.target.value)}
                                     displayEmpty
                                     sx={{
-                                        color: 'text.primary',
+                                        color: 'white',
                                         '& .MuiOutlinedInput-notchedOutline': {
                                             borderColor: 'divider',
                                         },
                                         '&:hover .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: 'text.primary',
+                                            borderColor: 'white',
                                         },
                                         '& .MuiSvgIcon-root': {
-                                            color: 'text.secondary'
+                                            color: 'white'
                                         },
                                     }}
                                 >
@@ -340,7 +338,7 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
                                 onMarkAllAsRead={() => handleMarkAllAsRead(otherNotifications)}
                             />
 
-                            {userProfile?.role === 'student' && (
+                            {userRoles.includes('student') && (
                                 <Tooltip title="Νέα Παράσημα">
                                     <IconButton color="inherit" onClick={() => navigate('/my-badges')}>
                                         <Badge badgeContent={newBadgeCount} color="secondary">
@@ -359,9 +357,7 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
                             <Box sx={{ flexGrow: 0 }}>
                                 <Tooltip title="Επιλογές Χρήστη">
                                     <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                                        {/* --- START: Use the new fullUserProfile state for the avatar --- */}
                                         <Avatar alt={fullUserProfile?.displayName || fullUserProfile?.firstName} src={fullUserProfile?.avatarUrl || fullUserProfile?.profileImageUrl} />
-                                        {/* --- END: Use the new fullUserProfile state for the avatar --- */}
                                     </IconButton>
                                 </Tooltip>
                                 <Menu

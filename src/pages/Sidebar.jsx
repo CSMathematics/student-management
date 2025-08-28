@@ -1,5 +1,5 @@
 // src/pages/Sidebar.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Typography, Collapse, Drawer, Toolbar } from '@mui/material';
 import ExpandLess from '@mui/icons-material/ExpandLess';
@@ -41,10 +41,9 @@ const navItemsByRole = {
                 { text: "Λίστα καθηγητών", icon: "fas fa-chalkboard-user", path: "/teachers" },
             ]
         },
-        { text: "Διαγωνίσματα - Εργασίες", icon: "fas fa-file-alt", path: "assignments" },
+        { text: "Διαγωνίσματα - Εργασίες", icon: "fas fa-file-alt", path: "/assignments" },
         { text: "Βαθμολογίες", icon: "fas fa-chart-bar", path: "/grades-summary" },
         { text: "Βιβλιοθήκη", icon: "fas fa-book-open", path: "/library" },
-        // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
         {
             text: "Οδηγός Σπουδών", icon: "fas fa-university", isParent: true,
             subItems: [
@@ -54,7 +53,6 @@ const navItemsByRole = {
                 { text: "Προσομοίωση", icon: "fas fa-tasks", path: "/study-guide/simulation" }
             ]
         },
-        // --- ΤΕΛΟΣ ΠΡΟΣΘΗΚΗΣ ---
         { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", path: "/phonebook" },
         { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
@@ -67,13 +65,12 @@ const navItemsByRole = {
             text: "Ρυθμίσεις", icon: "fas fa-cog", isParent: true,
             subItems: [
                 { text: "Βασικές Ρυθμίσεις", icon: "fas fa-cog", path: "#" },
+                { text: "Το Προφίλ μου", icon: "fas fa-user-cog", path: "/my-profile" },
                 { text: "Ακαδημαϊκή χρονιά", icon: "fas fa-calendar-alt", path: "/academicYear" },
                 { text: "Διαχείριση Χρηστών", icon: "fas fa-users-cog", path: "/users-management" },
                 { text: "Εμφάνιση", icon: "fas fa-sliders-h", path: "#" }
             ]
         },
-
-
     ],
     teacher: [
         { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
@@ -85,7 +82,6 @@ const navItemsByRole = {
         { text: "Οι Μαθητές μου", icon: "fas fa-users", path: "/my-students" },
         { text: "Οι Αξιολογήσεις μου", icon: "fas fa-tasks", path: "/my-assignments" },
         { text: "Το Βαθμολόγιό μου", icon: "fas fa-book-reader", path: "/my-gradebook" },
-        // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
         {
             text: "Οδηγός Σπουδών", icon: "fas fa-university", isParent: true,
             subItems: [
@@ -95,7 +91,6 @@ const navItemsByRole = {
                 { text: "Προσομοίωση", icon: "fas fa-tasks", path: "/study-guide/simulation" }
             ]
         },
-        // --- ΤΕΛΟΣ ΠΡΟΣΘΗΚΗΣ ---
         { text: "Στατιστικά", icon: "fas fa-chart-pie", path: "/teacher-stats" },
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
     ],
@@ -106,7 +101,6 @@ const navItemsByRole = {
         { text: "Τα Μαθήματά μου", icon: "fas fa-book-reader", path: "/my-courses" }, 
         { text: "Εργασίες & Διαγωνίσματα", icon: "fas fa-file-alt", path: "/my-assignments" },
         { text: "Το Υλικό μου", icon: "fas fa-book-open", path: "/my-materials" },
-        // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
         {
             text: "Οδηγός Σπουδών", icon: "fas fa-university", isParent: true,
             subItems: [
@@ -116,7 +110,6 @@ const navItemsByRole = {
                 { text: "Προσομοίωση", icon: "fas fa-tasks", path: "/study-guide/simulation" }
             ]
         },
-        // --- ΤΕΛΟΣ ΠΡΟΣΘΗΚΗΣ ---
         { text: "Οι Βαθμοί μου", icon: "fas fa-chart-bar", path: "/my-grades" },
         { text: "Οι Απουσίες μου", icon: "fas fa-times", path: "/my-absences" },
         { text: "Τα Παράσημά μου", icon: "fas fa-trophy", path: "/my-badges" },
@@ -140,15 +133,31 @@ const navItemsByRole = {
 };
 
 
-function Sidebar({ mobileOpen, handleDrawerToggle, userRole }) {
+function Sidebar({ mobileOpen, handleDrawerToggle, userRoles = [] }) {
     const location = useLocation();
     const [openSubmenus, setOpenSubmenus] = useState({});
 
-    const navItems = navItemsByRole[userRole] || navItemsByRole.unknown;
+    const navItems = useMemo(() => {
+        // --- START: Updated logic to prioritize roles ---
+        if (userRoles.includes('admin')) {
+            return navItemsByRole.admin;
+        }
+        if (userRoles.includes('teacher')) {
+            return navItemsByRole.teacher;
+        }
+        if (userRoles.includes('student')) {
+            return navItemsByRole.student;
+        }
+        if (userRoles.includes('parent')) {
+            return navItemsByRole.parent;
+        }
+        return navItemsByRole.unknown;
+        // --- END: Updated logic ---
+    }, [userRoles]);
 
     useEffect(() => {
         const parentOfPath = (path) => {
-            const item = navItems.find(item => item.isParent && path.startsWith(item.path));
+            const item = navItems.find(item => item.isParent && item.subItems.some(sub => sub.path === path));
             return item ? item.text : null;
         };
         const parent = parentOfPath(location.pathname);
@@ -162,6 +171,10 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRole }) {
     };
 
     const renderListItemButton = (item, isSubItem = false) => {
+        if (item.type === 'divider') {
+            return <Divider />;
+        }
+        
         const isSelected = location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
 
         const commonProps = {

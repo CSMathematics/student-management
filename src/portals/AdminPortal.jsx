@@ -28,6 +28,7 @@ import MyAssignmentsManager from '../portals/teacher/MyAssignmentsManager.jsx';
 import AcademicYearManager from '../pages/AcademicYearsManager.jsx';
 import UsersManager from '../pages/UsersManager.jsx';
 import Library from '../pages/Library.jsx';
+import MyProfile from '../pages/MyProfile.jsx';
 
 // --- Εισαγωγή των σελίδων του Οδηγού Σπουδών ---
 import FacultiesPage from '../pages/FacultiesPage.jsx';
@@ -59,7 +60,8 @@ const TeacherFormWrapper = (props) => {
 };
 
 
-function AdminPortal({ db, appId, user }) {
+// --- START: Add userProfile as a prop ---
+function AdminPortal({ db, appId, user, userProfile }) {
     const { selectedYear, loadingYears } = useAcademicYear();
 
     const [allData, setAllData] = useState({
@@ -142,13 +144,12 @@ function AdminPortal({ db, appId, user }) {
         <>
             <Routes>
                 <Route path="/" element={<DashboardContent {...commonProps} />} />
-                <Route path="/students" element={<StudentsList {...commonProps} selectedYear={selectedYear} />} />
                 
-                {/* --- START: ΔΙΟΡΘΩΣΗ --- */}
+                <Route path="/my-profile" element={<MyProfile {...commonProps} userProfile={userProfile} />} />
+
+                <Route path="/students" element={<StudentsList {...commonProps} selectedYear={selectedYear} />} />
                 <Route path="/student/new" element={<StudentForm {...commonProps} selectedYear={selectedYear} openModalWithData={openModalWithData} />} />
                 <Route path="/student/edit/:studentId" element={<StudentFormWrapper {...commonProps} selectedYear={selectedYear} openModalWithData={openModalWithData} />} />
-                {/* --- END: ΔΙΟΡΘΩΣΗ --- */}
-
                 <Route path="/student/report/:studentId" element={<StudentReport {...commonProps} />} />
                 <Route path="/classrooms" element={<Classrooms {...commonProps} selectedYear={selectedYear} />} />
                 <Route path="/classroom/new" element={<NewClassroomForm {...commonProps} selectedYear={selectedYear} />} />

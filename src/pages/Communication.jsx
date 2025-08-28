@@ -418,12 +418,12 @@ const ChatMessage = ({ msg, onReplyClick, onDeleteClick, currentUser, participan
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography variant="caption" sx={{ fontWeight: 'bold' }}>{isMe ? 'Me' : msg.title}</Typography>
                     
-                    {!isMe && msg.senderRole === 'admin' && (
+                    {!isMe && msg.senderRoles?.includes('admin') && (
                         <Tooltip title="Διαχειριστής">
                             <AdminPanelSettingsIcon sx={{ fontSize: '1rem', color: 'error.main' }} />
                         </Tooltip>
                     )}
-                    {!isMe && msg.senderRole === 'teacher' && (
+                    {!isMe && msg.senderRoles?.includes('teacher') && (
                         <Tooltip title="Καθηγητής">
                             <TeacherIcon sx={{ fontSize: '1rem', color: 'info.main' }} />
                         </Tooltip>
@@ -509,40 +509,36 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
         };
     }, [userId, allUsers]);
     
-    // --- ΔΙΟΡΘΩΣΗ: Δημιουργία ενός ενιαίου "χάρτη" χρηστών με όλες τις πληροφορίες ---
     const allUsersMap = useMemo(() => {
         const map = new Map();
-        // 1. Προσθέτουμε τους βασικούς χρήστες (π.χ. admins)
         allUsers.forEach(u => {
             if (u && u.id) {
                 map.set(u.id, { 
                     name: u.displayName || `${u.firstName} ${u.lastName}`, 
                     avatar: u.avatarUrl || null,
-                    role: u.role 
+                    roles: u.roles || [u.role]
                 });
             }
         });
 
-        // 2. Εμπλουτίζουμε/Αντικαθιστούμε με δεδομένα από τα προφίλ των μαθητών
         allStudents.forEach(s => {
             const user = allUsers.find(u => u.profileId === s.id || u.email === s.email);
             if (user) {
                 map.set(user.id, {
                     name: `${s.lastName} ${s.firstName}`,
                     avatar: s.profileImageUrl || null,
-                    role: 'student'
+                    roles: user.roles || [user.role]
                 });
             }
         });
         
-        // 3. Εμπλουτίζουμε/Αντικαθιστούμε με δεδομένα από τα προφίλ των καθηγητών
         allTeachers.forEach(t => {
             const user = allUsers.find(u => u.profileId === t.id || u.email === t.email);
             if (user) {
                 map.set(user.id, {
                     name: `${t.firstName} ${t.lastName}`,
                     avatar: t.profileImageUrl || null,
-                    role: 'teacher'
+                    roles: user.roles || [user.role]
                 });
             }
         });
@@ -862,7 +858,7 @@ function Communication({ db, appId, allStudents = [], classrooms = [], allTeache
                     type: msg.type || 'text',
                     title: senderInfo?.name || 'Unknown User',
                     avatar: senderInfo?.avatar,
-                    senderRole: senderInfo?.role
+                    senderRoles: senderInfo?.roles || []
                 };
             });
     }, [messages, selectedChannel, currentUser.id, allUsersMap]);

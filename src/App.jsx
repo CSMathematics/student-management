@@ -70,7 +70,7 @@ function App() {
                     if (doc.exists()) {
                         setUserProfile(doc.data());
                     } else {
-                        setUserProfile({ role: 'unknown' });
+                        setUserProfile({ roles: ['unknown'] });
                     }
                     setAuthLoading(false);
                 });
@@ -95,8 +95,8 @@ function App() {
                 email: user.email,
                 firstName: firstName,
                 lastName: lastName,
-                role: 'pending_approval', 
-                requestedRole: role, // --- ΑΛΛΑΓΗ: Αποθήκευση του αιτούμενου ρόλου ---
+                roles: ['pending_approval'], 
+                requestedRole: role,
                 profileId: null,
                 createdAt: new Date(),
             });
@@ -143,21 +143,38 @@ function App() {
     };
 
     const renderPortal = () => {
+        // --- START: DEBUGGING ---
+        console.log("--- DEBUG: Checking which portal to render ---");
+        console.log("Current userProfile state:", userProfile);
+        console.log("Checking for roles:", userProfile?.roles);
+        // --- END: DEBUGGING ---
+
         const props = { db, appId, user, userProfile };
-        switch (userProfile?.role) {
-            case 'admin':
-                return <AdminPortal {...props} />;
-            case 'teacher':
-                return <TeacherPortal {...props} />;
-            case 'student':
-                return <StudentPortal {...props} />;
-            case 'parent':
-                return <ParentPortal {...props} />;
-            case 'pending_approval':
-                return <PendingApprovalPage />;
-            default:
-                return <Box>Loading user profile...</Box>;
+        const roles = userProfile?.roles || [];
+
+        if (roles.includes('admin')) {
+            console.log("Decision: Rendering AdminPortal");
+            return <AdminPortal {...props} />;
         }
+        if (roles.includes('teacher')) {
+            console.log("Decision: Rendering TeacherPortal");
+            return <TeacherPortal {...props} />;
+        }
+        if (roles.includes('student')) {
+            console.log("Decision: Rendering StudentPortal");
+            return <StudentPortal {...props} />;
+        }
+        if (roles.includes('parent')) {
+            console.log("Decision: Rendering ParentPortal");
+            return <ParentPortal {...props} />;
+        }
+        if (roles.includes('pending_approval')) {
+            console.log("Decision: Rendering PendingApprovalPage");
+            return <PendingApprovalPage />;
+        }
+        
+        console.log("Decision: Fallback to 'Loading user profile...'");
+        return <Box>Loading user profile...</Box>;
     };
 
     if (!isFirebaseReady || authLoading) {

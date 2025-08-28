@@ -9,7 +9,6 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Link as LinkIcon } from '@mui/icons-material';
 import { doc, deleteDoc, collection, onSnapshot, updateDoc } from 'firebase/firestore';
 
-// --- ΔΙΟΡΘΩΣΗ: Προσθήκη του selectedYear στα props ---
 function TeachersList({ allTeachers, loading, db, appId, selectedYear }) {
     const navigate = useNavigate();
     const [teacherToDelete, setTeacherToDelete] = useState(null);
@@ -38,9 +37,14 @@ function TeachersList({ allTeachers, loading, db, appId, selectedYear }) {
         return map;
     }, [allUsers]);
 
+    // --- START: Updated logic to check 'roles' array ---
     const unlinkedTeacherUsers = useMemo(() => {
-        return allUsers.filter(user => user.role === 'teacher' && !user.profileId);
+        return allUsers.filter(user => {
+            const userRoles = user.roles || (user.role ? [user.role] : []);
+            return userRoles.includes('teacher') && !user.profileId;
+        });
     }, [allUsers]);
+    // --- END: Updated logic ---
 
     const handleOpenLinkDialog = (teacher) => {
         setTeacherToLink(teacher);
@@ -72,7 +76,6 @@ function TeachersList({ allTeachers, loading, db, appId, selectedYear }) {
     const handleConfirmDelete = async () => {
         if (!teacherToDelete || !selectedYear) return;
         try {
-            // --- ΔΙΟΡΘΩΣΗ: Χρήση του selectedYear στη διαδρομή ---
             await deleteDoc(doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/teachers`, teacherToDelete.id));
             setTeacherToDelete(null);
         } catch (error) {

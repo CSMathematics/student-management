@@ -31,7 +31,6 @@ const DetailItem = ({ label, value }) => (
     </Box>
 );
 
-// --- ΔΙΟΡΘΩΣΗ: Προσθήκη του userId στα props ---
 function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeachers, allGrades, allAssignments, loading, db, appId, selectedYear, userId }) { 
     const navigate = useNavigate();
     const location = useLocation();
@@ -79,16 +78,20 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
     }, [selectedClassroom, classrooms]);
 
 
+    // --- START: Updated logic to handle navigation from dashboard ---
     useEffect(() => {
-        const classroomIdFromState = location.state?.selectedClassroomId;
+        const classroomIdFromState = location.state?.selectedId;
         if (classroomIdFromState && classrooms.length > 0) {
             const classroomToSelect = classrooms.find(c => c.id === classroomIdFromState);
             if (classroomToSelect) {
                 setSelectedGrade(classroomToSelect.grade);
                 setSelectedClassroomId(classroomToSelect.id);
+                // Clear the state to prevent re-triggering on refresh
+                navigate(location.pathname, { replace: true, state: {} });
             }
         }
-    }, [location.state, classrooms]);
+    }, [location.state, classrooms, navigate, location.pathname]);
+    // --- END: Updated logic ---
 
 
     const handleTabChange = (event, newValue) => setActiveTab(newValue);
@@ -296,7 +299,7 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                             db={db} 
                             appId={appId} 
                             selectedYear={selectedYear}
-                            userId={userId} // <-- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ
+                            userId={userId}
                         />
                     </TabPanel>
                     <TabPanel value={activeTab} index={2}><SyllabusTracker classroom={selectedClassroom} allCourses={allCourses} db={db} appId={appId} selectedYear={selectedYear} /></TabPanel>
@@ -307,7 +310,7 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                             db={db} 
                             appId={appId} 
                             selectedYear={selectedYear}
-                            userId={userId} // <-- Η ΔΙΟΡΘΩΣΗ ΕΙΝΑΙ ΕΔΩ
+                            userId={userId}
                         />
                     </TabPanel>
                     <TabPanel value={activeTab} index={5}><ClassroomStats selectedClassroom={selectedClassroom} allStudents={allStudents} allGrades={allGrades} allAbsences={allAbsences} classrooms={classrooms} /></TabPanel>
