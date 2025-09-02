@@ -21,7 +21,14 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
     const navigate = useNavigate();
     const [mobileOpen, setMobileOpen] = useState(false);
     const { mode, toggleTheme } = useTheme();
-    const [notifications, setNotifications] = useState([]);
+    
+    // --- START: REFACTORED NOTIFICATION STATE ---
+    const [userNotifications, setUserNotifications] = useState([]);
+    const [yearNotifications, setYearNotifications] = useState([]);
+    const [adminNotifications, setAdminNotifications] = useState([]);
+    const [combinedNotifications, setCombinedNotifications] = useState([]);
+    // --- END: REFACTORED NOTIFICATION STATE ---
+
     const [newBadgeCount, setNewBadgeCount] = useState(0);
     const [anchorElUser, setAnchorElUser] = useState(null);
     const [anchorElNotifications, setAnchorElNotifications] = useState(null);
@@ -31,6 +38,16 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
     const { academicYears, selectedYear, setSelectedYear, loadingYears } = useAcademicYear();
     
     const userRoles = useMemo(() => userProfile?.roles || [userProfile?.role].filter(Boolean), [userProfile]);
+    
+    // Combine notifications from all sources whenever one of them changes
+    useEffect(() => {
+        setCombinedNotifications([
+            ...userNotifications,
+            ...yearNotifications,
+            ...adminNotifications
+        ]);
+    }, [userNotifications, yearNotifications, adminNotifications]);
+
 
     useEffect(() => {
         if (!db || !userProfile?.profileId || userRoles.length === 0 || !selectedYear) {
@@ -62,12 +79,12 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
     }, [db, appId, userProfile, selectedYear, userRoles]);
 
     const messageNotifications = useMemo(() => 
-        notifications.filter(n => n.type === 'message'), 
-    [notifications]);
+        combinedNotifications.filter(n => n.type === 'message'), 
+    [combinedNotifications]);
 
     const otherNotifications = useMemo(() => 
-        notifications.filter(n => n.type !== 'message'), 
-    [notifications]);
+        combinedNotifications.filter(n => n.type !== 'message'), 
+    [combinedNotifications]);
 
     const handleOpenUserMenu = (event) => setAnchorElUser(event.currentTarget);
     const handleCloseUserMenu = () => setAnchorElUser(null);
@@ -92,7 +109,7 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
     };
 
     useEffect(() => {
-        setNotifications(prev => prev.filter(n => n.source !== 'year'));
+        setYearNotifications([]); // Clear year-specific notifications on year change
     }, [selectedYear]);
 
     useEffect(() => {
@@ -126,63 +143,53 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
 
         const unsubscribes = [];
 
+        // Listener for user-specific notifications (like reminders)
+        const userNotificationsQuery = query(
+            collection(db, `users/${user.uid}/notifications`),
+            orderBy('timestamp', 'desc'),
+            limit(20)
+        );
+        const userUnsubscribe = onSnapshot(userNotificationsQuery, (snapshot) => {
+            setUserNotifications(snapshot.docs.map(d => ({
+                id: d.id, ...d.data(),
+                read: d.data().read || false, source: 'user'
+            })));
+        }, (error) => console.error("Error fetching user-specific notifications:", error));
+        unsubscribes.push(userUnsubscribe);
+
+        // Listener for academic year notifications
         if (selectedYear) {
             const recipientIds = ['global', user.uid];
             if (userRoles.includes('parent') && userProfile.childIds) {
                 recipientIds.push(...userProfile.childIds);
             }
-
             const yearNotificationsQuery = query(
                 collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/notifications`),
                 where('recipientId', 'in', recipientIds),
-                orderBy('timestamp', 'desc'),
-                limit(50)
+                orderBy('timestamp', 'desc'), limit(50)
             );
-
             const yearUnsubscribe = onSnapshot(yearNotificationsQuery, (snapshot) => {
-                const yearNotifications = snapshot.docs.map(d => ({
-                    id: d.id,
-                    ...d.data(),
-                    read: d.data().readBy?.includes(user.uid) || false,
-                    source: 'year',
-                    yearId: selectedYear 
-                }));
-                
-                setNotifications(prev => [
-                    ...prev.filter(n => n.source !== 'year'), 
-                    ...yearNotifications
-                ]);
-
-            }, (error) => {
-                console.error("Error fetching yearly notifications:", error);
-            });
+                setYearNotifications(snapshot.docs.map(d => ({
+                    id: d.id, ...d.data(),
+                    read: d.data().readBy?.includes(user.uid) || false, source: 'year', yearId: selectedYear 
+                })));
+            }, (error) => console.error("Error fetching yearly notifications:", error));
             unsubscribes.push(yearUnsubscribe);
         }
 
+        // Listener for admin-wide notifications
         if (userRoles.includes('admin')) {
             const adminNotificationsQuery = query(
                 collection(db, `artifacts/${appId}/public/data/adminNotifications`),
                 where('recipientId', '==', 'admin'),
-                orderBy('timestamp', 'desc'),
-                limit(20)
+                orderBy('timestamp', 'desc'), limit(20)
             );
-
             const adminUnsubscribe = onSnapshot(adminNotificationsQuery, (snapshot) => {
-                const adminNotifications = snapshot.docs.map(d => ({
-                    id: d.id,
-                    ...d.data(),
-                    read: d.data().readBy?.includes(user.uid) || false,
-                    source: 'admin'
-                }));
-
-                setNotifications(prev => [
-                    ...prev.filter(n => n.source !== 'admin'), 
-                    ...adminNotifications
-                ]);
-
-            }, (error) => {
-                console.error("Error fetching admin notifications:", error);
-            });
+                setAdminNotifications(snapshot.docs.map(d => ({
+                    id: d.id, ...d.data(),
+                    read: d.data().readBy?.includes(user.uid) || false, source: 'admin'
+                })));
+            }, (error) => console.error("Error fetching admin notifications:", error));
             unsubscribes.push(adminUnsubscribe);
         }
 
@@ -199,6 +206,8 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
             collectionPath = `artifacts/${appId}/public/data/adminNotifications`;
         } else if (notification.source === 'year' && notification.yearId) {
             collectionPath = `artifacts/${appId}/public/data/academicYears/${notification.yearId}/notifications`;
+        } else if (notification.source === 'user') {
+            collectionPath = `users/${user.uid}/notifications`;
         } else {
             console.error("Cannot mark notification as read: unknown source or missing yearId", notification);
             return;
@@ -206,7 +215,11 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
 
         try {
             const notifRef = doc(db, collectionPath, notification.id);
-            await updateDoc(notifRef, { readBy: arrayUnion(user.uid) });
+            if (notification.source === 'user') {
+                 await updateDoc(notifRef, { read: true });
+            } else {
+                 await updateDoc(notifRef, { readBy: arrayUnion(user.uid) });
+            }
         } catch (error) {
             console.error("Error marking notification as read:", error);
         }
@@ -224,11 +237,18 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
                     collectionPath = `artifacts/${appId}/public/data/adminNotifications`;
                 } else if (n.source === 'year' && n.yearId) {
                     collectionPath = `artifacts/${appId}/public/data/academicYears/${n.yearId}/notifications`;
-                } else {
+                } else if (n.source === 'user') {
+                    collectionPath = `users/${user.uid}/notifications`;
+                }
+                else {
                     return; 
                 }
                 const notifRef = doc(db, collectionPath, n.id);
-                batch.update(notifRef, { readBy: arrayUnion(user.uid) });
+                 if (n.source === 'user') {
+                    batch.update(notifRef, { read: true });
+                } else {
+                    batch.update(notifRef, { readBy: arrayUnion(user.uid) });
+                }
             });
             await batch.commit();
         } catch (error) {
@@ -408,3 +428,4 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
 }
 
 export default Layout;
+

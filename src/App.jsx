@@ -56,13 +56,17 @@ function App() {
             }
         } catch (error) {
             console.error("Firebase config error:", error);
-            setIsFirebaseReady(true);
+            setIsFirebaseReady(true); // Still allow app to proceed, might be local dev
         }
     }, []);
 
     useEffect(() => {
-        if (!auth) return;
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (!auth) {
+            if(isFirebaseReady) setAuthLoading(false);
+            return;
+        };
+
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
                 setUser(user);
                 const userDocRef = doc(db, `users/${user.uid}`);
@@ -70,8 +74,10 @@ function App() {
                     if (doc.exists()) {
                         setUserProfile(doc.data());
                     } else {
+                        // This case handles a user who is authenticated but doesn't have a document in Firestore yet.
                         setUserProfile({ roles: ['unknown'] });
                     }
+                    // --- KEY CHANGE: Set loading to false ONLY AFTER the user profile is fetched ---
                     setAuthLoading(false);
                 });
                 return () => unsubscribeProfile();
@@ -81,8 +87,9 @@ function App() {
                 setAuthLoading(false);
             }
         });
+
         return () => unsubscribe();
-    }, [auth, db]);
+    }, [auth, db, isFirebaseReady]);
 
     const handleSignUp = async (email, password, role, firstName, lastName) => {
         setAuthLoading(true);
@@ -116,6 +123,7 @@ function App() {
                 setAuthError('Το email που δώσατε χρησιμοποιείται ήδη.');
             } else {
                 setAuthError('Προέκυψε ένα σφάλμα. Δοκιμάστε ξανά.');
+                console.error("Sign up error:", error);
             }
         } finally {
             setAuthLoading(false);
@@ -130,7 +138,7 @@ function App() {
         } catch (error) {
             setAuthError('Λάθος email ή κωδικός πρόσβασης.');
         } finally {
-            setAuthLoading(false);
+            // Loading is handled by onAuthStateChanged
         }
     };
 
@@ -143,14 +151,13 @@ function App() {
     };
 
     const renderPortal = () => {
-        // --- START: DEBUGGING ---
+        // Now this function is only called when authLoading is false and userProfile is guaranteed to be available.
         console.log("--- DEBUG: Checking which portal to render ---");
         console.log("Current userProfile state:", userProfile);
-        console.log("Checking for roles:", userProfile?.roles);
-        // --- END: DEBUGGING ---
+        const roles = userProfile?.roles || [];
+        console.log("Checking for roles:", roles);
 
         const props = { db, appId, user, userProfile };
-        const roles = userProfile?.roles || [];
 
         if (roles.includes('admin')) {
             console.log("Decision: Rendering AdminPortal");
@@ -173,11 +180,13 @@ function App() {
             return <PendingApprovalPage />;
         }
         
-        console.log("Decision: Fallback to 'Loading user profile...'");
-        return <Box>Loading user profile...</Box>;
+        console.log("Decision: Fallback to AuthPage or Loading");
+        // This case should ideally not be reached if the user is logged in.
+        // It acts as a fallback.
+        return <AuthPage handleLogin={handleLogin} handleSignUp={handleSignUp} loading={authLoading} error={authError} />;
     };
 
-    if (!isFirebaseReady || authLoading) {
+    if (authLoading) {
         return (<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>);
     }
 
@@ -185,7 +194,7 @@ function App() {
         <ThemeProvider>
             <AcademicYearProvider db={db} appId={appId}>
                 <BrowserRouter>
-                    {user ? (
+                    {user && userProfile ? (
                         <Layout 
                             userProfile={userProfile} 
                             handleLogout={handleLogout}

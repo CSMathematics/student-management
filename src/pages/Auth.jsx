@@ -26,7 +26,9 @@ function AuthPage({ handleSignUp, handleLogin, loading, error }) {
         if (isLogin) {
             handleLogin(data.email, data.password);
         } else {
-            handleSignUp(data.email, data.password, data.role, data.firstName, data.lastName);
+            // ΔΙΟΡΘΩΣΗ: Περνάμε τον ρόλο ως πίνακα (array) για να είναι συμβατός
+            // με τη νέα δομή πολλαπλών ρόλων (roles).
+            handleSignUp(data.email, data.password, [data.role], data.firstName, data.lastName);
         }
     };
     

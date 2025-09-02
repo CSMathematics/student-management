@@ -1,7 +1,7 @@
 // src/portals/AdminPortal.jsx
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useParams } from 'react-router-dom';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { Box, Dialog, DialogContent, DialogTitle, IconButton, CircularProgress, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useAcademicYear } from '../context/AcademicYearContext.jsx';
@@ -14,7 +14,7 @@ import Classrooms from '../pages/Classrooms.jsx';
 import NewClassroomForm from '../pages/NewClassroomForm.jsx';
 import WeeklyScheduleCalendar from '../pages/WeeklyScheduleCalendar.jsx';
 import StudentForm from '../pages/StudentForm.jsx';
-import Payments from '../pages/Payments.jsx';
+// import Payments from '../pages/Payments.jsx';
 import Courses from '../pages/Courses.jsx';
 import CourseForm from '../pages/CourseForm.jsx';
 import TeachersList from '../pages/TeachersList.jsx';
@@ -60,14 +60,13 @@ const TeacherFormWrapper = (props) => {
 };
 
 
-// --- START: Add userProfile as a prop ---
 function AdminPortal({ db, appId, user, userProfile }) {
     const { selectedYear, loadingYears } = useAcademicYear();
 
     const [allData, setAllData] = useState({
         classrooms: [], students: [], grades: [], absences: [],
         payments: [], courses: [], teachers: [], announcements: [],
-        assignments: [], expenses: []
+        assignments: [], expenses: [], files: []
     });
     const [allUsers, setAllUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -94,7 +93,7 @@ function AdminPortal({ db, appId, user, userProfile }) {
 
         const collectionsToFetch = [
             'classrooms', 'students', 'grades', 'absences', 'payments', 
-            'courses', 'teachers', 'announcements', 'assignments', 'expenses'
+            'courses', 'teachers', 'announcements', 'assignments', 'expenses', 'files'
         ];
 
         for (const name of collectionsToFetch) {
@@ -117,6 +116,7 @@ function AdminPortal({ db, appId, user, userProfile }) {
         return () => { isMounted = false; unsubscribes.forEach(unsub => unsub()); };
     }, [db, appId, selectedYear, loadingYears]);
 
+
     const openModalWithData = (data) => { setModalData(data); setIsModalOpen(true); };
     const closeModal = () => { setIsModalOpen(false); setModalData(null); };
 
@@ -136,6 +136,7 @@ function AdminPortal({ db, appId, user, userProfile }) {
         allAnnouncements: allData.announcements, 
         allAssignments: allData.assignments, 
         allExpenses: allData.expenses, 
+        allFiles: allData.files,
         allUsers: allUsers,
         loading 
     };
@@ -155,7 +156,7 @@ function AdminPortal({ db, appId, user, userProfile }) {
                 <Route path="/classroom/new" element={<NewClassroomForm {...commonProps} selectedYear={selectedYear} />} />
                 <Route path="/classroom/edit/:classroomId" element={<ClassroomFormWrapper {...commonProps} selectedYear={selectedYear} />} />
                 <Route path="/calendar" element={<WeeklyScheduleCalendar {...commonProps} selectedYear={selectedYear} />} />
-                <Route path="/payments" element={<Payments {...commonProps} selectedYear={selectedYear} />} />
+                {/* <Route path="/payments" element={<Payments {...commonProps} selectedYear={selectedYear} />} /> */}
                 <Route path="/courses/list" element={<Courses {...commonProps} selectedYear={selectedYear} />} />
                 <Route path="/course/new" element={<CourseForm {...commonProps} selectedYear={selectedYear} />} />
                 <Route path="/course/edit/:courseId" element={<CourseFormWrapper {...commonProps} selectedYear={selectedYear} />} />
@@ -176,6 +177,7 @@ function AdminPortal({ db, appId, user, userProfile }) {
                 <Route path="/study-guide/points-calculator" element={<PointsCalculatorPage {...commonProps} />} />
                 <Route path="/study-guide/documents" element={<StudyGuideDocs {...commonProps} />} />
                 <Route path="/study-guide/simulation" element={<StudyGuideSimulation {...commonProps} />} />
+
             </Routes>
 
             <Dialog open={isModalOpen} onClose={closeModal} maxWidth="md" fullWidth>
@@ -200,3 +202,4 @@ function AdminPortal({ db, appId, user, userProfile }) {
 }
 
 export default AdminPortal;
+

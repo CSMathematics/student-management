@@ -1,7 +1,15 @@
 // src/components/Notifications.jsx
 import React, { useMemo } from 'react';
 import { Badge, IconButton, Menu, MenuItem, ListItemIcon, ListItemText, Typography, Divider, Box, Tooltip } from '@mui/material';
-import { Notifications as NotificationsIcon, Grade as GradeIcon, Campaign as CampaignIcon, Assignment as AssignmentIcon, PersonAdd as PersonAddIcon, Email as MessageIcon } from '@mui/icons-material';
+import { 
+    Notifications as NotificationsIcon, 
+    Grade as GradeIcon, 
+    Campaign as CampaignIcon, 
+    Assignment as AssignmentIcon, 
+    PersonAdd as PersonAddIcon, 
+    Email as MessageIcon,
+    Alarm as AlarmIcon // Import AlarmIcon
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -16,10 +24,10 @@ const notificationIcons = {
     assignment: <AssignmentIcon fontSize="small" color="info" />,
     newUser: <PersonAddIcon fontSize="small" color="success" />,
     message: <MessageIcon fontSize="small" color="info" />,
+    taskReminder: <AlarmIcon fontSize="small" color="warning" />, // Add icon for reminders
     default: <NotificationsIcon fontSize="small" />
 };
 
-// --- START: Component updated to be more reusable ---
 function Notifications({ 
     notifications, 
     onMarkAsRead, 
@@ -57,7 +65,6 @@ function Notifications({
         return [...notifications].sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
     }, [notifications]);
 
-    // The IconButton is now in the Layout component. This component is only the Menu.
     return (
         <Menu
             anchorEl={anchorEl}
@@ -102,6 +109,5 @@ function Notifications({
         </Menu>
     );
 }
-// --- END: Component updated ---
 
 export default Notifications;

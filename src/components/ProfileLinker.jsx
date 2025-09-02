@@ -24,7 +24,10 @@ function ProfileLinker({ open, onClose, userToLink, allStudents, db }) {
                 updateData = { childIds: arrayUnion(selectedStudent.id) };
             }
             
-            if(userToLink.role === 'pending_approval') {
+            // ΔΙΟΡΘΩΣΗ: Όταν ένας χρήστης εγκρίνεται, ενημερώνουμε και το πεδίο 'roles' (array)
+            // και το πεδίο 'role' (string) για συμβατότητα.
+            if(userToLink.roles?.includes('pending_approval')) {
+                updateData.roles = [finalRole];
                 updateData.role = finalRole;
             }
 

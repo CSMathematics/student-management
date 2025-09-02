@@ -9,7 +9,7 @@ import { useAcademicYear } from '../context/AcademicYearContext.jsx';
 import Communication from '../pages/Communication.jsx';
 import StudentReport from '../pages/StudentReport.jsx';
 import ParentDashboard from './parent/ParentDashboard.jsx';
-import ParentFinancials from './parent/ParentFinancials.jsx';
+// import ParentFinancials from './parent/ParentFinancials.jsx';
 import ViewAnnouncements from './parent/ViewAnnouncements.jsx';
 import TeachersAndReport from './parent/TeachersAndReport.jsx';
 import ParentProfile from './parent/ParentProfile.jsx';
@@ -216,7 +216,7 @@ function ParentPortal({ db, appId, user, userProfile }) {
                         <Route path="/child-assignments" element={<MyAssignments {...commonProps} />} />
                         <Route path="/child-materials" element={<MyMaterials {...commonProps} />} />
                         <Route path="/child-grades-absences" element={<MyGradesAndAbsences {...commonProps} />} />
-                        <Route path="/payments" element={<ParentFinancials {...commonProps} />} />
+                        {/* <Route path="/payments" element={<ParentFinancials {...commonProps} />} /> */}
                         <Route path="/announcements" element={<ViewAnnouncements announcements={announcements} loading={loading} />} />
                         <Route path="/child-teachers-report" element={<TeachersAndReport {...commonProps} />} />
                         <Route path="/student/report/:studentId" element={<StudentReport {...commonProps} allStudents={childrenData} />} />
