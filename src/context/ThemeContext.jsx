@@ -25,7 +25,7 @@ export const lightPalette = {
 };
 
 export const darkPalette = {
-  primary: '#64b5f6',
+  primary: '#4fa2e6ff',
   secondary: '#d61dbeff',
   background: '#121212',
   paper: '#1e1e1e',
