@@ -59,7 +59,7 @@ const navItemsByRole = {
         { type: 'divider' },
         // { text: "Πληρωμές", icon: "fas fa-money-bill", path: "/payments" },
         { text: "Έξοδα", icon: "fas fa-file-invoice-dollar", path: "/expenses" },
-        { text: "Εργασίες - Υποχρεώσεις", icon: "fas fa-tasks", path: "#" },
+        { text: "Εργασίες - Υποχρεώσεις", icon: "fas fa-tasks", path: "/tasks" }, // <<< ΑΛΛΑΓΗ
         { type: 'divider' },
         {
             text: "Ρυθμίσεις", icon: "fas fa-cog", isParent: true,

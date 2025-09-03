@@ -29,6 +29,7 @@ import AcademicYearManager from '../pages/AcademicYearsManager.jsx';
 import UsersManager from '../pages/UsersManager.jsx';
 import Library from '../pages/Library.jsx';
 import MyProfile from '../pages/MyProfile.jsx';
+import TasksCalendar from '../pages/TasksCalendar.jsx'; // <<< ΠΡΟΣΘΗΚΗ
 
 // --- Εισαγωγή των σελίδων του Οδηγού Σπουδών ---
 import FacultiesPage from '../pages/FacultiesPage.jsx';
@@ -170,6 +171,7 @@ function AdminPortal({ db, appId, user, userProfile }) {
                 <Route path="/grades-summary" element={<GradeSummary {...commonProps} />} />
                 <Route path="/library" element={<Library {...commonProps} selectedYear={selectedYear} />} />
                 <Route path="/assignments" element={<MyAssignmentsManager {...commonProps} selectedYear={selectedYear} />} />
+                <Route path="/tasks" element={<TasksCalendar {...commonProps} selectedYear={selectedYear} />} /> {/* <<< ΠΡΟΣΘΗΚΗ */}
                 <Route path="/academicYear" element={<AcademicYearManager {...commonProps} />} />
                 <Route path="/users-management" element={<UsersManager {...commonProps} />} />
 
@@ -202,4 +204,3 @@ function AdminPortal({ db, appId, user, userProfile }) {
 }
 
 export default AdminPortal;
-

@@ -181,7 +181,6 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
         if (userRoles.includes('admin')) {
             const adminNotificationsQuery = query(
                 collection(db, `artifacts/${appId}/public/data/adminNotifications`),
-                where('recipientId', '==', 'admin'),
                 orderBy('timestamp', 'desc'), limit(20)
             );
             const adminUnsubscribe = onSnapshot(adminNotificationsQuery, (snapshot) => {
@@ -428,4 +427,3 @@ function Layout({ userProfile, handleLogout, children, db, appId, user }) {
 }
 
 export default Layout;
-
