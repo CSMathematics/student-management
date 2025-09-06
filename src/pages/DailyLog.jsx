@@ -13,6 +13,8 @@ import 'dayjs/locale/el';
 import AssignmentForm from './AssignmentForm.jsx';
 import MaterialSelector from './MaterialSelector.jsx';
 import { checkAndAwardBadges } from '../services/BadgeService.js'; // --- ΝΕΑ ΕΙΣΑΓΩΓΗ ---
+import { useTheme } from '@mui/material/styles';
+import { alpha } from '@mui/material/styles';
 
 dayjs.locale('el');
 
@@ -56,6 +58,7 @@ const StudentGradingRow = ({ student, data, onDataChange, isAssignment = false, 
 );
 
 function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignments, allCourses = [], db, appId, teacherData, selectedYear, userId }) {
+    const theme = useTheme();
     const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
     const [dailyData, setDailyData] = useState({});
     const [isSaving, setIsSaving] = useState(false);
@@ -68,6 +71,59 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
     const [feedback, setFeedback] = useState({ type: '', message: '' });
     const [isUploading, setIsUploading] = useState(false);
     const [dailyLogDocType, setDailyLogDocType] = useState('notes');
+
+    const calendarStyles = useMemo(() => `
+        .fc .fc-toolbar-title,
+        .fc .fc-daygrid-day-number,
+        .fc .fc-col-header-cell-cushion,
+        .fc .fc-timegrid-axis-cushion,
+        .fc-timegrid-slot-label {
+            color: ${theme.palette.text.primary};
+        }
+        .fc .fc-day-today {
+            background-color: ${alpha(theme.palette.secondary.main, 0.1)} !important;
+        }
+        .fc .fc-button-primary {
+            background-color: ${theme.palette.primary.main};
+            border-color: ${theme.palette.primary.main};
+            color: ${theme.palette.primary.contrastText};
+        }
+        .fc .fc-button-primary:hover {
+            background-color: ${theme.palette.primary.dark};
+            border-color: ${theme.palette.primary.dark};
+        }
+        .fc .fc-button-primary:active, .fc .fc-button-primary:focus {
+            background-color: ${theme.palette.primary.dark} !important;
+            border-color: ${theme.palette.primary.dark} !important;
+            box-shadow: none !important;
+        }
+        .fc .fc-highlight {
+            background: ${alpha(theme.palette.primary.main, 0.4)} !important;
+            border: 1px solid ${alpha(theme.palette.primary.main, 0.8)};
+        }
+        .sidebar-scrollable {
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: calc(100vh - 420px);
+        }
+        .fc th, .fc td, .fc-scrollgrid, .fc-timegrid-axis, .fc-daygrid-day-frame, .fc-timegrid-slot, .fc-timegrid-lane {
+            border: none !important;
+        }
+        .fc .fc-col-header, .fc .fc-toolbar.fc-header-toolbar {
+            background-color: ${theme.palette.background.paper} !important;
+        }
+        .event-completed {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+        .fc-event-main-frame {
+            display: flex;
+            align-items: center;
+        }
+        .fc-event-title-container {
+            flex-grow: 1;
+        }
+    `, [theme]);
 
     const studentsInClassroom = useMemo(() => {
         return allStudents.filter(s => s.enrolledClassrooms?.includes(classroom.id))
@@ -340,6 +396,7 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                 Προσθήκη Νέας Αξιολόγησης
             </Button>
             <Paper variant="outlined" sx={{ p: 2, height: 'auto' }}>
+                <style>{calendarStyles}</style>
                 <FullCalendar
                     plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                     initialView="dayGridMonth"

@@ -15,11 +15,28 @@ import PrintIcon from '@mui/icons-material/Print'; // Εικονίδιο Εκτ�
 import ClearAllIcon from '@mui/icons-material/ClearAll'; // Εικονίδιο Καθαρισμού
 import { visuallyHidden } from '@mui/utils';
 
+import filomatheiaLogo from '../../public/Logo_full.png'; 
+import filomatheiaInfo from '../../public/info.png'; 
+
 // Εισαγωγή των δεδομένων από το JSON αρχείο.
 import facultiesData1 from '../data/universities/1oPedio_Full.json';
 import facultiesData2 from '../data/universities/2oPedio_Full.json';
 import facultiesData3 from '../data/universities/3oPedio_Full.json';
 import facultiesData4 from '../data/universities/4oPedio_Full.json';
+
+// Cache for the font file to avoid refetching
+let robotoFontBytes = null;
+
+// Helper function to convert ArrayBuffer to Base64
+function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+}
 
 // Function for stable sorting
 function stableSort(array, comparator) {
@@ -41,10 +58,20 @@ function getComparator(order, orderBy) {
 
 // Function to compare two items
 function descendingComparator(a, b, orderBy) {
-    const valA = a[orderBy] ?? (typeof a[orderBy] === 'number' ? 0 : '');
-    const valB = b[orderBy] ?? (typeof b[orderBy] === 'number' ? 0 : '');
-    if (valB < valA) return -1;
-    if (valB > valA) return 1;
+    const valA = a[orderBy];
+    const valB = b[orderBy];
+
+    // Treat null or undefined as the "smallest" value
+    if (valA == null && valB == null) return 0;
+    if (valA == null) return 1; // a is "smaller", so b comes first in descending
+    if (valB == null) return -1; // b is "smaller", so a comes first in descending
+
+    if (valB < valA) {
+        return -1;
+    }
+    if (valB > valA) {
+        return 1;
+    }
     return 0;
 }
 
@@ -115,11 +142,38 @@ export default function FacultiesPage() {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [selectedField, setSelectedField] = useState(1);
+    const [scriptsLoaded, setScriptsLoaded] = useState(false);
 
     // Filters state
     const [searchText, setSearchText] = useState('');
     const [selectedCity, setSelectedCity] = useState('');
     const [selectedUniversity, setSelectedUniversity] = useState('');
+
+    useEffect(() => {
+        const loadScript = (src, onLoad) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = onLoad;
+            script.onerror = () => console.error(`Failed to load script: ${src}`);
+            document.head.appendChild(script);
+        };
+
+        // Load jspdf first, then autotable which depends on it.
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', () => {
+            loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js', () => {
+                setScriptsLoaded(true);
+            });
+        });
+    }, []); // Run only once on component mount.
+
+    const fieldButtons = useMemo(() => [
+        { id: 1, label: '1ο: Ανθρωπιστικών Σπουδών', icon: <BookIcon />, color: 'primary' },
+        { id: 2, label: '2ο: Θετικών Σπουδών', icon: <ScienceIcon />, color: 'success' },
+        { id: 3, label: '3ο: Σπουδών Υγείας', icon: <HealthAndSafetyIcon />, color: 'error' },
+        { id: 4, label: '4ο: Οικονομίας & Πληροφορικής', icon: <BusinessCenterIcon />, color: 'warning' },
+        { id: 5, label: 'Σχολές ΕΠΑ.Λ.', icon: <ConstructionIcon />, color: 'info' }
+    ], []);
+
 
     useEffect(() => {
         switch (selectedField) {
@@ -160,31 +214,12 @@ export default function FacultiesPage() {
         setPage(0);
     };
 
-    // --- ΝΕΕΣ ΛΕΙΤΟΥΡΓΙΕΣ ---
     const handleClearFilters = () => {
         setSearchText('');
         setSelectedCity('');
         setSelectedUniversity('');
         setPage(0);
     };
-
-    const handlePrint = () => {
-        window.print();
-    };
-    // --- ΤΕΛΟΣ ΝΕΩΝ ΛΕΙΤΟΥΡΓΙΩΝ ---
-
-    const uniqueCities = useMemo(() => [...new Set(faculties.map(f => f.city))].sort(), [faculties]);
-const allFaculties = useMemo(() => [
-    ...facultiesData1, 
-    ...facultiesData2, 
-    ...facultiesData3, 
-    ...facultiesData4
-], []);
-
-const uniqueUniversities = useMemo(() => 
-    [...new Set(allFaculties.map(f => f.university).filter(Boolean))].sort(), 
-[allFaculties]);
-
 
     const filteredFaculties = useMemo(() => {
         return faculties.filter(faculty => {
@@ -194,6 +229,88 @@ const uniqueUniversities = useMemo(() =>
             return nameMatch && cityMatch && universityMatch;
         });
     }, [faculties, searchText, selectedCity, selectedUniversity]);
+
+
+    const handlePrint = async () => {
+        if (!scriptsLoaded) {
+            console.error("PDF generation scripts are not loaded yet.");
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Load Roboto font for Greek characters support
+        try {
+            if (!robotoFontBytes) {
+                const fontUrl = 'https://raw.githubusercontent.com/googlefonts/roboto/main/src/hinted/Roboto-Regular.ttf';
+                robotoFontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
+            }
+            const robotoBase64 = arrayBufferToBase64(robotoFontBytes);
+            doc.addFileToVFS('Roboto-Regular.ttf', robotoBase64);
+            doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+            doc.setFont('Roboto');
+        } catch (e) {
+            console.error("Font loading failed, falling back to default font.", e);
+        }
+
+        doc.addImage(filomatheiaLogo, 'PNG', 14, 10, 63, 15);
+        doc.addImage(filomatheiaInfo, 'PNG', doc.internal.pageSize.getWidth() - 65, 12, 51, 18);
+
+        const selectedFieldLabel = fieldButtons.find(f => f.id === selectedField)?.label || "Λίστα Σχολών";
+        doc.text(selectedFieldLabel, 14, 35);
+
+        const tableColumn = ["Κωδικός", "Όνομα Σχολής", "Ίδρυμα", "Πόλη", "Βάση (Εκτ.)", "Βαθμός ΕΒΕ"];
+        const tableRows = [];
+
+        // Sort the faculties based on the current table sort order
+        const sortedData = stableSort(filteredFaculties, getComparator(order, orderBy));
+
+        // Use all filtered faculties, not just the visible rows on the current page
+        sortedData.forEach(faculty => {
+            const facultyData = [
+                faculty.code,
+                faculty.name,
+                faculty.university,
+                faculty.city,
+                faculty.base_2025 || 'N/A',
+                faculty.eve_score
+            ];
+            tableRows.push(facultyData);
+        });
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 40,
+            styles: {
+                font: 'Roboto', // Apply the font to the table
+                fontStyle: 'normal',
+            },
+            headStyles: {
+                fillColor: [33, 150, 243] // Material UI primary color
+            },
+            // Ensure columns with long text can wrap
+            columnStyles: {
+                1: { cellWidth: 'auto' }, // Όνομα Σχολής
+                2: { cellWidth: 'auto' }  // Ίδρυμα
+            }
+        });
+
+        doc.save(`${selectedFieldLabel.replace(/[:\s]/g, '_')}.pdf`);
+    };
+
+    const uniqueCities = useMemo(() => [...new Set(faculties.map(f => f.city))].sort(), [faculties]);
+    const allFaculties = useMemo(() => [
+        ...facultiesData1,
+        ...facultiesData2,
+        ...facultiesData3,
+        ...facultiesData4
+    ], []);
+
+    const uniqueUniversities = useMemo(() =>
+        [...new Set(allFaculties.map(f => f.university).filter(Boolean))].sort(),
+        [allFaculties]);
 
     const visibleRows = useMemo(
         () =>
@@ -206,38 +323,8 @@ const uniqueUniversities = useMemo(() =>
 
     const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - filteredFaculties.length) : 0;
 
-    const fieldButtons = [
-        { id: 1, label: '1ο: Ανθρωπιστικών Σπουδών', icon: <BookIcon />, color: 'primary' },
-        { id: 2, label: '2ο: Θετικών Σπουδών', icon: <ScienceIcon />, color: 'success' },
-        { id: 3, label: '3ο: Σπουδών Υγείας', icon: <HealthAndSafetyIcon />, color: 'error' },
-        { id: 4, label: '4ο: Οικονομίας & Πληροφορικής', icon: <BusinessCenterIcon />, color: 'warning' },
-        { id: 5, label: 'Σχολές ΕΠΑ.Λ.', icon: <ConstructionIcon />, color: 'info' }
-    ];
-
     return (
         <Box sx={{ width: '100%', p: 3 }}>
-             {/* --- CSS ΓΙΑ ΤΗΝ ΕΚΤΥΠΩΣΗ --- */}
-            <style>
-                {`
-                    @media print {
-                        body * {
-                            visibility: hidden;
-                        }
-                        #print-area, #print-area * {
-                            visibility: visible;
-                        }
-                        #print-area {
-                            position: absolute;
-                            left: 0;
-                            top: 0;
-                            width: 100%;
-                        }
-                        .no-print {
-                            display: none !important;
-                        }
-                    }
-                `}
-            </style>
             <Paper id="print-area" sx={{ width: '100%', mb: 2, p: 3, overflow: 'hidden' }}>
                 <Box className="no-print" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                     <Typography variant="h5" component="div">
@@ -250,9 +337,11 @@ const uniqueUniversities = useMemo(() =>
                             </IconButton>
                         </Tooltip>
                         <Tooltip title="Εκτύπωση σε PDF">
-                            <IconButton onClick={handlePrint}>
-                                <PrintIcon />
-                            </IconButton>
+                            <span>
+                                <IconButton onClick={handlePrint} disabled={!scriptsLoaded}>
+                                    <PrintIcon />
+                                </IconButton>
+                            </span>
                         </Tooltip>
                     </Box>
                 </Box>
@@ -269,7 +358,6 @@ const uniqueUniversities = useMemo(() =>
                                     color={field.color}
                                     startIcon={field.icon}
                                     onClick={() => setSelectedField(field.id)}
-                                    // disabled={field.id !== 1}
                                     sx={{ justifyContent: 'flex-start', textAlign: 'left', height: '100%', textTransform: 'none' }}
                                 >
                                     {field.label}
@@ -333,8 +421,8 @@ const uniqueUniversities = useMemo(() =>
                                 return (
                                     <TableRow hover tabIndex={-1} key={row.code}>
                                         <TableCell align="right">{row.code}</TableCell>
-                                        <TableCell sx={{ minWidth: 250 }}> 
-                                            <Link href={row.link}>{row.name}</Link>
+                                        <TableCell sx={{ minWidth: 250 }}>
+                                            <Link href={row.link} target="_blank" rel="noopener noreferrer">{row.name}</Link>
                                         </TableCell>
                                         <TableCell>{row.university}</TableCell>
                                         <TableCell>{row.city}</TableCell>
@@ -385,3 +473,4 @@ const uniqueUniversities = useMemo(() =>
         </Box>
     );
 }
+

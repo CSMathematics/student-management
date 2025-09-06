@@ -24,6 +24,7 @@
     "@pdf-lib/fontkit": "^1.1.1",
     "@react-pdf/renderer": "^4.3.0",
     "blob-stream": "^0.1.3",
+    "buffer": "^6.0.3",
     "cloudinary": "^2.7.0",
     "dayjs": "^1.11.13",
     "firebase": "^11.10.0",
@@ -44,6 +45,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.0",
-    "vite": "^5.0.0"
+    "vite": "^5.0.0",
+    "vite-plugin-pwa": "^1.0.3"
   }
 }

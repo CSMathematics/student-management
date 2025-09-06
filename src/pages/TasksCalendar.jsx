@@ -511,7 +511,7 @@ function TasksCalendar({ db, appId, selectedYear }) {
                                             '& .MuiFormControlLabel-label': {
                                                 color: event.isCompleted ? alpha(theme.palette.primary.contrastText, 0.6) : 'primary.contrastText',
                                                 textDecoration: event.isCompleted ? 'line-through' : 'none',
-                                                fontSize: '0.875rem'
+                                                fontSize: '0.95rem'
                                             }
                                         }}
                                         control={<Checkbox checked={event.isCompleted} onChange={() => handleToggleTaskCompletion(event)} size="small" sx={{ color: alpha(theme.palette.primary.contrastText, 0.7), '&.Mui-checked': { color: 'primary.contrastText' } }} />}
@@ -547,6 +547,7 @@ function TasksCalendar({ db, appId, selectedYear }) {
                         aspectRatio={1.5}
                         dayMaxEvents={3}
                         eventContent={eventContent}
+                        buttonText={{ today: 'Σήμερα', month: 'Μήνας', week: 'Εβδομάδα', day: 'Ημέρα' }}
                     />
                 )}
             </Box>

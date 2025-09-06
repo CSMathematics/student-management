@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react'; // Προσθήκη Suspense
 import { Box, CircularProgress, Paper, Typography, Container } from '@mui/material';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -11,12 +11,13 @@ import AuthPage from './pages/Auth.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { AcademicYearProvider } from './context/AcademicYearContext.jsx';
 import Layout from './components/Layout.jsx';
+import PwaInstallPrompt from './components/PwaInstallPrompt.jsx';
 
-import AdminPortal from './portals/AdminPortal.jsx';
-import TeacherPortal from './portals/TeacherPortal.jsx';
-import StudentPortal from './portals/StudentPortal.jsx';
-import ParentPortal from './portals/ParentPortal.jsx';
-import UsersManager from './pages/UsersManager.jsx';
+// --- ΑΛΛΑΓΗ: Δυναμική φόρτωση των Portals ---
+const AdminPortal = React.lazy(() => import('./portals/AdminPortal.jsx'));
+const TeacherPortal = React.lazy(() => import('./portals/TeacherPortal.jsx'));
+const StudentPortal = React.lazy(() => import('./portals/StudentPortal.jsx'));
+const ParentPortal = React.lazy(() => import('./portals/ParentPortal.jsx'));
 
 const PendingApprovalPage = () => (
     <Container component="main" maxWidth="sm" sx={{ mt: 8 }}>
@@ -56,7 +57,7 @@ function App() {
             }
         } catch (error) {
             console.error("Firebase config error:", error);
-            setIsFirebaseReady(true); // Still allow app to proceed, might be local dev
+            setIsFirebaseReady(true);
         }
     }, []);
 
@@ -74,10 +75,8 @@ function App() {
                     if (doc.exists()) {
                         setUserProfile(doc.data());
                     } else {
-                        // This case handles a user who is authenticated but doesn't have a document in Firestore yet.
                         setUserProfile({ roles: ['unknown'] });
                     }
-                    // --- KEY CHANGE: Set loading to false ONLY AFTER the user profile is fetched ---
                     setAuthLoading(false);
                 });
                 return () => unsubscribeProfile();
@@ -119,12 +118,7 @@ function App() {
             });
 
         } catch (error) {
-            if (error.code === 'auth/email-already-in-use') {
-                setAuthError('Το email που δώσατε χρησιμοποιείται ήδη.');
-            } else {
-                setAuthError('Προέκυψε ένα σφάλμα. Δοκιμάστε ξανά.');
-                console.error("Sign up error:", error);
-            }
+            setAuthError('Προέκυψε ένα σφάλμα. Δοκιμάστε ξανά.');
         } finally {
             setAuthLoading(false);
         }
@@ -137,52 +131,31 @@ function App() {
             await signInWithEmailAndPassword(auth, email, password);
         } catch (error) {
             setAuthError('Λάθος email ή κωδικός πρόσβασης.');
-        } finally {
-            // Loading is handled by onAuthStateChanged
         }
     };
 
     const handleLogout = async () => {
+        // --- ΔΙΟΡΘΩΣΗ: Προσθήκη loading state κατά την αποσύνδεση ---
+        setAuthLoading(true); 
         try {
             await signOut(auth);
+            // Το onAuthStateChanged θα χειριστεί τα user/userProfile και θα θέσει το authLoading σε false.
         } catch (error) {
             console.error("Error signing out: ", error);
+            setAuthLoading(false); // Σε περίπτωση σφάλματος, σταματάμε το loading.
         }
     };
 
     const renderPortal = () => {
-        // Now this function is only called when authLoading is false and userProfile is guaranteed to be available.
-        console.log("--- DEBUG: Checking which portal to render ---");
-        console.log("Current userProfile state:", userProfile);
         const roles = userProfile?.roles || [];
-        console.log("Checking for roles:", roles);
-
         const props = { db, appId, user, userProfile };
 
-        if (roles.includes('admin')) {
-            console.log("Decision: Rendering AdminPortal");
-            return <AdminPortal {...props} />;
-        }
-        if (roles.includes('teacher')) {
-            console.log("Decision: Rendering TeacherPortal");
-            return <TeacherPortal {...props} />;
-        }
-        if (roles.includes('student')) {
-            console.log("Decision: Rendering StudentPortal");
-            return <StudentPortal {...props} />;
-        }
-        if (roles.includes('parent')) {
-            console.log("Decision: Rendering ParentPortal");
-            return <ParentPortal {...props} />;
-        }
-        if (roles.includes('pending_approval')) {
-            console.log("Decision: Rendering PendingApprovalPage");
-            return <PendingApprovalPage />;
-        }
+        if (roles.includes('admin')) return <AdminPortal {...props} />;
+        if (roles.includes('teacher')) return <TeacherPortal {...props} />;
+        if (roles.includes('student')) return <StudentPortal {...props} />;
+        if (roles.includes('parent')) return <ParentPortal {...props} />;
+        if (roles.includes('pending_approval')) return <PendingApprovalPage />;
         
-        console.log("Decision: Fallback to AuthPage or Loading");
-        // This case should ideally not be reached if the user is logged in.
-        // It acts as a fallback.
         return <AuthPage handleLogin={handleLogin} handleSignUp={handleSignUp} loading={authLoading} error={authError} />;
     };
 
@@ -195,15 +168,21 @@ function App() {
             <AcademicYearProvider db={db} appId={appId}>
                 <BrowserRouter>
                     {user && userProfile ? (
-                        <Layout 
-                            userProfile={userProfile} 
-                            handleLogout={handleLogout}
-                            db={db}
-                            appId={appId}
-                            user={user}
-                        >
-                            {renderPortal()}
-                        </Layout>
+                        <>
+                            <Layout 
+                                userProfile={userProfile} 
+                                handleLogout={handleLogout}
+                                db={db}
+                                appId={appId}
+                                user={user}
+                            >
+                                {/* --- ΑΛΛΑΓΗ: Προσθήκη Suspense για τη δυναμική φόρτωση --- */}
+                                <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+                                    {renderPortal()}
+                                </Suspense>
+                            </Layout>
+                            <PwaInstallPrompt />
+                        </>
                     ) : (
                         <Routes>
                             <Route path="*" element={<AuthPage handleLogin={handleLogin} handleSignUp={handleSignUp} loading={authLoading} error={authError} />} />
@@ -216,3 +195,4 @@ function App() {
 }
 
 export default App;
+

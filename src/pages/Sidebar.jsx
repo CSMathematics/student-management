@@ -4,6 +4,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Typography, Collapse, Drawer, Toolbar } from '@mui/material';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+// --- ΔΙΟΡΘΩΣΗ: Εισαγωγή του λογότυπου ως module ---
+import logoSrc from '../../public/Logo_full.svg'; // Υποθέτουμε ότι το λογότυπο είναι στο src/assets/Logo_full.png
 
 
 const drawerWidth = 280;
@@ -57,9 +59,8 @@ const navItemsByRole = {
         { text: "Ανακοινώσεις", icon: "fas fa-bullhorn", path: "/announcements" },
         { text: "Επικοινωνία", icon: "fas fa-comments", path: "/communication" },
         { type: 'divider' },
-        // { text: "Πληρωμές", icon: "fas fa-money-bill", path: "/payments" },
         { text: "Έξοδα", icon: "fas fa-file-invoice-dollar", path: "/expenses" },
-        { text: "Εργασίες - Υποχρεώσεις", icon: "fas fa-tasks", path: "/tasks" }, // <<< ΑΛΛΑΓΗ
+        { text: "Εργασίες - Υποχρεώσεις", icon: "fas fa-tasks", path: "/tasks-calendar" },
         { type: 'divider' },
         {
             text: "Ρυθμίσεις", icon: "fas fa-cog", isParent: true,
@@ -138,21 +139,11 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRoles = [] }) {
     const [openSubmenus, setOpenSubmenus] = useState({});
 
     const navItems = useMemo(() => {
-        // --- START: Updated logic to prioritize roles ---
-        if (userRoles.includes('admin')) {
-            return navItemsByRole.admin;
-        }
-        if (userRoles.includes('teacher')) {
-            return navItemsByRole.teacher;
-        }
-        if (userRoles.includes('student')) {
-            return navItemsByRole.student;
-        }
-        if (userRoles.includes('parent')) {
-            return navItemsByRole.parent;
-        }
+        if (userRoles.includes('admin')) return navItemsByRole.admin;
+        if (userRoles.includes('teacher')) return navItemsByRole.teacher;
+        if (userRoles.includes('student')) return navItemsByRole.student;
+        if (userRoles.includes('parent')) return navItemsByRole.parent;
         return navItemsByRole.unknown;
-        // --- END: Updated logic ---
     }, [userRoles]);
 
     useEffect(() => {
@@ -204,7 +195,8 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRoles = [] }) {
     const drawerContent = (
         <div>
             <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border : 'none' }}>
-                <img src="../public/Logo_full.svg" alt="Φιλομάθεια" style={{ height: '45px' }} />
+                {/* --- ΔΙΟΡΘΩΣΗ: Χρήση της import-ed μεταβλητής --- */}
+                <img src={logoSrc} alt="Φιλομάθεια" style={{ height: '45px' }} />
             </Toolbar>
             
             <List>
@@ -239,3 +231,4 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRoles = [] }) {
 }
 
 export default Sidebar;
+

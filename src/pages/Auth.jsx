@@ -1,6 +1,5 @@
 // src/pages/Auth.jsx
 import { React, useState } from 'react';
-// --- 1. ΕΙΣΑΓΩΓΗ του useForm ---
 import { useForm, Controller } from 'react-hook-form';
 import { 
     Container, Paper, Box, Typography, TextField, Button, 
@@ -8,26 +7,23 @@ import {
 } from '@mui/material';
 import { LockOutlined } from '@mui/icons-material';
 
+// --- ΔΙΟΡΘΩΣΗ: Εισαγωγή των λογότυπων ως modules ---
+import logoFullWhite from '../../public/Logo_full.svg'; // Υποθέτουμε ότι το λευκό λογότυπο είναι εδώ
+import logoFullColor from '../../public/Logo_fullΒ.svg'; // Υποθέτουμε ότι το έγχρωμο λογότυπο είναι εδώ
+
 function AuthPage({ handleSignUp, handleLogin, loading, error }) {
     const [isLogin, setIsLogin] = useState(true);
 
-    // --- 2. ΑΡΧΙΚΟΠΟΙΗΣΗ του React Hook Form ---
-    // Αφαιρούμε όλα τα παλιά useState για τα πεδία της φόρμας.
     const { register, handleSubmit, watch, control, formState: { errors } } = useForm({
-        mode: "onTouched" // Η επικύρωση θα τρέχει όταν ο χρήστης φεύγει από ένα πεδίο
+        mode: "onTouched"
     });
 
-    // Παρακολουθούμε την τιμή του πεδίου 'password' για να την ελέγξουμε στην επιβεβαίωση
     const password = watch('password');
 
-    // --- 3. Η ΝΕΑ ΣΥΝΑΡΤΗΣΗ ΥΠΟΒΟΛΗΣ ---
-    // Λαμβάνει τα δεδομένα της φόρμας ως ένα αντικείμενο 'data'.
     const onSubmit = (data) => {
         if (isLogin) {
             handleLogin(data.email, data.password);
         } else {
-            // ΔΙΟΡΘΩΣΗ: Περνάμε τον ρόλο ως πίνακα (array) για να είναι συμβατός
-            // με τη νέα δομή πολλαπλών ρόλων (roles).
             handleSignUp(data.email, data.password, [data.role], data.firstName, data.lastName);
         }
     };
@@ -71,7 +67,8 @@ function AuthPage({ handleSignUp, handleLogin, loading, error }) {
                     boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)'
                 }}>
                     <img 
-                        src="../public/Logo_full.svg" 
+                        // --- ΔΙΟΡΘΩΣΗ: Χρήση της import-ed μεταβλητής ---
+                        src={logoFullWhite} 
                         alt="Φιλομάθεια Λογότυπο" 
                         style={{ maxWidth: '450px', marginBottom: '2rem' }} 
                     />
@@ -109,7 +106,8 @@ function AuthPage({ handleSignUp, handleLogin, loading, error }) {
                         maxWidth: '400px',
                     }}
                 >
-                    <img src="../public/Logo_fullΒ.svg" alt="Φιλομάθεια Λογότυπο" style={{marginBottom : '30px',maxWidth:'350px'}}/>
+                    {/* --- ΔΙΟΡΘΩΣΗ: Χρήση της import-ed μεταβλητής --- */}
+                    <img src={logoFullColor} alt="Φιλομάθεια Λογότυπο" style={{marginBottom : '30px',maxWidth:'350px'}}/>
                     <LockOutlined sx={{ fontSize: 40, mb: 1, color: 'primary.main' }} />
                     <Typography component="h1" variant="h5">
                         {isLogin ? 'Σύνδεση' : 'Εγγραφή'}
@@ -124,12 +122,10 @@ function AuthPage({ handleSignUp, handleLogin, loading, error }) {
                             <Tab label="Εγγραφή" />
                         </Tabs>
                     </Box>
-                    {/* --- 4. ΧΡΗΣΗ του handleSubmit --- */}
                     <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 1, width: '100%' }}>
                         {!isLogin && (
                              <Grid container spacing={2}>
                                 <Grid item xs={12} sm={6}>
-                                    {/* --- 5. ΕΓΓΡΑΦΗ ΠΕΔΙΩΝ & ΕΜΦΑΝΙΣΗ ΣΦΑΛΜΑΤΩΝ --- */}
                                     <TextField 
                                         margin="normal" 
                                         required 
@@ -208,7 +204,6 @@ function AuthPage({ handleSignUp, handleLogin, loading, error }) {
                                     error={!!errors.confirmPassword}
                                     helperText={errors.confirmPassword?.message}
                                 />
-                                {/* --- 6. ΧΡΗΣΗ του Controller για το Select του Material-UI --- */}
                                 <Controller
                                     name="role"
                                     control={control}

@@ -10,12 +10,20 @@ import {
     Campaign as CampaignIcon,
     NoteAdd as NoteAddIcon,
     ArrowForward as ArrowForwardIcon,
-    Event as EventIcon,
     NotificationsActive as ActivityIcon,
     Grade as GradeIcon,
     Assignment as AssignmentIcon,
     LinkOff as LinkOffIcon,
-    Book as BookIcon
+    Book as BookIcon,
+    Functions as FunctionsIcon, 
+    HistoryEdu as HistoryEduIcon, 
+    Science as ScienceIcon, 
+    Computer as ComputerIcon,
+    Event as EventIcon,
+    PlaylistAddCheck as PlaylistAddCheckIcon,
+    Warning as WarningIcon,
+    LabelImportant as LabelImportantIcon,
+    Label as LabelIcon
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import 'dayjs/locale/el';
@@ -67,8 +75,36 @@ const QuickActionButton = ({ title, icon, onClick, color = 'primary' }) => (
     </Grid>
 );
 
+// Helper to assign icon and a fallback color based on subject name
+const getSubjectStyle = (subject = '') => {
+    const subjectLower = subject.toLowerCase();
+    if (subjectLower.includes('γλώσσα') || subjectLower.includes('φιλολογία') || subjectLower.includes('αρχαία') || subjectLower.includes('ιστορία')) {
+        return { color: '#ff9800', icon: <HistoryEduIcon /> }; // orange
+    }
+    if (subjectLower.includes('μαθηματικά') || subjectLower.includes('άλγεβρα') || subjectLower.includes('γεωμετρία')) {
+        return { color: '#f44336', icon: <FunctionsIcon /> }; // red
+    }
+    if (subjectLower.includes('φυσική') || subjectLower.includes('χημεία') || subjectLower.includes('βιολογία')) {
+        return { color: '#4caf50', icon: <ScienceIcon /> }; // green
+    }
+    if (subjectLower.includes('πληροφορική')) {
+        return { color: '#2196f3', icon: <ComputerIcon /> }; // blue
+    }
+    // default style
+    return { color: '#607d8b', icon: <BookIcon /> }; // blueGrey
+};
 
-function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnnouncements, allAssignments, allGrades, db, appId, selectedYear }) {
+const getPriorityIcon = (priority) => {
+    switch (priority) {
+        case 'high': return <WarningIcon fontSize="inherit" sx={{ color: '#d40e0bff' }} />;
+        case 'medium': return <LabelImportantIcon fontSize="inherit" sx={{ color: '#ff9800' }} />;
+        case 'low': return <LabelIcon fontSize="inherit" sx={{ color: '#4caf50' }} />;
+        default: return null;
+    }
+};
+
+
+function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnnouncements, allAssignments, allGrades, allTasks, db, appId, selectedYear }) {
     const navigate = useNavigate();
     const [activityFeed, setActivityFeed] = useState([]);
 
@@ -93,18 +129,64 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
     }, [allStudents, classrooms, allUsers, allFiles]);
 
     const todaysSchedule = useMemo(() => {
-        if (!classrooms) return [];
+        if (!classrooms || !allUsers) return {};
         const today = dayjs().format('dddd');
-        return classrooms
-            .flatMap(c => (c.schedule || []).map(s => ({ 
-                ...s, 
-                classroomName: c.classroomName, 
-                subject: c.subject,
-                classroomId: c.id 
-            })))
+
+        const teachers = allUsers.filter(u => u.roles?.includes('teacher'));
+
+        // FIX: Use profileId as the key for the map to match classroom's teacherId
+        const teacherMap = new Map(
+            teachers.map(t => [t.profileId, `${t.firstName} ${t.lastName}`])
+        );
+
+        const scheduleItems = classrooms
+            .flatMap(c => {
+                return (c.schedule || []).map(s => ({
+                    ...s,
+                    classroomName: c.classroomName,
+                    subject: c.subject,
+                    grade: c.grade, // Added grade
+                    classroomId: c.id,
+                    classroomColor: c.color,
+                    teacherName: teacherMap.get(c.teacherId) || 'Χωρίς Καθηγητή'
+                }));
+            })
             .filter(s => s.day.toLowerCase() === today.toLowerCase())
             .sort((a, b) => a.startTime.localeCompare(b.startTime));
-    }, [classrooms]);
+        
+        const groupedSchedule = scheduleItems.reduce((acc, item) => {
+            const key = item.teacherName;
+            if (!acc[key]) {
+                acc[key] = [];
+            }
+            acc[key].push(item);
+            return acc;
+        }, {});
+
+        return groupedSchedule;
+
+    }, [classrooms, allUsers]);
+    
+    const upcomingAdminTasks = useMemo(() => {
+        if (!allTasks) return [];
+        const today = dayjs().startOf('day');
+        const priorityOrder = { high: 1, medium: 2, low: 3 };
+
+        return allTasks
+            .filter(task => !task.isCompleted && dayjs(task.start?.toDate()).isAfter(today.subtract(1, 'month'))) // Filter out old tasks
+            .sort((a, b) => {
+                // Primary sort: by priority
+                const priorityA = priorityOrder[a.priority] || 4;
+                const priorityB = priorityOrder[b.priority] || 4;
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
+                // Secondary sort: by date
+                return a.start?.toDate() - b.start?.toDate();
+            })
+            .slice(0, 5);
+    }, [allTasks]);
+
 
     const upcomingAssignments = useMemo(() => {
         if (!allAssignments) return [];
@@ -164,11 +246,13 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
     return (
         <Box sx={{ flexGrow: 1 }}>
             <Grid container spacing={3}>
+                {/* STAT CARDS */}
                 <StatCard title="Ενεργοί Μαθητές" value={stats.activeStudents} icon={<PeopleIcon />} color="primary.main" onClick={() => navigate('/students')} />
                 <StatCard title="Ενεργά Τμήματα" value={stats.activeClassrooms} icon={<ClassIcon />} color="secondary.main" onClick={() => navigate('/classrooms')} />
                 <StatCard title="Εγγραφές σε Αναμονή" value={stats.pendingUsers} icon={<PersonAddIcon />} color="warning.main" onClick={() => navigate('/users-management')} />
                 <StatCard title="Ασύνδετοι Καθηγητές" value={stats.unlinkedTeachers} icon={<LinkOffIcon />} color="error.main" onClick={() => navigate('/teachers')} />
 
+                {/* QUICK ACTIONS */}
                 <Grid item xs={12}>
                     <Typography variant="h5" gutterBottom sx={{ mt: 2, fontWeight: 'bold' }}>Γρήγορες Ενέργειες</Typography>
                     <Grid container spacing={2}>
@@ -179,7 +263,75 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
                     </Grid>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                {/* TODAY'S SCHEDULE */}
+                <Grid item xs={12}>
+                     <Card elevation={3} sx={{ height: '100%', borderRadius: '12px' }}>
+                        <CardHeader title="Το Σημερινό Πρόγραμμα" action={<Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/calendar')}>Πλήρες Πρόγραμμα</Button>} />
+                        <CardContent sx={{ pt: 0 }}>
+                            {Object.keys(todaysSchedule).length > 0 ? (
+                                Object.entries(todaysSchedule).map(([teacherName, scheduleItems], teacherIndex) => (
+                                    <Box key={teacherName} sx={{ mb: teacherIndex < Object.keys(todaysSchedule).length - 1 ? 3 : 0 }}>
+                                         <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1, ml: 1, fontSize: '1rem' }}>{teacherName}</Typography>
+                                         <Box
+                                            sx={{
+                                                display: 'flex',
+                                                overflowX: 'auto',
+                                                p: 1,
+                                                gap: 2,
+                                                '&::-webkit-scrollbar': { height: 8 },
+                                                '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 4 }
+                                            }}
+                                        >
+                                            {scheduleItems.map((item, index) => {
+                                                const { icon, color: fallbackColor } = getSubjectStyle(item.subject);
+                                                const bgColor = item.classroomColor || fallbackColor;
+                                                return (
+                                                    <Paper
+                                                        key={index}
+                                                        elevation={2}
+                                                        onClick={() => navigate('/classrooms', { state: { selectedId: item.classroomId } })}
+                                                        sx={{
+                                                            minWidth: 220,
+                                                            p: 2,
+                                                            borderRadius: '12px',
+                                                            bgcolor: bgColor,
+                                                            color: 'common.white',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            justifyContent: 'space-between',
+                                                            flexShrink: 0,
+                                                            '&:hover': {
+                                                                transform: 'scale(1.03)',
+                                                                boxShadow: 6
+                                                            },
+                                                            transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out'
+                                                        }}
+                                                    >
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, opacity: 0.8 }}>
+                                                            {React.cloneElement(icon, { sx: { color: 'common.white' } })}
+                                                            <Typography variant="body2" sx={{ ml: 1, fontWeight: 'bold' }}>
+                                                                {`${item.startTime} - ${item.endTime}`}
+                                                            </Typography>
+                                                        </Box>
+                                                        <Box>
+                                                            <Typography variant="h6" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>{item.subject}</Typography>
+                                                            <Typography variant="body1" sx={{ opacity: 0.9 }}>{item.grade}</Typography>
+                                                            <Typography variant='body2' sx={{ opacity: 0.9 }}>{item.classroomName}</Typography>
+                                                        </Box>
+                                                    </Paper>
+                                                );
+                                            })}
+                                        </Box>
+                                    </Box>
+                                ))
+                            ) : ( <Typography color="text.secondary" sx={{ textAlign: 'center', p: 2 }}>Δεν υπάρχουν προγραμματισμένα μαθήματα για σήμερα.</Typography> )}
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* INFO CARDS ROW */}
+                <Grid item xs={12} md={6} lg={3}>
                      <Card elevation={3} sx={{ height: '100%', borderRadius: '12px' }}>
                         <CardHeader title="Επερχόμενες Αξιολογήσεις" action={<Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/assignments')}>Όλες</Button>} />
                         <CardContent sx={{ pt: 0 }}>
@@ -196,7 +348,24 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={6} lg={3}>
+                     <Card elevation={3} sx={{ height: '100%', borderRadius: '12px' }}>
+                        <CardHeader title="Οι Εργασίες μου" action={<Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/tasks-calendar')}>Όλες</Button>} />
+                        <CardContent sx={{ pt: 0 }}>
+                            {upcomingAdminTasks.length > 0 ? (
+                                <List dense>
+                                    {upcomingAdminTasks.map((item, index) => (
+                                        <ListItem key={item.id} divider={index < upcomingAdminTasks.length - 1}>
+                                            <ListItemIcon sx={{minWidth: '40px'}}>{getPriorityIcon(item.priority)}</ListItemIcon>
+                                            <ListItemText primary={item.title} secondary={`Έως: ${dayjs(item.start.toDate()).format('dddd, DD/MM')}`} />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            ) : ( <Typography color="text.secondary" sx={{ textAlign: 'center', p: 2 }}>Δεν υπάρχουν εκκρεμείς εργασίες.</Typography> )}
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} md={6} lg={3}>
                      <Card elevation={3} sx={{ height: '100%', borderRadius: '12px' }}>
                         <CardHeader title="Πρόσφατη Βαθμολογία" action={<Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/grades-summary')}>Αναλυτικά</Button>} />
                         <CardContent sx={{ pt: 0 }}>
@@ -208,30 +377,12 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
                                             <ListItemText primary={`${item.studentName}: ${item.grade}`} secondary={`${item.subject} - ${item.type}`} />
                                         </ListItem>
                                     ))}
-                                </List>
+                                 </List>
                             ) : ( <Typography color="text.secondary" sx={{ textAlign: 'center', p: 2 }}>Δεν υπάρχουν πρόσφατοι βαθμοί.</Typography> )}
                         </CardContent>
                     </Card>
                 </Grid>
-
-                <Grid item xs={12} md={6}>
-                     <Card elevation={3} sx={{ height: '100%', borderRadius: '12px' }}>
-                        <CardHeader title="Το Σημερινό Πρόγραμμα" action={<Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/calendar')}>Πλήρες Πρόγραμμα</Button>} />
-                        <CardContent sx={{ pt: 0 }}>
-                            {todaysSchedule.length > 0 ? (
-                                <List dense>
-                                    {todaysSchedule.map((item, index) => (
-                                        <ListItemButton key={index} divider={index < todaysSchedule.length - 1} onClick={() => navigate('/classrooms', { state: { selectedId: item.classroomId } })}>
-                                            <ListItemIcon sx={{minWidth: '40px'}}><EventIcon color="action" /></ListItemIcon>
-                                            <ListItemText primary={`${item.startTime} - ${item.endTime}: ${item.subject}`} secondary={item.classroomName} />
-                                        </ListItemButton>
-                                    ))}
-                                </List>
-                            ) : ( <Typography color="text.secondary" sx={{ textAlign: 'center', p: 2 }}>Δεν υπάρχουν προγραμματισμένα μαθήματα για σήμερα.</Typography> )}
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={6} lg={3}>
                     <Card elevation={3} sx={{ height: '100%', borderRadius: '12px' }}>
                         <CardHeader title="Ροή Δραστηριότητας" avatar={<ActivityIcon color="action"/>} />
                         <CardContent sx={{ pt: 0 }}>
@@ -249,7 +400,8 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
                     </Card>
                 </Grid>
 
-                 <Grid item xs={12}>
+                {/* LIBRARY STATS */}
+                <Grid item xs={12}>
                     <Paper elevation={3} sx={{ p: 2, display: 'flex', alignItems: 'center', borderRadius: '12px' }}>
                         <Avatar sx={{ bgcolor: 'info.main', width: 56, height: 56, mr: 2 }}><BookIcon /></Avatar>
                         <Box sx={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
