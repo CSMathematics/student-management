@@ -62,7 +62,7 @@ function AdminPortal({ db, appId, user, userProfile }) {
     const [allData, setAllData] = useState({
         classrooms: [], students: [], grades: [], absences: [],
         payments: [], courses: [], teachers: [], announcements: [],
-        assignments: [], expenses: [], files: []
+        assignments: [], expenses: [], files: [], tasks: [] // Added tasks
     });
     const [allUsers, setAllUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -85,7 +85,7 @@ function AdminPortal({ db, appId, user, userProfile }) {
 
         const collectionsToFetch = [
             'classrooms', 'students', 'grades', 'absences', 'payments', 
-            'courses', 'teachers', 'announcements', 'assignments', 'expenses', 'files'
+            'courses', 'teachers', 'announcements', 'assignments', 'expenses', 'files', 'tasks' // Added tasks
         ];
 
         collectionsToFetch.forEach(name => {
@@ -113,7 +113,6 @@ function AdminPortal({ db, appId, user, userProfile }) {
         return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}><CircularProgress /></Box>;
     }
 
-    // --- ΔΙΟΡΘΩΣΗ: Επαναφορά του σωστού mapping των props ---
     const commonProps = { 
         db, appId, userId: user.uid,
         classrooms: allData.classrooms, 
@@ -127,6 +126,7 @@ function AdminPortal({ db, appId, user, userProfile }) {
         allAssignments: allData.assignments, 
         allExpenses: allData.expenses, 
         allFiles: allData.files,
+        allTasks: allData.tasks, // Added tasks
         allUsers: allUsers,
         loading 
     };
@@ -182,4 +182,3 @@ function AdminPortal({ db, appId, user, userProfile }) {
 }
 
 export default AdminPortal;
-

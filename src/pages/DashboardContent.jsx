@@ -27,7 +27,9 @@ import {
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import 'dayjs/locale/el';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'; // Import the plugin
 dayjs.locale('el');
+dayjs.extend(isSameOrAfter); // Extend dayjs with the plugin
 
 
 const StatCard = ({ title, value, icon, color, onClick }) => (
@@ -133,8 +135,7 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
         const today = dayjs().format('dddd');
 
         const teachers = allUsers.filter(u => u.roles?.includes('teacher'));
-
-        // FIX: Use profileId as the key for the map to match classroom's teacherId
+        
         const teacherMap = new Map(
             teachers.map(t => [t.profileId, `${t.firstName} ${t.lastName}`])
         );
@@ -145,7 +146,7 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
                     ...s,
                     classroomName: c.classroomName,
                     subject: c.subject,
-                    grade: c.grade, // Added grade
+                    grade: c.grade,
                     classroomId: c.id,
                     classroomColor: c.color,
                     teacherName: teacherMap.get(c.teacherId) || 'Χωρίς Καθηγητή'
@@ -172,17 +173,30 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
         const today = dayjs().startOf('day');
         const priorityOrder = { high: 1, medium: 2, low: 3 };
 
+        // Helper function to safely convert date fields
+        const safeGetDate = (dateField) => {
+            if (!dateField) return null;
+            if (typeof dateField.toDate === 'function') {
+                return dateField.toDate(); // Firestore Timestamp
+            }
+            return dayjs(dateField).toDate(); // String or other parsable format
+        };
+
         return allTasks
-            .filter(task => !task.isCompleted && dayjs(task.start?.toDate()).isAfter(today.subtract(1, 'month'))) // Filter out old tasks
+            .filter(task => {
+                const startDate = safeGetDate(task.start);
+                return !task.isCompleted && startDate && dayjs(startDate).isSameOrAfter(today);
+            })
             .sort((a, b) => {
-                // Primary sort: by priority
+                const startDateA = safeGetDate(a.start);
+                const startDateB = safeGetDate(b.start);
+
+                const dateComparison = dayjs(startDateA).diff(dayjs(startDateB));
+                if (dateComparison !== 0) return dateComparison;
+
                 const priorityA = priorityOrder[a.priority] || 4;
                 const priorityB = priorityOrder[b.priority] || 4;
-                if (priorityA !== priorityB) {
-                    return priorityA - priorityB;
-                }
-                // Secondary sort: by date
-                return a.start?.toDate() - b.start?.toDate();
+                return priorityA - priorityB;
             })
             .slice(0, 5);
     }, [allTasks]);
@@ -277,7 +291,7 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
                                                 display: 'flex',
                                                 overflowX: 'auto',
                                                 p: 1,
-                                                gap: 2,
+                                                gap: 1,
                                                 '&::-webkit-scrollbar': { height: 8 },
                                                 '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 4 }
                                             }}
@@ -292,8 +306,8 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
                                                         onClick={() => navigate('/classrooms', { state: { selectedId: item.classroomId } })}
                                                         sx={{
                                                             minWidth: 220,
-                                                            p: 2,
-                                                            borderRadius: '12px',
+                                                            p: 1,
+                                                            borderRadius: '5px',
                                                             bgcolor: bgColor,
                                                             color: 'common.white',
                                                             cursor: 'pointer',
@@ -317,7 +331,7 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
                                                         <Box>
                                                             <Typography variant="h6" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>{item.subject}</Typography>
                                                             <Typography variant="body1" sx={{ opacity: 0.9 }}>{item.grade}</Typography>
-                                                            <Typography variant='body2' sx={{ opacity: 0.9 }}>{item.classroomName}</Typography>
+                                                            <Typography variant="body2" sx={{ opacity: 0.9 }}>{item.classroomName}</Typography>
                                                         </Box>
                                                     </Paper>
                                                 );
@@ -354,12 +368,15 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
                         <CardContent sx={{ pt: 0 }}>
                             {upcomingAdminTasks.length > 0 ? (
                                 <List dense>
-                                    {upcomingAdminTasks.map((item, index) => (
-                                        <ListItem key={item.id} divider={index < upcomingAdminTasks.length - 1}>
-                                            <ListItemIcon sx={{minWidth: '40px'}}>{getPriorityIcon(item.priority)}</ListItemIcon>
-                                            <ListItemText primary={item.title} secondary={`Έως: ${dayjs(item.start.toDate()).format('dddd, DD/MM')}`} />
-                                        </ListItem>
-                                    ))}
+                                    {upcomingAdminTasks.map((item, index) => {
+                                        const startDate = item.start?.toDate ? item.start.toDate() : item.start;
+                                        return (
+                                            <ListItem key={item.id} divider={index < upcomingAdminTasks.length - 1}>
+                                                <ListItemIcon sx={{minWidth: '40px'}}>{getPriorityIcon(item.priority)}</ListItemIcon>
+                                                <ListItemText primary={item.title} secondary={`Έως: ${dayjs(startDate).format('dddd, DD/MM')}`} />
+                                            </ListItem>
+                                        );
+                                    })}
                                 </List>
                             ) : ( <Typography color="text.secondary" sx={{ textAlign: 'center', p: 2 }}>Δεν υπάρχουν εκκρεμείς εργασίες.</Typography> )}
                         </CardContent>

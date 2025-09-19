@@ -50,9 +50,8 @@ const navItemsByRole = {
             text: "Οδηγός Σπουδών", icon: "fas fa-university", isParent: true,
             subItems: [
                 { text: "Σχολές", icon: "fas fa-building-columns", path: "/study-guide/faculties" },
-                { text: "Υπολογισμός μορίων", icon: "fas fa-calculator", path: "/study-guide/points-calculator" },
+                { text: "Προσομοίωση μηχανογραφικού", icon: "fas fa-calculator", path: "/study-guide/points-calculator" },
                 { text: "Χρήσιμα έγγραφα", icon: "fas fa-file-archive", path: "/study-guide/documents" },
-                { text: "Προσομοίωση", icon: "fas fa-tasks", path: "/study-guide/simulation" }
             ]
         },
         { text: "Τηλεφωνικός κατάλογος", icon: "fas fa-phone", path: "/phonebook" },

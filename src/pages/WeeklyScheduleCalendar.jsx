@@ -36,7 +36,7 @@ const generateTimeSlots = (startHour, endHour) => {
     return slots;
 };
 
-const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherName, enrolledStudentsCount, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker, onAddMoreHours, isEditMode }) => {
+const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherName, enrolledStudentsCount, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker, onAddMoreHours, isEditMode, onClick }) => {
     const isSmall = height <= 80;
 
     const tooltipContent = (
@@ -55,12 +55,13 @@ const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherNam
                 position: 'absolute', left, top, width, height, backgroundColor: backgroundColor || '#2196f3',
                 color: '#fff', borderRadius: '4px', padding: '5px',
                 overflow: 'hidden', zIndex: 5, boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                cursor: isEditMode ? 'grab' : 'default', // Change cursor based on edit mode
+                cursor: isEditMode ? 'grab' : 'pointer', 
                 touchAction: 'none', display: 'flex', flexDirection: 'column',
                 justifyContent: 'space-between', fontSize: '0.75rem', boxSizing: 'border-box',
                 transition: 'background-color 0.3s ease',
             }}
-            onMouseDown={(e) => isEditMode && onDragStart(e, id)} // Only allow drag in edit mode
+            onMouseDown={(e) => isEditMode && onDragStart(e, id)} 
+            onClick={() => !isEditMode && onClick(fullClassroomData.id)}
         >
             {isEditMode && <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', cursor: 'ns-resize', zIndex: 6 }} onMouseDown={(e) => onResizeStart(e, id, 'top')} />}
             
@@ -83,7 +84,7 @@ const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherNam
                 {!isSmall && <Typography variant="caption" sx={{ display: 'block' }}>Μαθητές: {enrolledStudentsCount || 0}/{maxStudents}</Typography>}
                 <Typography variant="caption" sx={{ display: 'block', fontSize: isSmall ? '0.7rem' : 'inherit' }}>{startTime} - {endTime}</Typography>
             </Box>
-            {isEditMode && ( // Only show action buttons in edit mode
+            {isEditMode && (
                 <Box className="no-print" sx={{ position: 'absolute', bottom: '2px', right: '2px', display: 'flex', gap: '2px', zIndex: 7 }}>
                     <Tooltip title="Προσθήκη Ώρας"><IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onAddMoreHours(fullClassroomData); }}><AddIcon sx={{ fontSize: '0.8rem' }} /></IconButton></Tooltip>
                     <Tooltip title="Επεξεργασία"><IconButton size="small" sx={{ color: '#fff', padding: '2px' }} onClick={(e) => { e.stopPropagation(); onEdit(fullClassroomData); }}><Edit sx={{ fontSize: '0.8rem' }} /></IconButton></Tooltip>
@@ -102,12 +103,11 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     const [calendarEndHour, setCalendarEndHour] = useState(22);
     const [selectedTeacherIds, setSelectedTeacherIds] = useState([]);
     const [visibleDays, setVisibleDays] = useState(ALL_DAYS_OF_WEEK);
+    const [cellHeight, setCellHeight] = useState(40); 
     const TIME_SLOTS = useMemo(() => generateTimeSlots(calendarStartHour, calendarEndHour), [calendarStartHour, calendarEndHour]);
     
-    // --- NEW: State for Edit Mode ---
     const [isEditMode, setIsEditMode] = useState(false);
     const [workingClassrooms, setWorkingClassrooms] = useState([]);
-    // --- END NEW ---
 
     const gridBodyRef = useRef(null);
     const [gridDimensions, setGridDimensions] = useState({ width: 0, dayWidth: 0, teacherColumnWidth: 0, cellHeight: 40 });
@@ -134,9 +134,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     const [selectedClassroomForColor, setSelectedClassroomForColor] = useState(null);
     const [tempColor, setTempColor] = useState('#2196f3');
 
-    // --- NEW: Initialize and sync working copy with props ---
     useEffect(() => {
-        // Create a deep copy to avoid mutating props
         setWorkingClassrooms(JSON.parse(JSON.stringify(classrooms || [])));
     }, [classrooms]);
 
@@ -160,13 +158,13 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                 const availableWidthForDataColumns = parentWidth - TIME_COLUMN_WIDTH_PX;
                 const dayWidth = visibleDays.length > 0 ? availableWidthForDataColumns / visibleDays.length : 0;
                 const teacherColumnWidth = teacherColumns.length > 0 ? dayWidth / teacherColumns.length : 0;
-                setGridDimensions({ width: parentWidth, dayWidth, teacherColumnWidth, cellHeight: 40 });
+                setGridDimensions({ width: parentWidth, dayWidth, teacherColumnWidth, cellHeight: cellHeight }); 
             }
         };
         updateGridDimensions();
         window.addEventListener('resize', updateGridDimensions);
         return () => window.removeEventListener('resize', updateGridDimensions);
-    }, [teacherColumns.length, visibleDays]);
+    }, [teacherColumns.length, visibleDays, cellHeight]); 
 
     useEffect(() => {
         if (!db || !appId || !selectedYear) return;
@@ -177,7 +175,6 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     }, [db, appId, selectedYear]);
 
     const enrichedClassrooms = useMemo(() => {
-        // --- MODIFIED: Use workingClassrooms instead of classrooms prop ---
         if (!workingClassrooms || !allStudents) return [];
         const studentCountMap = new Map();
         allStudents.forEach(student => {
@@ -269,7 +266,6 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
         if (!targetStart.isValid() || !targetEnd.isValid() || targetEnd.isSameOrBefore(targetStart)) return true;
         if (!targetTeacherId) return false;
 
-        // --- MODIFIED: Use workingClassrooms for overlap check ---
         for (const classroom of workingClassrooms) {
             if (classroom.teacherId === targetTeacherId) {
                 if (classroom.id === ignoreClassroomId) continue;
@@ -288,7 +284,6 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     }, [workingClassrooms]);
 
     const handleGridMouseDown = (e) => {
-        // --- MODIFIED: Guard for edit mode ---
         if (!isEditMode || e.button !== 0 || (addHoursMode && (e.ctrlKey || e.metaKey))) return;
         e.preventDefault();
         const gridRect = gridBodyRef.current.getBoundingClientRect();
@@ -302,7 +297,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     };
 
     const handleEventDragStart = useCallback((e, id) => {
-        if (!isEditMode) return; // Guard
+        if (!isEditMode) return;
         e.stopPropagation();
         if (e.button !== 0) return;
         e.preventDefault();
@@ -318,7 +313,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     }, [displayedEventBlocks, isEditMode]);
 
     const handleEventResizeStart = useCallback((e, id, handle) => {
-        if (!isEditMode) return; // Guard
+        if (!isEditMode) return;
         e.stopPropagation();
         if (e.button !== 0) return;
         e.preventDefault();
@@ -334,7 +329,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     }, [displayedEventBlocks, isEditMode]);
 
     const handleGlobalMouseMove = useCallback((e) => {
-        if (!isEditMode) return; // Guard
+        if (!isEditMode) return;
         e.preventDefault();
         const { cellHeight } = gridDimensions;
         
@@ -376,7 +371,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     }, [isDraggingNewSelection, getGridCoordinatesFromPixels, draggedEvent, resizedEvent, gridDimensions, startSelection, updateTempFloatingSelectionRect, isEditMode]);
 
     const handleGlobalMouseUp = useCallback(async (e) => {
-        if (!isEditMode) return; // Guard
+        if (!isEditMode) return;
         
         if (isDraggingNewSelection && startSelection && endSelection) {
             const day = visibleDays[startSelection.dayIndex];
@@ -389,7 +384,14 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                 const endHourIdx = Math.max(startSelection.hourIndex, endSelection.hourIndex);
                 const startTime = TIME_SLOTS[startHourIdx];
                 const endTime = TIME_SLOTS[endHourIdx + 1] || `${String(calendarEndHour).padStart(2, '0')}:00`;
-                const newEntry = { id: dayjs().valueOf(), day, startTime, endTime };
+                
+                const newEntry = {
+                    id: dayjs().valueOf(),
+                    day,
+                    startTime,
+                    endTime,
+                    teacherIndex: startSelection.teacherIndex
+                };
                 
                 if (checkOverlap(day, startTime, endTime, teacher.id, addHoursMode ? addHoursMode.id : null)) {
                     setConflictMessage(`Ο καθηγητής ${teacher.firstName} ${teacher.lastName} έχει ήδη μάθημα αυτή την ώρα.`);
@@ -426,7 +428,6 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                     setOpenConflictDialog(true);
                     setDisplayedEventBlocks(prev => prev.map(b => b.id === originalBlock.id ? originalBlock : b));
                 } else {
-                    // --- MODIFIED: Update local state instead of Firebase ---
                     const scheduleIndex = parseInt(originalBlock.id.split('-')[1], 10);
                     const classroomId = originalBlock.fullClassroomData.id;
                     setWorkingClassrooms(prev => {
@@ -460,7 +461,6 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                     setOpenConflictDialog(true);
                     setDisplayedEventBlocks(prev => prev.map(b => b.id === originalBlock.id ? originalBlock : b));
                 } else {
-                    // --- MODIFIED: Update local state instead of Firebase ---
                     const scheduleIndex = parseInt(originalBlock.id.split('-')[1], 10);
                     const classroomId = originalBlock.fullClassroomData.id;
                     setWorkingClassrooms(prev => {
@@ -503,7 +503,6 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     };
     const handleSaveAddedHours = async () => {
         if (!isEditMode || !addHoursMode || accumulatedSelections.length === 0) return;
-        // --- MODIFIED: Update local state instead of Firebase ---
         setWorkingClassrooms(prev => {
             const newClassrooms = JSON.parse(JSON.stringify(prev));
             const classroomToUpdate = newClassrooms.find(c => c.id === addHoursMode.id);
@@ -527,7 +526,6 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     };
     const handleConfirmSlotDelete = async () => {
         if (!isEditMode || !deleteInfo) return;
-        // --- MODIFIED: Update local state instead of Firebase ---
         setWorkingClassrooms(prev => {
             const newClassrooms = JSON.parse(JSON.stringify(prev));
             const classroomToUpdate = newClassrooms.find(c => c.id === deleteInfo.classroomId);
@@ -546,7 +544,6 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     };
     const handleSaveColor = async () => {
         if (!isEditMode || !selectedClassroomForColor) return;
-        // --- MODIFIED: Update local state instead of Firebase ---
         setWorkingClassrooms(prev => prev.map(c =>
             c.id === selectedClassroomForColor.id ? { ...c, color: tempColor } : c
         ));
@@ -558,7 +555,6 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
     };
     const handleConfirmClearSchedule = async () => {
         if (!isEditMode) return;
-        // --- MODIFIED: Update local state instead of Firebase ---
         setWorkingClassrooms([]);
         setOpenClearConfirmDialog(false);
     };
@@ -577,13 +573,12 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
 
     const handlePrint = () => window.print();
 
-    // --- NEW: Button Handlers for Edit Mode ---
     const handleEditClick = () => {
         setIsEditMode(true);
     };
 
     const handleCancelClick = () => {
-        setWorkingClassrooms(JSON.parse(JSON.stringify(classrooms || []))); // Revert to original props
+        setWorkingClassrooms(JSON.parse(JSON.stringify(classrooms || [])));
         setIsEditMode(false);
     };
 
@@ -592,24 +587,19 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
         const originalMap = new Map(classrooms.map(c => [c.id, c]));
         const workingMap = new Map(workingClassrooms.map(c => [c.id, c]));
 
-        // Check for updates and new classrooms
         for (const [id, workingCopy] of workingMap.entries()) {
             const originalCopy = originalMap.get(id);
             if (!originalCopy) {
-                // This is a new classroom (though current UI doesn't create them locally)
-                // Add logic for addDoc if needed in the future
+                // Future: Add logic for addDoc if needed
             } else if (JSON.stringify(originalCopy) !== JSON.stringify(workingCopy)) {
-                // This classroom was updated
                 const { id: classroomId, ...dataToUpdate } = workingCopy;
                 const classroomDocRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, classroomId);
                 promises.push(updateDoc(classroomDocRef, dataToUpdate));
             }
         }
 
-        // Check for deletions
         for (const [id, originalCopy] of originalMap.entries()) {
             if (!workingMap.has(id)) {
-                // This classroom was deleted
                 const classroomDocRef = doc(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/classrooms`, id);
                 promises.push(deleteDoc(classroomDocRef));
             }
@@ -629,7 +619,13 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
             alert("Σφάλμα κατά την αποθήκευση. Οι αλλαγές δεν αποθηκεύτηκαν.");
         } finally {
             setIsEditMode(false);
-            // The parent component will handle refetching the data, which will update the 'classrooms' prop
+        }
+    };
+    
+    // New handler for read-only clicks
+    const handleBlockClick = (classroomId) => {
+        if (!isEditMode) {
+            navigate('/classrooms', { state: { selectedId: classroomId } });
         }
     };
 
@@ -650,6 +646,19 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                             {Array.from({ length: 25 }, (_, i) => i).map(hour => <MenuItem key={hour} value={hour} disabled={hour <= calendarStartHour}>{String(hour).padStart(2, '0')}:00</MenuItem>)}
                         </Select>
                     </FormControl>
+                    <FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
+                        <InputLabel>Ύψος Γραμμής</InputLabel>
+                        <Select
+                            value={cellHeight}
+                            onChange={(e) => setCellHeight(Number(e.target.value))}
+                            label="Ύψος Γραμμής"
+                        >
+                            <MenuItem value={30}>Μικρό</MenuItem>
+                            <MenuItem value={40}>Κανονικό</MenuItem>
+                            <MenuItem value={50}>Μεσαίο</MenuItem>
+                            <MenuItem value={60}>Μεγάλο</MenuItem>
+                        </Select>
+                    </FormControl>
                     <FormControl variant="outlined" size="small" sx={{ minWidth: 220 }}>
                         <InputLabel>Εμφάνιση Ημερών</InputLabel>
                         <Select multiple value={visibleDays} onChange={handleVisibleDaysChange} label="Εμφάνιση Ημερών" renderValue={(selected) => selected.join(', ')}>
@@ -658,15 +667,13 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                     </FormControl>
                     <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
                         <InputLabel>Εμφάνιση Καθηγητών</InputLabel>
-                        <Select multiple value={selectedTeacherIds} onChange={handleVisibleTeachersChange} label="Εμφάνιση Καθηγητών" renderValue={(selected) => { if (selected.length === allTeachers.length) return 'Όλοι οι Καθηγητές'; return `${selected.length} επιλεγμένοι`; }}>
+                        <Select multiple value={selectedTeacherIds} onChange={handleVisibleTeachersChange} label="Εμφάνιση Καθηγητών" renderValue={(selected) => { if (allTeachers && selected.length === allTeachers.length) return 'Όλοι οι Καθηγητές'; return `${selected.length} επιλεγμένοι`; }}>
                            {allTeachers && allTeachers.map(teacher => (<MenuItem key={teacher.id} value={teacher.id}><Checkbox checked={selectedTeacherIds.indexOf(teacher.id) > -1} /><ListItemText primary={`${teacher.firstName} ${teacher.lastName}`} /></MenuItem>))}
                         </Select>
                     </FormControl>
                     <Box sx={{ flexGrow: 1 }} />
-                    {/* --- REMOVED BUTTONS FROM HERE --- */}
                 </Box>
                 
-                {/* --- MODIFIED: Title bar with all action icon buttons --- */}
                 <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="h5">Εβδομαδιαίο Πρόγραμμα</Typography>
                     <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -753,8 +760,8 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                                     const dayIdx = visibleDays.indexOf(selection.day);
                                     const startHourIdx = TIME_SLOTS.indexOf(selection.startTime);
                                     const endHourIdx = TIME_SLOTS.indexOf(selection.endTime);
-                                    const teacherIdx = addHoursMode ? teacherColumns.findIndex(t => t.id === addHoursMode.teacherId) : startSelection.teacherIndex;
-                                    if (dayIdx === -1 || startHourIdx === -1 || endHourIdx === -1 || gridDimensions.teacherColumnWidth === 0) return null;
+                                    const teacherIdx = selection.teacherIndex;
+                                    if (dayIdx === -1 || startHourIdx === -1 || endHourIdx === -1 || teacherIdx === -1 || gridDimensions.teacherColumnWidth === 0) return null;
                                     const left = (dayIdx * teacherColumns.length * gridDimensions.teacherColumnWidth) + (teacherIdx * gridDimensions.teacherColumnWidth);
                                     const top = startHourIdx * gridDimensions.cellHeight;
                                     const height = (endHourIdx - startHourIdx) * gridDimensions.cellHeight;
@@ -763,7 +770,7 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                                 })}
                                 {displayedEventBlocks.map(block => {
                                     const isBeingEdited = addHoursMode && block.fullClassroomData.id === addHoursMode.id;
-                                    return (<FloatingEventBlock key={block.id} {...block} onEdit={handleEditEntry} onDelete={handleDeleteEntry} onDragStart={handleEventDragStart} onResizeStart={handleEventResizeStart} onOpenColorPicker={handleOpenColorPicker} onAddMoreHours={handleEnterAddHoursMode} backgroundColor={isBeingEdited ? '#4caf50' : block.backgroundColor} isEditMode={isEditMode} />);
+                                    return (<FloatingEventBlock key={block.id} {...block} onClick={handleBlockClick} onEdit={handleEditEntry} onDelete={handleDeleteEntry} onDragStart={handleEventDragStart} onResizeStart={handleEventResizeStart} onOpenColorPicker={handleOpenColorPicker} onAddMoreHours={handleEnterAddHoursMode} backgroundColor={isBeingEdited ? '#4caf50' : block.backgroundColor} isEditMode={isEditMode} />);
                                 })}
                             </Box>
                         </Box>
@@ -789,6 +796,14 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
             </Box>
 
             <Dialog open={!!deleteInfo} onClose={() => setDeleteInfo(null)}>
+                <DialogTitle>Επιβεβαίωση Διαγραφής</DialogTitle>
+                <DialogContent><DialogContentText>Είστε σίγουροι ότι θέλετε να διαγράψετε τη συγκεκριμένη ώρα από το τμήμα;</DialogContentText></DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteInfo(null)}>Ακύρωση</Button>
+                    <Button onClick={handleConfirmSlotDelete} color="error">Διαγραφή</Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog open={openClearConfirmDialog} onClose={() => setOpenClearConfirmDialog(false)}>
                 <DialogTitle>Επιβεβαίωση Εκκαθάρισης</DialogTitle>
                 <DialogContent><DialogContentText>Αυτή η ενέργεια θα διαγράψει ΟΛΑ τα τμήματα από την τρέχουσα προβολή. Για να αποθηκευτεί η αλλαγή πατήστε Αποθήκευση. Είστε σίγουροι;</DialogContentText></DialogContent>
                 <DialogActions>
@@ -816,3 +831,4 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
 }
 
 export default WeeklyScheduleCalendar;
+

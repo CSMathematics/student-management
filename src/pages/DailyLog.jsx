@@ -41,7 +41,11 @@ const StudentGradingRow = ({ student, data, onDataChange, isAssignment = false, 
                     onChange={(e) => onDataChange(student.id, 'attendance', e.target.checked ? 'present' : 'absent', assignmentId)}
                 />
             }
-            label={data?.attendance === 'present' ? 'Παρών' : 'Απών'}
+            label={
+                data?.attendance === 'present'
+                    ? (student.gender === 'Άρρεν' ? 'Παρών' : 'Παρούσα')
+                    : (student.gender === 'Άρρεν' ? 'Απών' : 'Απούσα')
+            }
         />
         {isAssignment ? (
             <>
@@ -63,7 +67,7 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
     const [dailyData, setDailyData] = useState({});
     const [isSaving, setIsSaving] = useState(false);
     const [assignmentFormOpen, setAssignmentFormOpen] = useState(false);
-    
+
     const [taughtSection, setTaughtSection] = useState('');
     const [notes, setNotes] = useState('');
     const [attachedFiles, setAttachedFiles] = useState([]);
@@ -129,11 +133,11 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
         return allStudents.filter(s => s.enrolledClassrooms?.includes(classroom.id))
             .sort((a, b) => a.lastName.localeCompare(b.lastName));
     }, [classroom, allStudents]);
-    
+
     const courseForClassroom = useMemo(() => {
         if (!classroom || !Array.isArray(allCourses)) return null;
-        const foundCourse = allCourses.find(c => 
-            c.grade === classroom.grade && 
+        const foundCourse = allCourses.find(c =>
+            c.grade === classroom.grade &&
             c.name?.toLowerCase() === classroom.subject?.toLowerCase()
         );
         return foundCourse;
@@ -270,7 +274,7 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
 
         try {
             const logRef = doc(db, `${yearPath}/dailyLogs`, logId);
-            batch.set(logRef, { 
+            batch.set(logRef, {
                 classroomId: classroom.id, date: new Date(selectedDate), type: 'lesson',
                 taughtSection, notes, attachedFiles
             }, { merge: true });
@@ -307,7 +311,7 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                     }
                 }
             }
-            
+
             await batch.commit();
             setFeedback({ type: 'success', message: 'Η αποθήκευση ολοκληρώθηκε!' });
 
@@ -322,7 +326,7 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
             setIsSaving(false);
         }
     };
-    
+
     const handleSaveAssignment = async (assignmentData) => {
         if (!selectedYear) return;
         const collectionRef = collection(db, `artifacts/${appId}/public/data/academicYears/${selectedYear}/assignments`);
@@ -334,7 +338,7 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
             console.error("Error saving assignment: ", error);
         }
     };
-    
+
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
         if (!file || !selectedYear || !userId) return;
@@ -355,7 +359,7 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                 path: storagePath,
                 uploadedAt: new Date()
             };
-            
+
             setAttachedFiles(prev => [...prev, newFile]);
 
             const fileMetadata = {
@@ -420,7 +424,7 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                             {isSaving ? <CircularProgress size={24} /> : 'Αποθήκευση Ημέρας'}
                         </Button>
                     </Box>
-                    
+
                     {feedback.message && (<Alert severity={feedback.type} sx={{ mb: 2 }} onClose={() => setFeedback({ type: '', message: '' })}>{feedback.message}</Alert>)}
 
                     {isLessonOnSelectedDate && (
@@ -429,7 +433,7 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                             <AccordionDetails>
                                 <Box sx={{ maxHeight: '40vh', overflowY: 'auto', mb: 2 }}>
                                     {studentsInClassroom.map(student => (
-                                        <StudentGradingRow key={`lesson-${student.id}`} student={student} data={dailyData[student.id]} onDataChange={handleDataChange}/>
+                                        <StudentGradingRow key={`lesson-${student.id}`} student={student} data={dailyData[student.id]} onDataChange={handleDataChange} />
                                     ))}
                                 </Box>
                                 <Divider sx={{ my: 2 }} />
@@ -438,8 +442,8 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                                         <InputLabel>Ενότητα Ύλης που Διδάχθηκε</InputLabel>
                                         <Select value={taughtSection} label="Ενότητα Ύλης που Διδάχθηκε" onChange={(e) => setTaughtSection(e.target.value)}>
                                             <MenuItem value=""><em>Καμία</em></MenuItem>
-                                            {syllabusOptions.map((opt, i) => 
-                                                opt.isHeader 
+                                            {syllabusOptions.map((opt, i) =>
+                                                opt.isHeader
                                                     ? <ListSubheader key={i}>{opt.title}</ListSubheader>
                                                     : <MenuItem key={opt.id} value={opt.id}>{opt.text}</MenuItem>
                                             )}
@@ -477,7 +481,7 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                                 <AccordionDetails>
                                     <Box sx={{ maxHeight: '40vh', overflowY: 'auto' }}>
                                         {studentsInClassroom.map(student => (
-                                            <StudentGradingRow key={`assign-${assignment.id}-${student.id}`} student={student} data={dailyData[student.id]} onDataChange={handleDataChange} isAssignment={true} assignmentId={assignment.id}/>
+                                            <StudentGradingRow key={`assign-${assignment.id}-${student.id}`} student={student} data={dailyData[student.id]} onDataChange={handleDataChange} isAssignment={true} assignmentId={assignment.id} />
                                         ))}
                                     </Box>
                                 </AccordionDetails>
@@ -487,20 +491,20 @@ function DailyLog({ classroom, allStudents, allGrades, allAbsences, allAssignmen
                 </Paper>
             )}
 
-            <AssignmentForm 
-                open={assignmentFormOpen} 
-                onClose={() => setAssignmentFormOpen(false)} 
-                onSave={handleSaveAssignment} 
-                classroomId={classroom.id} 
-                classrooms={[classroom]} 
+            <AssignmentForm
+                open={assignmentFormOpen}
+                onClose={() => setAssignmentFormOpen(false)}
+                onSave={handleSaveAssignment}
+                classroomId={classroom.id}
+                classrooms={[classroom]}
                 db={db}
                 appId={appId}
                 selectedYear={selectedYear}
                 userId={userId}
             />
-            
-            <MaterialSelector 
-                open={materialSelectorOpen} 
+
+            <MaterialSelector
+                open={materialSelectorOpen}
                 onClose={() => setMaterialSelectorOpen(false)}
                 onAttach={handleAttachFiles}
                 classroomMaterials={classroom.materials}
