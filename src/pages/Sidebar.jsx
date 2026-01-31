@@ -1,7 +1,7 @@
 // src/pages/Sidebar.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Typography, Collapse, Drawer, Toolbar } from '@mui/material';
+import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Typography, Collapse, Drawer, Toolbar, useTheme } from '@mui/material';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 // --- ΔΙΟΡΘΩΣΗ: Εισαγωγή του λογότυπου ως module ---
@@ -98,7 +98,7 @@ const navItemsByRole = {
         { text: "Αρχική", icon: "fas fa-chart-line", path: "/" },
         { text: "Το Προφίλ μου", icon: "fas fa-user-cog", path: "/my-profile" },
         { text: "Το Ημερολόγιό μου", icon: "fas fa-calendar-alt", path: "/my-schedule" },
-        { text: "Τα Μαθήματά μου", icon: "fas fa-book-reader", path: "/my-courses" }, 
+        { text: "Τα Μαθήματά μου", icon: "fas fa-book-reader", path: "/my-courses" },
         { text: "Εργασίες & Διαγωνίσματα", icon: "fas fa-file-alt", path: "/my-assignments" },
         { text: "Το Υλικό μου", icon: "fas fa-book-open", path: "/my-materials" },
         {
@@ -135,6 +135,7 @@ const navItemsByRole = {
 
 function Sidebar({ mobileOpen, handleDrawerToggle, userRoles = [] }) {
     const location = useLocation();
+    const theme = useTheme();
     const [openSubmenus, setOpenSubmenus] = useState({});
 
     const navItems = useMemo(() => {
@@ -162,9 +163,9 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRoles = [] }) {
 
     const renderListItemButton = (item, isSubItem = false) => {
         if (item.type === 'divider') {
-            return <Divider />;
+            return <Divider sx={{ my: 1, borderColor: 'rgba(255,255,255,0.1)' }} />;
         }
-        
+
         const isSelected = location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
 
         const commonProps = {
@@ -179,34 +180,73 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRoles = [] }) {
                 }
             },
             selected: isSelected,
-            className: isSubItem ? 'sub-item' : ''
+            className: isSubItem ? 'sub-item' : '',
+            sx: {
+                borderRadius: isSubItem ? 2 : '0 24px 24px 0',
+                mr: isSubItem ? 2 : 1,
+                mb: 0.5,
+                pl: isSubItem ? 4 : 2,
+                color: isSelected ? 'white' : 'rgba(255,255,255,0.7)',
+                background: isSelected
+                    ? `linear-gradient(90deg, ${theme.palette.primary.main}20, ${theme.palette.primary.main}40)`
+                    : 'transparent',
+                borderLeft: !isSubItem && isSelected ? `4px solid ${theme.palette.primary.main}` : '4px solid transparent',
+                '&:hover': {
+                    background: 'rgba(255,255,255,0.05)',
+                    color: 'white',
+                },
+                '&.Mui-selected': {
+                    background: `linear-gradient(90deg, ${theme.palette.primary.main}30, ${theme.palette.primary.main}60)`,
+                },
+                '&.Mui-selected:hover': {
+                    background: `linear-gradient(90deg, ${theme.palette.primary.main}40, ${theme.palette.primary.main}70)`,
+                },
+                transition: 'all 0.2s ease-in-out'
+            }
         };
 
         return (
             <ListItemButton {...commonProps}>
-                <ListItemIcon><i className={item.icon}></i></ListItemIcon>
-                <ListItemText primary={item.text} />
+                <ListItemIcon sx={{
+                    color: isSelected ? theme.palette.primary.light : 'rgba(255,255,255,0.5)',
+                    minWidth: 40,
+                    fontSize: '1.2rem'
+                }}>
+                    <i className={item.icon}></i>
+                </ListItemIcon>
+                <ListItemText
+                    primary={item.text}
+                    primaryTypographyProps={{
+                        fontWeight: isSelected ? 600 : 400,
+                        fontSize: '0.95rem'
+                    }}
+                    style={{ paddingLeft: '1rem' }}
+                />
                 {item.isParent && (openSubmenus[item.text] ? <ExpandLess /> : <ExpandMore />)}
             </ListItemButton>
         );
     };
 
     const drawerContent = (
-        <div>
-            <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border : 'none' }}>
+        <Box sx={{
+            height: '100%',
+            background: theme.palette.mode === 'dark' ? theme.palette.background.default : '#1e293b', // Force dark sidebar
+            color: 'white'
+        }}>
+            <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', minHeight: 80 }}>
                 {/* --- ΔΙΟΡΘΩΣΗ: Χρήση της import-ed μεταβλητής --- */}
-                <img src={logoSrc} alt="Φιλομάθεια" style={{ height: '45px' }} />
+                <img src={logoSrc} alt="Φιλομάθεια" style={{ height: '50px', filter: 'drop-shadow(0px 0px 5px rgba(255,255,255,0.3))' }} />
             </Toolbar>
-            
-            <List>
+
+            <List sx={{ px: 1 }}>
                 {navItems.map((item, index) => (
                     <React.Fragment key={index}>
-                        <ListItem disablePadding>{renderListItemButton(item)}</ListItem>
+                        <ListItem disablePadding sx={{ display: 'block' }}>{renderListItemButton(item)}</ListItem>
                         {item.isParent && (
                             <Collapse in={openSubmenus[item.text]} timeout="auto" unmountOnExit>
                                 <List component="div" disablePadding>
                                     {item.subItems.map((subItem, subIndex) => (
-                                        <ListItem key={subIndex} disablePadding>{renderListItemButton(subItem, true)}</ListItem>
+                                        <ListItem key={subIndex} disablePadding sx={{ display: 'block' }}>{renderListItemButton(subItem, true)}</ListItem>
                                     ))}
                                 </List>
                             </Collapse>
@@ -214,15 +254,15 @@ function Sidebar({ mobileOpen, handleDrawerToggle, userRoles = [] }) {
                     </React.Fragment>
                 ))}
             </List>
-        </div>
+        </Box>
     );
 
     return (
         <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
-            <Drawer variant="temporary" open={mobileOpen} onClose={handleDrawerToggle} ModalProps={{ keepMounted: true }} sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth } }}>
+            <Drawer variant="temporary" open={mobileOpen} onClose={handleDrawerToggle} ModalProps={{ keepMounted: true }} sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, border: 'none' } }}>
                 {drawerContent}
             </Drawer>
-            <Drawer variant="permanent" sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth } }} open>
+            <Drawer variant="permanent" sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, border: 'none' } }} open>
                 {drawerContent}
             </Drawer>
         </Box>

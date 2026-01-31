@@ -40,7 +40,8 @@ body {
 .main-content {
   flex: 1;
   padding: 30px;
-  background-color: #f5f5f5;
+  background: var(--color-background);
+  background-image: linear-gradient(to bottom right, var(--color-background), var(--color-paper)); /* Disable if too heavy */
   overflow-y: auto;
   box-sizing: border-box;
 }
