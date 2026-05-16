@@ -31,6 +31,7 @@ const MyProfile = React.lazy(() => import('../pages/MyProfile.jsx'));
 const FacultiesPage = React.lazy(() => import('../pages/FacultiesPage.jsx'));
 const PointsCalculatorPage = React.lazy(() => import('../pages/PointsCalculatorPage.jsx'));
 const TasksCalendar = React.lazy(() => import('../pages/TasksCalendar.jsx'));
+const ExamSchedule = React.lazy(() => import('../pages/ExamSchedule.jsx'));
 
 
 const StudyGuideDocs = () => <Box p={3}><Typography variant="h5">Χρήσιμα Έγγραφα και Πληροφορίες</Typography></Box>;
@@ -161,6 +162,7 @@ function AdminPortal({ db, appId, user, userProfile }) {
                     <Route path="/academicYear" element={<AcademicYearManager {...commonProps} />} />
                     <Route path="/users-management" element={<UsersManager {...commonProps} />} />
                     <Route path="/tasks-calendar" element={<TasksCalendar {...commonProps} selectedYear={selectedYear} />} />
+                    <Route path="/exam-schedule" element={<ExamSchedule {...commonProps} selectedYear={selectedYear} />} />
                     <Route path="/study-guide/faculties" element={<FacultiesPage {...commonProps} />} />
                     <Route path="/study-guide/points-calculator" element={<PointsCalculatorPage {...commonProps} />} />
                     <Route path="/study-guide/documents" element={<StudyGuideDocs {...commonProps} />} />

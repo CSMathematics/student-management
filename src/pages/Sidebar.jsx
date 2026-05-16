@@ -45,6 +45,7 @@ const navItemsByRole = {
         },
         { text: "Διαγωνίσματα - Εργασίες", icon: "fas fa-file-alt", path: "/assignments" },
         { text: "Βαθμολογίες", icon: "fas fa-chart-bar", path: "/grades-summary" },
+        { text: "Πρόγραμμα Εξετάσεων", icon: "fas fa-clipboard-list", path: "/exam-schedule" },
         { text: "Βιβλιοθήκη", icon: "fas fa-book-open", path: "/library" },
         {
             text: "Οδηγός Σπουδών", icon: "fas fa-university", isParent: true,

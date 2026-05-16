@@ -1,0 +1,205 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function hasRole(role) {
+      // Check if the user document exists and has the roles field which is a list
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             'roles' in getUserData(request.auth.uid) &&
+             getUserData(request.auth.uid).roles is list &&
+             role in getUserData(request.auth.uid).roles;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isTeacher() {
+      return hasRole('teacher');
+    }
+
+    function isStudentOwner(studentId) {
+      return isSignedIn() && getUserData(request.auth.uid).profileId == studentId;
+    }
+
+    function isParentOfStudent(studentId) {
+      let userData = getUserData(request.auth.uid);
+      return isSignedIn() && 'childIds' in userData && studentId in userData.childIds;
+    }
+
+    function isOwner(studentId) {
+      return isStudentOwner(studentId) || isParentOfStudent(studentId);
+    }
+
+    function isMemberOfClassroom(classroomId, yearId, appId) {
+      let userData = getUserData(request.auth.uid);
+      let classroomData = get(/databases/$(database)/documents/artifacts/$(appId)/public/data/academicYears/$(yearId)/classrooms/$(classroomId)).data;
+
+      let isStudentMember = 'profileId' in userData && userData.profileId != null && userData.profileId in classroomData.enrolledStudents;
+      let isParentMember = 'childIds' in userData && userData.childIds.hasAny(classroomData.enrolledStudents);
+
+      return isStudentMember || isParentMember;
+    }
+
+    match /users/{userId} {
+      allow get: if request.auth.uid == userId || isAdmin();
+      allow list: if isAdmin();
+      allow update: if request.auth.uid == userId || isAdmin();
+      allow create: if isSignedIn();
+
+      match /notifications/{notificationId} {
+        allow read, create, delete: if request.auth.uid == userId;
+        allow update: if request.auth.uid == userId &&
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
+                         request.resource.data.read == true &&
+                         resource.data.read == false;
+      }
+    }
+
+    match /artifacts/{appId}/public/data/adminNotifications/{notificationId} {
+      allow read, delete: if isAdmin();
+      allow update: if isAdmin() &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
+                       (
+                         ('readBy' in resource.data && request.resource.data.readBy == resource.data.readBy.concat([request.auth.uid])) ||
+                         (!('readBy' in resource.data) && request.resource.data.readBy == [request.auth.uid])
+                       );
+      allow create: if isSignedIn();
+    }
+
+    match /artifacts/{appId}/public/data/academicYears/{yearId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+
+      match /files/{fileId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin() || isTeacher();
+      }
+
+      // CORRECTED AND SIMPLIFIED RULE FOR TASKS
+      match /tasks/{taskId} {
+        allow read: if isSignedIn();
+        // Only admins have write permissions (create, update, delete)
+        allow write: if isAdmin();
+      }
+
+      // NEW RULE FOR EXAM SCHEDULE
+      match /examSchedule/{studentId} {
+        allow list: if isAdmin() || isTeacher();
+        allow get: if isAdmin() || isTeacher() || isOwner(studentId);
+        allow write: if isAdmin() || isTeacher();
+      }
+
+      match /students/{studentId} {
+        allow list: if isAdmin() || isTeacher();
+        allow get: if isSignedIn();
+        allow update: if isAdmin() || isStudentOwner(studentId);
+        allow create, delete: if isAdmin();
+
+        match /badges/{badgeId} {
+          allow read: if isOwner(studentId) || isAdmin() || isTeacher();
+          allow create: if isAdmin() || isTeacher();
+          allow update: if isOwner(studentId) &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seenByUser']);
+        }
+      }
+
+      match /classrooms/{classroomId} {
+        allow list: if isAdmin() || isTeacher();
+        allow get: if isAdmin() || isTeacher() ||
+                   (getUserData(request.auth.uid).profileId in resource.data.enrolledStudents) ||
+                   (getUserData(request.auth.uid).childIds.hasAny(resource.data.enrolledStudents));
+        allow write: if isAdmin() || isTeacher();
+      }
+
+      match /grades/{recordId} {
+        allow list: if isAdmin() || isTeacher();
+        allow get: if isAdmin() || isTeacher() || isOwner(resource.data.studentId);
+        allow write: if isAdmin() || isTeacher();
+      }
+
+      match /absences/{recordId} {
+        allow list: if isAdmin() || isTeacher();
+        allow get: if isAdmin() || isTeacher() || isOwner(resource.data.studentId);
+        allow write: if isAdmin() || isTeacher();
+      }
+
+      match /submissions/{submissionId} {
+        allow read: if isAdmin() || isTeacher() || isOwner(resource.data.studentId);
+        allow create: if isOwner(request.resource.data.studentId);
+        allow delete: if isOwner(resource.data.studentId) || isAdmin() || isTeacher();
+      }
+
+      match /payments/{paymentId} {
+        allow list: if isAdmin();
+        allow get: if isAdmin() || isOwner(resource.data.studentId);
+        allow write: if isAdmin();
+      }
+
+      match /assignments/{recordId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin() || isTeacher();
+      }
+
+      match /dailyLogs/{recordId} {
+        allow read: if isAdmin() || isTeacher() || isMemberOfClassroom(resource.data.classroomId, yearId, appId);
+        allow write: if isAdmin() || isTeacher();
+      }
+
+      match /announcements/{docId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
+      }
+
+      match /courses/{docId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
+      }
+
+      match /teachers/{docId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
+      }
+
+      match /messages/{messageId} {
+        allow read, create: if isSignedIn();
+        allow delete: if request.auth.uid == resource.data.senderId || isAdmin();
+        allow update: if (request.auth.uid == resource.data.senderId || isAdmin()) ||
+                         (isSignedIn() &&
+                          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
+                          request.resource.data.readBy == resource.data.readBy.concat([request.auth.uid]));
+      }
+
+      match /expenses/{expenseId} {
+        allow read, write: if isAdmin();
+      }
+
+      match /notifications/{notificationId} {
+        allow read: if isSignedIn() && (
+          isAdmin() ||
+          resource.data.recipientId == request.auth.uid ||
+          resource.data.recipientId == 'global' ||
+          isParentOfStudent(resource.data.recipientId)
+        );
+        allow update: if isSignedIn() &&
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
+                         (
+                           ('readBy' in resource.data && request.resource.data.readBy == resource.data.readBy.concat([request.auth.uid])) ||
+                           (!('readBy' in resource.data) && request.resource.data.readBy == [request.auth.uid])
+                         );
+        allow create: if (isAdmin() || isTeacher());
+      }
+    }
+
+  }
+}

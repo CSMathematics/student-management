@@ -3,9 +3,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
     Box, Container, Grid, Paper, Typography,
     IconButton, Button, CircularProgress,
-    List, ListItem, ListItemText, Tabs, Tab, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, InputLabel, Select, MenuItem, Menu, Avatar
+    List, ListItem, ListItemText, Tabs, Tab, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, InputLabel, Select, MenuItem, Avatar,
+    Card, CardContent, CardActionArea, Collapse, TextField, InputAdornment, Chip
 } from '@mui/material';
-import { Edit, Delete } from '@mui/icons-material';
+import { Edit, Delete, Search, KeyboardArrowDown, KeyboardArrowUp, ArrowBack, Group, Book } from '@mui/icons-material';
 import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch } from 'firebase/firestore';
 import ClassroomTableVisual from './ClassroomTableVisual.jsx';
 import SyllabusTracker from './SyllabusTracker.jsx';
@@ -35,8 +36,10 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
     const navigate = useNavigate();
     const location = useLocation();
     
-    const [selectedGrade, setSelectedGrade] = useState('');
     const [selectedClassroomId, setSelectedClassroomId] = useState('');
+    
+    const [searchTerm, setSearchTerm] = useState('');
+    const [expandedGrades, setExpandedGrades] = useState({});
     
     const [activeTab, setActiveTab] = useState(0);
     const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
@@ -47,11 +50,16 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
     const [targetClassroomId, setTargetClassroomId] = useState('');
     const [errorDialog, setErrorDialog] = useState({ open: false, message: '' });
 
-
-    const groupedClassrooms = useMemo(() => {
+    const filteredAndGroupedClassrooms = useMemo(() => {
         const groups = {};
         if (classrooms) {
             classrooms.forEach(classroom => {
+                if (searchTerm) {
+                    const searchLower = searchTerm.toLowerCase();
+                    const nameMatch = classroom.classroomName?.toLowerCase().includes(searchLower);
+                    const subjectMatch = classroom.subject?.toLowerCase().includes(searchLower);
+                    if (!nameMatch && !subjectMatch) return;
+                }
                 const grade = classroom.grade || 'Χωρίς Τάξη';
                 if (!groups[grade]) groups[grade] = [];
                 groups[grade].push(classroom);
@@ -61,10 +69,17 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
             groups[grade].sort((a, b) => a.classroomName.localeCompare(b.classroomName));
         });
         return groups;
-    }, [classrooms]);
+    }, [classrooms, searchTerm]);
 
-    const availableGrades = useMemo(() => Object.keys(groupedClassrooms).sort(), [groupedClassrooms]);
-    const availableClassroomsInGrade = useMemo(() => groupedClassrooms[selectedGrade] || [], [selectedGrade, groupedClassrooms]);
+    const availableGrades = useMemo(() => Object.keys(filteredAndGroupedClassrooms).sort(), [filteredAndGroupedClassrooms]);
+
+    useEffect(() => {
+        if (searchTerm) {
+            const newExpanded = {};
+            availableGrades.forEach(g => newExpanded[g] = true);
+            setExpandedGrades(newExpanded);
+        }
+    }, [searchTerm, availableGrades]);
 
     const selectedClassroom = useMemo(() => classrooms.find(c => c.id === selectedClassroomId) || null, [selectedClassroomId, classrooms]);
 
@@ -84,7 +99,7 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
         if (classroomIdFromState && classrooms.length > 0) {
             const classroomToSelect = classrooms.find(c => c.id === classroomIdFromState);
             if (classroomToSelect) {
-                setSelectedGrade(classroomToSelect.grade);
+                setSelectedClassroomId(classroomToSelect.id);
                 setSelectedClassroomId(classroomToSelect.id);
                 // Clear the state to prevent re-triggering on refresh
                 navigate(location.pathname, { replace: true, state: {} });
@@ -97,12 +112,6 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
     const handleTabChange = (event, newValue) => setActiveTab(newValue);
 
     useEffect(() => { setActiveTab(0); }, [selectedClassroomId]);
-    
-    const handleGradeChange = (event) => {
-        const newGrade = event.target.value;
-        setSelectedGrade(newGrade);
-        setSelectedClassroomId('');
-    };
 
     const classroomDetails = useMemo(() => {
         if (!selectedClassroom) return null;
@@ -233,32 +242,141 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
     
     return (
         <Container maxWidth="lg">
-            <Paper elevation={3} sx={{ p: 2, mb: 3, borderRadius: '12px' }}>
-                <Typography variant="h5" sx={{ mb: 2 }}>Επιλογή Τμήματος</Typography>
-                <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                        <FormControl fullWidth>
-                            <InputLabel>Τάξη</InputLabel>
-                            <Select value={selectedGrade} label="Τάξη" onChange={handleGradeChange}>
-                                {availableGrades.map(grade => (<MenuItem key={grade} value={grade}>{grade}</MenuItem>))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <FormControl fullWidth disabled={!selectedGrade}>
-                            <InputLabel>Τμήμα</InputLabel>
-                            <Select value={selectedClassroomId} label="Τμήμα" onChange={(e) => setSelectedClassroomId(e.target.value)}>
-                                {availableClassroomsInGrade.map(classroom => (<MenuItem key={classroom.id} value={classroom.id}>{classroom.classroomName} - {classroom.subject}</MenuItem>))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                </Grid>
-            </Paper>
+            {!selectedClassroom && (
+                <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1a237e' }}>Τμήματα</Typography>
+                        <Box>
+                            <Button onClick={() => {
+                                const newExpanded = {};
+                                availableGrades.forEach(g => newExpanded[g] = true);
+                                setExpandedGrades(newExpanded);
+                            }}>Επέκταση Όλων</Button>
+                            <Button onClick={() => setExpandedGrades({})}>Σύμπτυξη Όλων</Button>
+                        </Box>
+                    </Box>
+
+                    <Paper elevation={2} sx={{ p: 2, mb: 4, borderRadius: '12px' }}>
+                        <TextField
+                            fullWidth
+                            variant="outlined"
+                            placeholder="Αναζήτηση με βάση το όνομα ή το μάθημα..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            InputProps={{
+                                startAdornment: <InputAdornment position="start"><Search /></InputAdornment>,
+                            }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                        />
+                    </Paper>
+
+                    {availableGrades.length === 0 ? (
+                        <Paper sx={{ p: 4, textAlign: 'center', borderRadius: '12px' }}>
+                            <Typography color="text.secondary">Δεν βρέθηκαν τμήματα που να ταιριάζουν στα κριτήρια αναζήτησης.</Typography>
+                        </Paper>
+                    ) : (
+                        availableGrades.map((grade) => {
+                            const isExpanded = expandedGrades[grade] !== false;
+                            const gradeClassrooms = filteredAndGroupedClassrooms[grade];
+                            return (
+                                <Paper key={grade} elevation={2} sx={{ mb: 3, borderRadius: '12px', overflow: 'hidden' }}>
+                                    <Box
+                                        onClick={() => setExpandedGrades(prev => ({ ...prev, [grade]: !isExpanded }))}
+                                        sx={{
+                                            p: 2,
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            cursor: 'pointer',
+                                            backgroundColor: '#f5f7fa',
+                                            borderBottom: isExpanded ? '1px solid #e0e0e0' : 'none',
+                                            transition: 'background-color 0.2s',
+                                            '&:hover': { backgroundColor: '#eef2f6' }
+                                        }}
+                                    >
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Typography variant="h6" sx={{ color: '#2c3e50', fontWeight: 'bold' }}>
+                                                {grade}
+                                            </Typography>
+                                            <Chip size="small" label={`${gradeClassrooms.length} τμήματα`} color="primary" variant="outlined" />
+                                        </Box>
+                                        <IconButton size="small">
+                                            {isExpanded ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+                                        </IconButton>
+                                    </Box>
+                                    <Collapse in={isExpanded}>
+                                        <Box sx={{ p: 3, backgroundColor: '#ffffff' }}>
+                                            <Grid container spacing={3}>
+                                                {gradeClassrooms.map(classroom => {
+                                                    const enrolledCount = classroom.enrolledStudents?.length || 0;
+                                                    return (
+                                                        <Grid item xs={12} sm={6} md={4} key={classroom.id}>
+                                                            <Card 
+                                                                elevation={0}
+                                                                sx={{ 
+                                                                    border: '1px solid #e0e0e0',
+                                                                    borderRadius: '12px',
+                                                                    height: '100%',
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column',
+                                                                    transition: 'all 0.2s ease-in-out',
+                                                                    '&:hover': {
+                                                                        borderColor: '#3f51b5',
+                                                                        boxShadow: '0 4px 12px rgba(63, 81, 181, 0.15)',
+                                                                        transform: 'translateY(-2px)'
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <CardActionArea 
+                                                                    onClick={() => setSelectedClassroomId(classroom.id)}
+                                                                    sx={{ flexGrow: 1, p: 2 }}
+                                                                >
+                                                                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1, color: '#1a237e' }}>
+                                                                        {classroom.classroomName}
+                                                                    </Typography>
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'text.secondary' }}>
+                                                                        <Book fontSize="small" />
+                                                                        <Typography variant="body2">{classroom.subject}</Typography>
+                                                                    </Box>
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+                                                                        <Group fontSize="small" />
+                                                                        <Typography variant="body2">{enrolledCount} μαθητές / {classroom.maxStudents || 0}</Typography>
+                                                                    </Box>
+                                                                </CardActionArea>
+                                                            </Card>
+                                                        </Grid>
+                                                    );
+                                                })}
+                                            </Grid>
+                                        </Box>
+                                    </Collapse>
+                                </Paper>
+                            );
+                        })
+                    )}
+                </Box>
+            )}
 
             {selectedClassroom && (
                 <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', minHeight: '400px' }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                        <Typography variant="h5" component="h3" color='#3f51b5'>{`Λεπτομέρειες: ${selectedClassroom.classroomName}`}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, pb: 2, borderBottom: '1px solid #e0e0e0' }}>
+                        <Button 
+                            startIcon={<ArrowBack />} 
+                            onClick={() => setSelectedClassroomId('')}
+                            sx={{ mr: 2, fontWeight: 'bold' }}
+                            variant="outlined"
+                        >
+                            Πίσω
+                        </Button>
+                        <Box sx={{ flexGrow: 1 }}>
+                            <Typography variant="h5" component="h3" color='#1a237e' sx={{ fontWeight: 'bold' }}>
+                                {selectedClassroom.classroomName}
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+                                <Chip size="small" icon={<Book />} label={selectedClassroom.subject} variant="outlined" color="primary" />
+                                <Chip size="small" label={selectedClassroom.grade} variant="outlined" />
+                            </Box>
+                        </Box>
                         <Box>
                             <IconButton color="primary" onClick={() => handleEditClick(selectedClassroom)}><Edit /></IconButton>
                             <IconButton color="error" onClick={() => handleDeleteClick(selectedClassroom)}><Delete /></IconButton>
