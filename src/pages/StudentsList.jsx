@@ -128,8 +128,11 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
 
     const [filters, setFilters] = useState({
         lastName: '', firstName: '', studentPhone: '', grade: '',
-        specialization: '', address: '', createdAt: '', email: ''
+        specialization: '', address: '', email: ''
     });
+
+    const [enrollmentDateFrom, setEnrollmentDateFrom] = useState('');
+    const [enrollmentDateTo, setEnrollmentDateTo] = useState('');
 
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -348,18 +351,26 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
     const filteredAndSortedStudents = useMemo(() => {
         let filtered = (allStudents || []).filter(student => student && student.id && student.lastName);
         filtered = filtered.filter(student => {
-            return Object.keys(filters).every(key => {
+            const matchesText = Object.keys(filters).every(key => {
                 const filterValue = filters[key];
                 if (!filterValue) return true;
-                if (key === 'createdAt') {
-                    if (!student.createdAt) return false;
-                    const studentDate = dayjs(getDateFromFirestoreTimestamp(student.createdAt));
-                    const filterDate = dayjs(filterValue);
-                    return studentDate.isSame(filterDate, 'day');
-                }
                 const studentValue = student[key]?.toString().toLowerCase() || '';
                 return studentValue.includes(filterValue.toLowerCase());
             });
+            if (!matchesText) return false;
+
+            if (enrollmentDateFrom || enrollmentDateTo) {
+                const timestamp = student.enrollmentDate || student.dob || student.createdAt;
+                if (!timestamp) return false;
+                
+                const enrollDate = dayjs(getDateFromFirestoreTimestamp(timestamp));
+                if (!enrollDate.isValid()) return false;
+
+                if (enrollmentDateFrom && enrollDate.isBefore(dayjs(enrollmentDateFrom), 'day')) return false;
+                if (enrollmentDateTo && enrollDate.isAfter(dayjs(enrollmentDateTo), 'day')) return false;
+            }
+
+            return true;
         });
         if (sortColumn) {
             filtered.sort((a, b) => {
@@ -371,7 +382,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
             });
         }
         return filtered;
-    }, [allStudents, filters, sortColumn, sortDirection]);
+    }, [allStudents, filters, enrollmentDateFrom, enrollmentDateTo, sortColumn, sortDirection]);
 
     const handleRowsPerPageChange = (event) => { setRowsPerPage(parseInt(event.target.value, 10)); setPage(0); };
     const handlePageChange = (event, newPage) => setPage(newPage);
@@ -525,13 +536,43 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
 
     return (
         <Container maxWidth={false}>
-            <Paper elevation={2} sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                <PeopleAlt color="primary" sx={{ fontSize: 40 }}/>
-                <Box>
-                    <Typography variant="h6">{filteredAndSortedStudents.length} Μαθητές</Typography>
-                    <Typography variant="body2" color="text.secondary">Εμφανίζονται {filteredAndSortedStudents.length} από {allStudents.length} σύνολο</Typography>
+            <Paper elevation={2} sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <PeopleAlt color="primary" sx={{ fontSize: 40 }}/>
+                    <Box>
+                        <Typography variant="h6">{filteredAndSortedStudents.length} Μαθητές</Typography>
+                        <Typography variant="body2" color="text.secondary">Εμφανίζονται {filteredAndSortedStudents.length} από {allStudents.length} σύνολο</Typography>
+                    </Box>
                 </Box>
                 <Box sx={{ flexGrow: 1 }} />
+                
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', bgcolor: 'background.default', p: 1, borderRadius: 1 }}>
+                     <Typography variant="body2" color="text.secondary" sx={{ mr: 1, display: { xs: 'none', md: 'block' } }}>Ημ. Εγγραφής:</Typography>
+                     <TextField
+                        type="date"
+                        label="Από"
+                        InputLabelProps={{ shrink: true }}
+                        value={enrollmentDateFrom}
+                        onChange={(e) => setEnrollmentDateFrom(e.target.value)}
+                        size="small"
+                        sx={{ width: 140 }}
+                     />
+                     <TextField
+                        type="date"
+                        label="Έως"
+                        InputLabelProps={{ shrink: true }}
+                        value={enrollmentDateTo}
+                        onChange={(e) => setEnrollmentDateTo(e.target.value)}
+                        size="small"
+                        sx={{ width: 140 }}
+                     />
+                     {(enrollmentDateFrom || enrollmentDateTo) && (
+                         <IconButton size="small" onClick={() => { setEnrollmentDateFrom(''); setEnrollmentDateTo(''); }} title="Καθαρισμός Φίλτρου">
+                             <Clear fontSize="small" />
+                         </IconButton>
+                     )}
+                </Box>
+
                 <Button variant="outlined" startIcon={<ImportIcon />} onClick={() => setIsImporting(true)}>
                     Εισαγωγή από Έτος
                 </Button>
@@ -615,7 +656,7 @@ function StudentsList({ allStudents, allGrades, allAbsences, allPayments, classr
                                                                             <Grid item xs={12} sm={6}><DetailItem label="Κατεύθυνση" value={selectedStudent.specialization} /></Grid>
                                                                             <Grid item xs={12} sm={6}><DetailItem label="Μέσος Όρος" value={averageGrade} /></Grid>
                                                                             <Grid item xs={12} sm={6}><DetailItem label="Σύνολο Απουσιών" value={studentAbsences.total} /></Grid>
-                                                                            <Grid item xs={12} sm={6}><DetailItem label="Ημερομηνία Εγγραφής" value={selectedStudent.createdAt ? dayjs(getDateFromFirestoreTimestamp(selectedStudent.createdAt)).format('DD/MM/YYYY') : '-'} /></Grid>
+                                                                            <Grid item xs={12} sm={6}><DetailItem label="Ημερομηνία Εγγραφής" value={selectedStudent.enrollmentDate ? dayjs(selectedStudent.enrollmentDate).format('DD/MM/YYYY') : (selectedStudent.dob ? dayjs(selectedStudent.dob).format('DD/MM/YYYY') : (selectedStudent.createdAt ? dayjs(getDateFromFirestoreTimestamp(selectedStudent.createdAt)).format('DD/MM/YYYY') : '-'))} /></Grid>
                                                                             <Grid item xs={12} sm={6}><DetailItem label="Διεύθυνση" value={selectedStudent.address} /></Grid>
                                                                             <Grid item xs={12} sm={6}><DetailItem label="Τηλέφωνο" value={selectedStudent.studentPhone} /></Grid>
                                                                             <Grid item xs={12} sm={6}><DetailItem label="Email" value={selectedStudent.email} /></Grid>

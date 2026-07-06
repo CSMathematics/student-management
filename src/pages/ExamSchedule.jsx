@@ -13,6 +13,8 @@ import {
 import { collection, onSnapshot, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import ExamEntryDialog from './ExamEntryDialog.jsx';
 import StudentExamPrintView from './StudentExamPrintView.jsx';
+import GlobalExamPrintView from './GlobalExamPrintView.jsx';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Radio, RadioGroup, FormControlLabel, FormLabel } from '@mui/material';
 
 const GRADE_ORDER = [
     "Α' Γυμνασίου", "Β' Γυμνασίου", "Γ' Γυμνασίου",
@@ -148,6 +150,9 @@ function ExamSchedule({ allStudents, classrooms, allCourses, loading, db, appId,
     const [dialogStudent, setDialogStudent] = useState(null);
     const [printDialogOpen, setPrintDialogOpen] = useState(false);
     const [printStudent, setPrintStudent] = useState(null);
+    
+    const [globalPrintDialogOpen, setGlobalPrintDialogOpen] = useState(false);
+    const [globalPrintGroupBy, setGlobalPrintGroupBy] = useState('date');
 
     // Listen to examSchedule collection
     useEffect(() => {
@@ -266,6 +271,21 @@ function ExamSchedule({ allStudents, classrooms, allCourses, loading, db, appId,
         setPrintStudent(null);
     }, []);
 
+    const openGlobalPrintDialog = useCallback(() => {
+        setGlobalPrintDialogOpen(true);
+    }, []);
+
+    const closeGlobalPrintDialog = useCallback(() => {
+        setGlobalPrintDialogOpen(false);
+    }, []);
+
+    const handleExecuteGlobalPrint = useCallback(() => {
+        setGlobalPrintDialogOpen(false);
+        setTimeout(() => {
+            window.print();
+        }, 100);
+    }, []);
+
     const handleInlineDateChange = useCallback(async (studentId, subject, newDate) => {
         if (!db || !appId || !selectedYear) return;
 
@@ -301,7 +321,10 @@ function ExamSchedule({ allStudents, classrooms, allCourses, loading, db, appId,
     if (loading) return <Container maxWidth="lg" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}><CircularProgress /></Container>;
 
     return (
-        <Container maxWidth="lg" sx={{ pb: 4 }}>
+        <Box>
+            {/* SCREEN VIEW - Hidden during print */}
+            <Box sx={{ '@media print': { display: 'none' } }}>
+                <Container maxWidth="lg" sx={{ pb: 4 }}>
             {/* Header */}
             <Paper elevation={0} sx={{
                 p: 3, mb: 3, borderRadius: '16px', color: 'white', position: 'relative', overflow: 'hidden',
@@ -340,7 +363,7 @@ function ExamSchedule({ allStudents, classrooms, allCourses, loading, db, appId,
                 <Box sx={{ flexGrow: 1 }} />
                 <Button size="small" onClick={expandAll} startIcon={<ExpandMore />}>Ανάπτυξη Όλων</Button>
                 <Button size="small" onClick={collapseAll} startIcon={<ExpandLess />}>Σύμπτυξη Όλων</Button>
-                <Button variant="outlined" size="small" startIcon={<Print />} onClick={() => window.print()}>Εκτύπωση</Button>
+                <Button variant="outlined" size="small" startIcon={<Print />} onClick={openGlobalPrintDialog}>Εκτύπωση</Button>
             </Paper>
 
             {/* Grade Cards */}
@@ -453,17 +476,48 @@ function ExamSchedule({ allStudents, classrooms, allCourses, loading, db, appId,
                 classrooms={classrooms}
             />
 
+            {/* Global Print Options Dialog */}
+            <Dialog open={globalPrintDialogOpen} onClose={closeGlobalPrintDialog} maxWidth="xs" fullWidth>
+                <DialogTitle>Επιλογές Εκτύπωσης</DialogTitle>
+                <DialogContent dividers>
+                    <FormControl component="fieldset">
+                        <FormLabel component="legend">Ομαδοποίηση Προγράμματος</FormLabel>
+                        <RadioGroup
+                            value={globalPrintGroupBy}
+                            onChange={(e) => setGlobalPrintGroupBy(e.target.value)}
+                        >
+                            <FormControlLabel value="date" control={<Radio />} label="Ανά Ημέρα" />
+                            <FormControlLabel value="grade" control={<Radio />} label="Ανά Τάξη" />
+                        </RadioGroup>
+                    </FormControl>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeGlobalPrintDialog}>Ακύρωση</Button>
+                    <Button variant="contained" onClick={handleExecuteGlobalPrint} startIcon={<Print />}>
+                        Εκτύπωση
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+                </Container>
+            </Box>
+
+            {/* PRINT VIEW - Only visible during print */}
+            <GlobalExamPrintView 
+                examData={examScheduleData} 
+                allStudents={allStudents} 
+                groupBy={globalPrintGroupBy} 
+            />
+
             <style>{`
                 @media print {
-                    body * { visibility: hidden; }
-                    .MuiContainer-root, .MuiContainer-root * { visibility: visible; }
+                    @page { margin: 1cm; size: auto; }
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
+                    /* Hide drawer and appbar just in case */
                     .MuiDrawer-root, nav, header, .MuiAppBar-root { display: none !important; }
-                    .MuiContainer-root { position: absolute; left: 0; top: 0; width: 100%; }
-                    .MuiCollapse-root { display: block !important; height: auto !important; }
-                    .MuiCollapse-wrapper, .MuiCollapse-wrapperInner { display: block !important; }
                 }
             `}</style>
-        </Container>
+        </Box>
     );
 }
 

@@ -37,6 +37,37 @@ export const AcademicYearProvider = ({ children, db, appId }) => {
                     if (currentSelectedYear && yearIds.includes(currentSelectedYear)) {
                         return currentSelectedYear;
                     }
+                    
+                    const now = new Date();
+                    
+                    // 1. Find the year that is currently active (now is between start and end)
+                    const activeYear = yearsData.find(y => {
+                        if (!y.startDate) return false;
+                        const start = y.startDate.toDate ? y.startDate.toDate() : new Date(y.startDate);
+                        
+                        if (y.endDate) {
+                            const end = y.endDate.toDate ? y.endDate.toDate() : new Date(y.endDate);
+                            return now >= start && now <= end;
+                        }
+                        return now >= start;
+                    });
+
+                    if (activeYear) {
+                        return activeYear.id;
+                    }
+                    
+                    // 2. Fallback: Find the most recent year that has already started
+                    const pastYear = yearsData.find(y => {
+                        if (!y.startDate) return false;
+                        const start = y.startDate.toDate ? y.startDate.toDate() : new Date(y.startDate);
+                        return now >= start;
+                    });
+
+                    if (pastYear) {
+                        return pastYear.id;
+                    }
+
+                    // 3. Fallback: return the first item (chronologically newest)
                     return yearsData[0].id;
                 }
                 return '';

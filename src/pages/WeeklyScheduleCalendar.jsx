@@ -36,7 +36,7 @@ const generateTimeSlots = (startHour, endHour) => {
     return slots;
 };
 
-const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherName, enrolledStudentsCount, maxStudents, left, top, width, height, backgroundColor, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker, onAddMoreHours, isEditMode, onClick }) => {
+const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherName, enrolledStudentsCount, maxStudents, enrolledStudentsList, left, top, width, height, backgroundColor, isFaded, onEdit, onDelete, onDragStart, onResizeStart, fullClassroomData, onOpenColorPicker, onAddMoreHours, isEditMode, onClick }) => {
     const isSmall = height <= 80;
 
     const tooltipContent = (
@@ -45,6 +45,15 @@ const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherNam
             <Typography color="inherit">{teacherName}</Typography>
             <Typography color="inherit">{startTime} - {endTime}</Typography>
             <Typography color="inherit">Μαθητές: {enrolledStudentsCount || 0}/{maxStudents}</Typography>
+            {enrolledStudentsList && enrolledStudentsList.length > 0 && (
+                <Box sx={{ mt: 1, borderTop: '1px solid rgba(255,255,255,0.3)', pt: 0.5 }}>
+                    {enrolledStudentsList.map(s => (
+                        <Typography key={s.id} variant="caption" sx={{ display: 'block' }}>
+                            • {s.lastName} {s.firstName}
+                        </Typography>
+                    ))}
+                </Box>
+            )}
         </React.Fragment>
     );
 
@@ -54,30 +63,30 @@ const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherNam
             sx={{
                 position: 'absolute', left, top, width, height, backgroundColor: backgroundColor || '#2196f3',
                 color: '#fff', borderRadius: '4px', padding: '5px',
-                overflow: 'hidden', zIndex: 5, boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                overflow: 'hidden', zIndex: isFaded ? 2 : 5, boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                 cursor: isEditMode ? 'grab' : 'pointer', 
                 touchAction: 'none', display: 'flex', flexDirection: 'column',
                 justifyContent: 'space-between', fontSize: '0.75rem', boxSizing: 'border-box',
                 transition: 'background-color 0.3s ease',
+                opacity: isFaded ? 0.3 : 1,
+                filter: isFaded ? 'grayscale(100%)' : 'none',
             }}
             onMouseDown={(e) => isEditMode && onDragStart(e, id)} 
             onClick={() => !isEditMode && onClick(fullClassroomData.id)}
         >
             {isEditMode && <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', cursor: 'ns-resize', zIndex: 6 }} onMouseDown={(e) => onResizeStart(e, id, 'top')} />}
             
-            {isSmall && (
-                <Tooltip title={tooltipContent} placement="top" arrow>
-                    <IconButton
-                        size="small"
-                        sx={{ position: 'absolute', top: 2, right: 2, color: '#fff', padding: '2px', zIndex: 8 }}
-                        onMouseDown={(e) => e.stopPropagation()}
-                    >
-                        <InfoOutlinedIcon sx={{ fontSize: '1rem' }} />
-                    </IconButton>
-                </Tooltip>
-            )}
+            <Tooltip title={tooltipContent} placement="top" arrow>
+                <IconButton
+                    size="small"
+                    sx={{ position: 'absolute', top: 2, right: 2, color: '#fff', padding: '2px', zIndex: 8 }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                >
+                    <InfoOutlinedIcon sx={{ fontSize: '1rem' }} />
+                </IconButton>
+            </Tooltip>
 
-            <Box sx={{ flexGrow: 1, overflow: 'hidden', pr: isSmall ? '24px' : '5px' }}>
+            <Box sx={{ flexGrow: 1, overflow: 'hidden', pr: '24px' }}>
                 <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', fontSize: isSmall ? '0.8rem' : '1rem', lineHeight: 1.2 }}>{subject}</Typography>
                 <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', fontSize: isSmall ? '0.7rem' : 'inherit' }}>{grade}</Typography>
                 {!isSmall && teacherName && <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic' }}>{teacherName}</Typography>}
@@ -99,11 +108,45 @@ const FloatingEventBlock = ({ id, startTime, endTime, subject, grade, teacherNam
 
 function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, appId, selectedYear }) {
     const navigate = useNavigate();
-    const [calendarStartHour, setCalendarStartHour] = useState(8);
-    const [calendarEndHour, setCalendarEndHour] = useState(22);
-    const [selectedTeacherIds, setSelectedTeacherIds] = useState([]);
-    const [visibleDays, setVisibleDays] = useState(ALL_DAYS_OF_WEEK);
-    const [cellHeight, setCellHeight] = useState(40); 
+    const [calendarStartHour, setCalendarStartHour] = useState(() => {
+        const saved = localStorage.getItem('weeklySchedule_startHour');
+        return saved ? parseInt(saved, 10) : 8;
+    });
+    const [calendarEndHour, setCalendarEndHour] = useState(() => {
+        const saved = localStorage.getItem('weeklySchedule_endHour');
+        return saved ? parseInt(saved, 10) : 22;
+    });
+    const [selectedTeacherIds, setSelectedTeacherIds] = useState(() => {
+        const saved = localStorage.getItem('weeklySchedule_selectedTeachers');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [visibleDays, setVisibleDays] = useState(() => {
+        const saved = localStorage.getItem('weeklySchedule_visibleDays');
+        return saved ? JSON.parse(saved) : ALL_DAYS_OF_WEEK;
+    });
+    const [cellHeight, setCellHeight] = useState(() => {
+        const saved = localStorage.getItem('weeklySchedule_cellHeight');
+        return saved ? parseInt(saved, 10) : 40;
+    });
+    const [selectedGrades, setSelectedGrades] = useState(() => {
+        const saved = localStorage.getItem('weeklySchedule_selectedGrades');
+        return saved ? JSON.parse(saved) : [];
+    });
+    
+    useEffect(() => {
+        localStorage.setItem('weeklySchedule_startHour', calendarStartHour);
+        localStorage.setItem('weeklySchedule_endHour', calendarEndHour);
+        localStorage.setItem('weeklySchedule_visibleDays', JSON.stringify(visibleDays));
+        localStorage.setItem('weeklySchedule_cellHeight', cellHeight);
+        localStorage.setItem('weeklySchedule_selectedGrades', JSON.stringify(selectedGrades));
+    }, [calendarStartHour, calendarEndHour, visibleDays, cellHeight, selectedGrades]);
+
+    useEffect(() => {
+        if (selectedTeacherIds.length > 0) {
+            localStorage.setItem('weeklySchedule_selectedTeachers', JSON.stringify(selectedTeacherIds));
+        }
+    }, [selectedTeacherIds]);
+
     const TIME_SLOTS = useMemo(() => generateTimeSlots(calendarStartHour, calendarEndHour), [calendarStartHour, calendarEndHour]);
     
     const [isEditMode, setIsEditMode] = useState(false);
@@ -140,7 +183,14 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
 
     useEffect(() => {
         if (allTeachers && allTeachers.length > 0) {
-            setSelectedTeacherIds(allTeachers.map(t => t.id));
+            const saved = localStorage.getItem('weeklySchedule_selectedTeachers');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                const valid = parsed.filter(id => allTeachers.some(t => t.id === id));
+                setSelectedTeacherIds(valid.length > 0 ? valid : allTeachers.map(t => t.id));
+            } else {
+                setSelectedTeacherIds(allTeachers.map(t => t.id));
+            }
         }
     }, [allTeachers]);
 
@@ -176,14 +226,29 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
 
     const enrichedClassrooms = useMemo(() => {
         if (!workingClassrooms || !allStudents) return [];
-        const studentCountMap = new Map();
+        const studentMap = new Map();
         allStudents.forEach(student => {
             student.enrolledClassrooms?.forEach(classroomId => {
-                studentCountMap.set(classroomId, (studentCountMap.get(classroomId) || 0) + 1);
+                if (!studentMap.has(classroomId)) {
+                    studentMap.set(classroomId, []);
+                }
+                studentMap.get(classroomId).push(student);
             });
         });
-        return workingClassrooms.map(c => ({ ...c, enrolledStudentsCount: studentCountMap.get(c.id) || (c.enrolledStudents || []).length }));
+        return workingClassrooms.map(c => ({ 
+            ...c, 
+            enrolledStudentsCount: studentMap.get(c.id)?.length || (c.enrolledStudents || []).length,
+            enrolledStudentsList: studentMap.get(c.id) || []
+        }));
     }, [workingClassrooms, allStudents]);
+
+    const allGrades = useMemo(() => {
+        const grades = new Set();
+        (workingClassrooms || []).forEach(c => {
+            if (c.grade) grades.add(c.grade);
+        });
+        return Array.from(grades).sort();
+    }, [workingClassrooms]);
 
     const transformClassroomsToEvents = useCallback((classroomsData) => {
         const events = [];
@@ -207,18 +272,21 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                 const width = teacherColumnWidth - 2;
                 const durationMinutes = dayjs(`2000-01-01T${slot.endTime}`).diff(dayjs(`2000-01-01T${slot.startTime}`), 'minute');
                 const height = (durationMinutes / 30) * cellHeight;
+                const isFaded = selectedGrades.length > 0 && !selectedGrades.includes(classroom.grade);
                 
                 events.push({
                     id: `${classroom.id}-${index}`, day: slot.day, startTime: slot.startTime, endTime: slot.endTime,
                     subject: classroom.subject, grade: classroom.grade, teacherName: classroom.teacherName,
                     enrolledStudentsCount: classroom.enrolledStudentsCount, maxStudents: classroom.maxStudents,
+                    enrolledStudentsList: classroom.enrolledStudentsList,
                     backgroundColor: classroom.color || '#2196f3', left, top, width, height,
+                    isFaded: isFaded,
                     fullClassroomData: classroom,
                 });
             });
         });
         return events;
-    }, [gridDimensions, TIME_SLOTS, teacherColumns, visibleDays]);
+    }, [gridDimensions, TIME_SLOTS, teacherColumns, visibleDays, selectedGrades]);
 
     useEffect(() => {
         setDisplayedEventBlocks(transformClassroomsToEvents(enrichedClassrooms));
@@ -571,6 +639,25 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
         setSelectedTeacherIds(typeof value === 'string' ? value.split(',') : value);
     };
 
+    const handleGradeFilterChange = (event) => {
+        const { target: { value } } = event;
+        const selected = typeof value === 'string' ? value.split(',') : value;
+        
+        if (selectedGrades.length === 0) {
+            if (selected.includes('ALL') && selected.length > 1) {
+                setSelectedGrades(selected.filter(s => s !== 'ALL'));
+                return;
+            }
+        } else {
+            if (selected.includes('ALL')) {
+                setSelectedGrades([]);
+                return;
+            }
+        }
+        
+        setSelectedGrades(selected);
+    };
+
     const handlePrint = () => window.print();
 
     const handleEditClick = () => {
@@ -663,6 +750,27 @@ function WeeklyScheduleCalendar({ classrooms, allTeachers, loading, db, userId, 
                         <InputLabel>Εμφάνιση Ημερών</InputLabel>
                         <Select multiple value={visibleDays} onChange={handleVisibleDaysChange} label="Εμφάνιση Ημερών" renderValue={(selected) => selected.join(', ')}>
                            {ALL_DAYS_OF_WEEK.map(day => (<MenuItem key={day} value={day}><Checkbox checked={visibleDays.indexOf(day) > -1} /><ListItemText primary={day} /></MenuItem>))}
+                        </Select>
+                    </FormControl>
+                    <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
+                        <InputLabel>Φίλτρο Τάξης</InputLabel>
+                        <Select 
+                            multiple 
+                            value={selectedGrades.length === 0 ? ['ALL'] : selectedGrades} 
+                            onChange={handleGradeFilterChange} 
+                            label="Φίλτρο Τάξης" 
+                            renderValue={(selected) => selected.includes('ALL') ? 'Όλες οι Τάξεις' : selected.join(', ')}
+                        >
+                           <MenuItem value="ALL">
+                               <Checkbox checked={selectedGrades.length === 0} />
+                               <ListItemText primary="Όλες οι Τάξεις" />
+                           </MenuItem>
+                           {allGrades.map(grade => (
+                               <MenuItem key={grade} value={grade}>
+                                   <Checkbox checked={selectedGrades.indexOf(grade) > -1} />
+                                   <ListItemText primary={grade} />
+                               </MenuItem>
+                           ))}
                         </Select>
                     </FormControl>
                     <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>

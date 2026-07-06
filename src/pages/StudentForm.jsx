@@ -40,7 +40,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
             };
         }
         return {
-            firstName: '', lastName: '', dob: '', studentPhone: '', address: '', email: '',
+            firstName: '', lastName: '', enrollmentDate: '', studentPhone: '', address: '', email: '',
             gender: 'Άρρεν',
             parents: [defaultParent],
             grade: '', specialization: '', payment: '', debt: '', documents: []
@@ -298,7 +298,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                 const dataToUpdate = {
                     firstName: formData.firstName,
                     lastName: formData.lastName,
-                    dob: formData.dob,
+                    enrollmentDate: formData.enrollmentDate,
                     studentPhone: formData.studentPhone,
                     address: formData.address,
                     email: formData.email,
@@ -381,7 +381,7 @@ function StudentForm({ db, appId, classrooms, allStudents, openModalWithData, in
                                 </RadioGroup>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6}><TextField fullWidth label="Ημερομηνία Γέννησης" name="dob" type="date" value={formData.dob} onChange={handleInputChange} InputLabelProps={{ shrink: true }} size="small" /></Grid>
+                        <Grid item xs={12} sm={6}><TextField fullWidth label="Ημερομηνία Εγγραφής" name="enrollmentDate" type="date" value={formData.enrollmentDate || formData.dob || ''} onChange={handleInputChange} InputLabelProps={{ shrink: true }} size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Τηλέφωνο Μαθητή" name="studentPhone" value={formData.studentPhone} onChange={handleInputChange} size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Διεύθυνση" name="address" value={formData.address} onChange={handleInputChange} size="small" /></Grid>
                         <Grid item xs={12} sm={6}><TextField fullWidth label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} size="small" /></Grid>

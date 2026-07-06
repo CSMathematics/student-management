@@ -106,7 +106,7 @@ const getPriorityIcon = (priority) => {
 };
 
 
-function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnnouncements, allAssignments, allGrades, allTasks, db, appId, selectedYear }) {
+function DashboardContent({ allStudents, classrooms, allUsers, allTeachers, allFiles, allAnnouncements, allAssignments, allGrades, allTasks, db, appId, selectedYear }) {
     const navigate = useNavigate();
     const [activityFeed, setActivityFeed] = useState([]);
 
@@ -131,14 +131,27 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
     }, [allStudents, classrooms, allUsers, allFiles]);
 
     const todaysSchedule = useMemo(() => {
-        if (!classrooms || !allUsers) return {};
+        if (!classrooms) return {};
         const today = dayjs().format('dddd');
 
-        const teachers = allUsers.filter(u => u.roles?.includes('teacher'));
-        
-        const teacherMap = new Map(
-            teachers.map(t => [t.profileId, `${t.firstName} ${t.lastName}`])
-        );
+        // Build map from teacher document ID -> full name
+        // First try from allTeachers collection (most reliable)
+        const teacherMap = new Map();
+        if (allTeachers) {
+            allTeachers.forEach(t => {
+                const name = `${t.firstName || ''} ${t.lastName || ''}`.trim();
+                if (name) teacherMap.set(t.id, name);
+            });
+        }
+        // Fallback: also map from allUsers by profileId for any gaps
+        if (allUsers) {
+            allUsers.filter(u => u.roles?.includes('teacher') || u.role === 'teacher').forEach(u => {
+                if (u.profileId && !teacherMap.has(u.profileId)) {
+                    const name = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+                    if (name) teacherMap.set(u.profileId, name);
+                }
+            });
+        }
 
         const scheduleItems = classrooms
             .flatMap(c => {
@@ -149,7 +162,7 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
                     grade: c.grade,
                     classroomId: c.id,
                     classroomColor: c.color,
-                    teacherName: teacherMap.get(c.teacherId) || 'Χωρίς Καθηγητή'
+                    teacherName: teacherMap.get(c.teacherId) || c.teacherName || 'Χωρίς Καθηγητή'
                 }));
             })
             .filter(s => s.day.toLowerCase() === today.toLowerCase())
@@ -157,16 +170,14 @@ function DashboardContent({ allStudents, classrooms, allUsers, allFiles, allAnno
         
         const groupedSchedule = scheduleItems.reduce((acc, item) => {
             const key = item.teacherName;
-            if (!acc[key]) {
-                acc[key] = [];
-            }
+            if (!acc[key]) acc[key] = [];
             acc[key].push(item);
             return acc;
         }, {});
 
         return groupedSchedule;
 
-    }, [classrooms, allUsers]);
+    }, [classrooms, allTeachers, allUsers]);
     
     const upcomingAdminTasks = useMemo(() => {
         if (!allTasks) return [];

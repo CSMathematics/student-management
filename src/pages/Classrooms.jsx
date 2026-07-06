@@ -245,15 +245,20 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
             {!selectedClassroom && (
                 <Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                        <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1a237e' }}>Τμήματα</Typography>
-                        <Box>
-                            <Button onClick={() => {
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>Τμήματα</Typography>
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={availableGrades.every(g => expandedGrades[g] === true) ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+                            onClick={() => {
+                                const allExpanded = availableGrades.every(g => expandedGrades[g] === true);
                                 const newExpanded = {};
-                                availableGrades.forEach(g => newExpanded[g] = true);
+                                availableGrades.forEach(g => newExpanded[g] = !allExpanded);
                                 setExpandedGrades(newExpanded);
-                            }}>Επέκταση Όλων</Button>
-                            <Button onClick={() => setExpandedGrades({})}>Σύμπτυξη Όλων</Button>
-                        </Box>
+                            }}
+                        >
+                            {availableGrades.every(g => expandedGrades[g] === true) ? 'Σύμπτυξη Όλων' : 'Επέκταση Όλων'}
+                        </Button>
                     </Box>
 
                     <Paper elevation={2} sx={{ p: 2, mb: 4, borderRadius: '12px' }}>
@@ -276,7 +281,7 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                         </Paper>
                     ) : (
                         availableGrades.map((grade) => {
-                            const isExpanded = expandedGrades[grade] !== false;
+                            const isExpanded = expandedGrades[grade] === true;
                             const gradeClassrooms = filteredAndGroupedClassrooms[grade];
                             return (
                                 <Paper key={grade} elevation={2} sx={{ mb: 3, borderRadius: '12px', overflow: 'hidden' }}>
@@ -288,14 +293,15 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
                                             cursor: 'pointer',
-                                            backgroundColor: '#f5f7fa',
-                                            borderBottom: isExpanded ? '1px solid #e0e0e0' : 'none',
+                                            backgroundColor: 'action.hover',
+                                            borderBottom: isExpanded ? '1px solid' : 'none',
+                                            borderColor: 'divider',
                                             transition: 'background-color 0.2s',
-                                            '&:hover': { backgroundColor: '#eef2f6' }
+                                            '&:hover': { backgroundColor: 'action.selected' }
                                         }}
                                     >
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                            <Typography variant="h6" sx={{ color: '#2c3e50', fontWeight: 'bold' }}>
+                                            <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 'bold' }}>
                                                 {grade}
                                             </Typography>
                                             <Chip size="small" label={`${gradeClassrooms.length} τμήματα`} color="primary" variant="outlined" />
@@ -305,7 +311,7 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                                         </IconButton>
                                     </Box>
                                     <Collapse in={isExpanded}>
-                                        <Box sx={{ p: 3, backgroundColor: '#ffffff' }}>
+                                        <Box sx={{ p: 3 }}>
                                             <Grid container spacing={3}>
                                                 {gradeClassrooms.map(classroom => {
                                                     const enrolledCount = classroom.enrolledStudents?.length || 0;
@@ -314,14 +320,15 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                                                             <Card 
                                                                 elevation={0}
                                                                 sx={{ 
-                                                                    border: '1px solid #e0e0e0',
+                                                                    border: '1px solid',
+                                                                    borderColor: 'divider',
                                                                     borderRadius: '12px',
                                                                     height: '100%',
                                                                     display: 'flex',
                                                                     flexDirection: 'column',
                                                                     transition: 'all 0.2s ease-in-out',
                                                                     '&:hover': {
-                                                                        borderColor: '#3f51b5',
+                                                                        borderColor: 'primary.main',
                                                                         boxShadow: '0 4px 12px rgba(63, 81, 181, 0.15)',
                                                                         transform: 'translateY(-2px)'
                                                                     }
@@ -331,7 +338,7 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                                                                     onClick={() => setSelectedClassroomId(classroom.id)}
                                                                     sx={{ flexGrow: 1, p: 2 }}
                                                                 >
-                                                                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1, color: '#1a237e' }}>
+                                                                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1, color: 'primary.main' }}>
                                                                         {classroom.classroomName}
                                                                     </Typography>
                                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'text.secondary' }}>
@@ -359,7 +366,7 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
 
             {selectedClassroom && (
                 <Paper elevation={3} sx={{ padding: '20px', borderRadius: '12px', minHeight: '400px' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, pb: 2, borderBottom: '1px solid #e0e0e0' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
                         <Button 
                             startIcon={<ArrowBack />} 
                             onClick={() => setSelectedClassroomId('')}
@@ -369,7 +376,7 @@ function Classrooms({ classrooms, allStudents, allAbsences, allCourses, allTeach
                             Πίσω
                         </Button>
                         <Box sx={{ flexGrow: 1 }}>
-                            <Typography variant="h5" component="h3" color='#1a237e' sx={{ fontWeight: 'bold' }}>
+                            <Typography variant="h5" component="h3" color='primary.main' sx={{ fontWeight: 'bold' }}>
                                 {selectedClassroom.classroomName}
                             </Typography>
                             <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
