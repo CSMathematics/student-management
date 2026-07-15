@@ -59,7 +59,7 @@ const TeacherFormWrapper = (props) => {
 
 
 function AdminPortal({ db, appId, user, userProfile }) {
-    const { selectedYear, loadingYears } = useAcademicYear();
+    const { selectedYear, loadingYears, academicYears } = useAcademicYear();
     const [allData, setAllData] = useState({
         classrooms: [], students: [], grades: [], absences: [],
         payments: [], courses: [], teachers: [], announcements: [],
@@ -149,7 +149,7 @@ function AdminPortal({ db, appId, user, userProfile }) {
                     <Route path="/courses/list" element={<Courses {...commonProps} selectedYear={selectedYear} />} />
                     <Route path="/course/new" element={<CourseForm {...commonProps} selectedYear={selectedYear} />} />
                     <Route path="/course/edit/:courseId" element={<CourseFormWrapper {...commonProps} selectedYear={selectedYear} />} />
-                    <Route path="/teachers" element={<TeachersList {...commonProps} selectedYear={selectedYear} />} />
+                    <Route path="/teachers" element={<TeachersList {...commonProps} selectedYear={selectedYear} academicYears={academicYears} />} />
                     <Route path="/teacher/new" element={<TeacherForm {...commonProps} selectedYear={selectedYear} />} />
                     <Route path="/teacher/edit/:teacherId" element={<TeacherFormWrapper {...commonProps} selectedYear={selectedYear} />} />
                     <Route path="/announcements" element={<Announcements {...commonProps} />} />

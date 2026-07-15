@@ -13,9 +13,9 @@ import {
 import { doc, setDoc, deleteDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import dayjs from 'dayjs';
 import 'dayjs/locale/el';
-import Plot from 'react-plotly.js';
 import isBetween from 'dayjs/plugin/isBetween';
-import { useTheme, lightPalette, darkPalette } from '../context/ThemeContext';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 
 dayjs.locale('el');
 dayjs.extend(isBetween);
@@ -65,7 +65,12 @@ const SummaryCard = ({ title, value, icon, color }) => (
 );
 
 function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId, selectedYear }) {
-    const { mode } = useTheme();
+    const muiTheme = useMuiTheme();
+    const isDark = muiTheme.palette.mode === 'dark';
+    const chartGridColor = isDark ? '#444' : '#e0e0e0';
+    const chartTextColor = isDark ? '#ccc' : '#555';
+    const tooltipBg = isDark ? '#333' : '#fff';
+    
     const [formData, setFormData] = useState(getInitialFormState());
     const [expenseToDelete, setExpenseToDelete] = useState(null);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
@@ -230,40 +235,21 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId, s
     const incomeExpenseChartData = useMemo(() => {
         const expensesData = {};
         filteredExpenses.forEach(exp => {
-            const expenseDate = safeGetDate(exp.date);
-            if (expenseDate) {
-                const month = expenseDate.format('YYYY-MM');
-                if (!expensesData[month]) expensesData[month] = 0;
-                expensesData[month] += exp.amount || 0;
-            }
+            const d = safeGetDate(exp.date);
+            if (d) { const m = d.format('YYYY-MM'); expensesData[m] = (expensesData[m] || 0) + (exp.amount || 0); }
         });
         const incomeData = {};
         filteredIncome.forEach(p => {
-            const paymentDate = safeGetDate(p.date);
-            if (paymentDate) {
-                const month = paymentDate.format('YYYY-MM');
-                if (!incomeData[month]) incomeData[month] = 0;
-                incomeData[month] += p.amount || 0;
-            }
+            const d = safeGetDate(p.date);
+            if (d) { const m = d.format('YYYY-MM'); incomeData[m] = (incomeData[m] || 0) + (p.amount || 0); }
         });
         const allMonths = new Set([...Object.keys(expensesData), ...Object.keys(incomeData)]);
-        const sortedMonths = Array.from(allMonths).sort();
-        return [
-            { name: 'Έσοδα', x: sortedMonths.map(m => dayjs(m).format('MMM YYYY')), y: sortedMonths.map(m => incomeData[m] || 0), type: 'bar', marker: { color: '#4caf50' } },
-            { name: 'Έξοδα', x: sortedMonths.map(m => dayjs(m).format('MMM YYYY')), y: sortedMonths.map(m => expensesData[m] || 0), type: 'bar', marker: { color: '#f44336' } }
-        ];
+        return Array.from(allMonths).sort().map(m => ({
+            month: dayjs(m).format('MMM YY'),
+            Έσοδα: parseFloat((incomeData[m] || 0).toFixed(2)),
+            Έξοδα: parseFloat((expensesData[m] || 0).toFixed(2)),
+        }));
     }, [filteredExpenses, filteredIncome]);
-
-    const barChartLayout = useMemo(() => {
-        const currentPalette = mode === 'light' ? lightPalette : darkPalette;
-        return {
-            autosize: true, margin: { l: 50, r: 20, b: 40, t: 40 },
-            yaxis: { title: 'Ποσό (€)', ticksuffix: '€', gridcolor: currentPalette.chartGridColor, color: currentPalette.chartFontColor },
-            xaxis: { gridcolor: currentPalette.chartGridColor, color: currentPalette.chartFontColor },
-            barmode: 'group', paper_bgcolor: currentPalette.chartPaperBg, plot_bgcolor: currentPalette.chartPlotBg,
-            font: { color: currentPalette.chartFontColor }, legend: { font: { color: currentPalette.chartFontColor } }
-        };
-    }, [mode]);
 
     // --- ΑΛΛΑΓΗ: Προετοιμασία δεδομένων για το διάγραμμα και τη λίστα ---
     const expensesByCategoryChart = useMemo(() => {
@@ -273,46 +259,20 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId, s
             acc[category] += exp.amount || 0;
             return acc;
         }, {});
-
         const labels = Object.keys(data);
         const values = Object.values(data);
         const colors = labels.map(label => categoryColorMap[label] || '#9e9e9e');
         const total = values.reduce((sum, val) => sum + val, 0);
-
+        const pieData = labels.map((label, i) => ({ name: label, value: parseFloat(values[i].toFixed(2)), color: colors[i] }));
         const legendData = labels.map((label, index) => ({
-            label: label,
-            value: values[index],
-            percentage: total > 0 ? ((values[index] / total) * 100).toFixed(2) : 0,
-            color: colors[index]
+            label, value: values[index], percentage: total > 0 ? ((values[index] / total) * 100).toFixed(2) : 0, color: colors[index]
         })).sort((a, b) => b.value - a.value);
-
-        return {
-            chartData: {
-                labels: labels, values: values, marker: { colors: colors },
-                type: 'pie', hole: .5, textinfo: 'none',
-                hoverinfo: 'label+percent+value', automargin: true
-            },
-            legendData: legendData,
-            total: total
-        };
+        return { pieData, legendData, total };
     }, [filteredExpenses]);
 
     const totalFilteredExpenses = useMemo(() => expensesByCategoryChart.total, [expensesByCategoryChart]);
     const totalFilteredIncome = useMemo(() => filteredIncome.reduce((sum, p) => sum + (p.amount || 0), 0), [filteredIncome]);
     const profitLoss = totalFilteredIncome - totalFilteredExpenses;
-
-    const donutChartLayout = useMemo(() => {
-        const currentPalette = mode === 'light' ? lightPalette : darkPalette;
-        return {
-            autosize: true, showlegend: false, margin: { l: 10, r: 10, b: 10, t: 10 },
-            paper_bgcolor: currentPalette.chartPaperBg, plot_bgcolor: currentPalette.chartPlotBg,
-            font: { color: currentPalette.chartFontColor },
-            annotations: [{
-                font: { size: 20, color: currentPalette.chartFontColor }, showarrow: false,
-                text: `<b>${totalFilteredExpenses.toFixed(2)}€</b>`, x: 0.5, y: 0.5
-            }]
-        };
-    }, [totalFilteredExpenses, mode]);
 
     const handleClearFilters = () => {
         setTimeFilter('all');
@@ -418,7 +378,17 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId, s
                 <Grid container spacing={3}>
                     <Grid item xs={12} md={7}>
                         <Typography variant="h6" sx={{ mb: 2 }}>Έσοδα vs Έξοδα ανά Μήνα</Typography>
-                        <Plot data={incomeExpenseChartData} layout={barChartLayout} style={{ width: '100%', height: '300px' }} useResizeHandler />
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={incomeExpenseChartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                                <XAxis dataKey="month" tick={{ fill: chartTextColor, fontSize: 12 }} />
+                                <YAxis tickFormatter={(v) => `${v}€`} tick={{ fill: chartTextColor, fontSize: 12 }} />
+                                <ReTooltip formatter={(v) => `${v.toFixed(2)}€`} contentStyle={{ backgroundColor: tooltipBg, border: `1px solid ${chartGridColor}`, color: chartTextColor }} />
+                                <Legend wrapperStyle={{ color: chartTextColor }} />
+                                <Bar dataKey="Έσοδα" fill="#4caf50" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="Έξοδα" fill="#f44336" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
                     </Grid>
                     {/* --- ΑΛΛΑΓΗ: Νέα διάταξη για το διάγραμμα και τη λίστα --- */}
                     <Grid item xs={12} md={5}>
@@ -426,7 +396,27 @@ function Expenses({ allExpenses, allPayments, allStudents, loading, db, appId, s
                         {expensesByCategoryChart && expensesByCategoryChart.legendData.length > 0 ? (
                             <Grid container spacing={2} alignItems="center">
                                 <Grid item xs={12} sm={7}>
-                                    <Plot data={[expensesByCategoryChart.chartData]} layout={donutChartLayout} style={{ width: '100%', height: '300px' }} useResizeHandler />
+                                    <Box sx={{ position: 'relative' }}>
+                                        <ResponsiveContainer width="100%" height={300}>
+                                            <PieChart>
+                                                <Pie
+                                                    data={expensesByCategoryChart.pieData}
+                                                    cx="50%" cy="50%"
+                                                    innerRadius="55%" outerRadius="80%"
+                                                    dataKey="value"
+                                                    paddingAngle={2}
+                                                >
+                                                    {expensesByCategoryChart.pieData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <ReTooltip formatter={(v) => `${v.toFixed(2)}€`} contentStyle={{ backgroundColor: tooltipBg, border: `1px solid ${chartGridColor}`, color: chartTextColor }} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
+                                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{expensesByCategoryChart.total.toFixed(2)}€</Typography>
+                                        </Box>
+                                    </Box>
                                 </Grid>
                                 <Grid item xs={12} sm={5}>
                                     <List dense>

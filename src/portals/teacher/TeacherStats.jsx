@@ -3,10 +3,10 @@ import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Container, Paper, Typography, Box, Grid, List, ListItem, ListItemText,
-    Avatar, ListItemAvatar, Divider, Button
+    Avatar, ListItemAvatar, Divider, Button, useTheme as useMuiTheme
 } from '@mui/material';
-import Plot from 'react-plotly.js';
-import { BarChart, PieChart, TrendingDown, WarningAmber } from '@mui/icons-material';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
+import { BarChart as BarChartIcon, TrendingDown, WarningAmber } from '@mui/icons-material';
 
 const StatCard = ({ title, value, icon, color }) => (
     <Paper elevation={3} sx={{ p: 2, display: 'flex', alignItems: 'center', borderRadius: '12px', height: '100%' }}>
@@ -20,6 +20,11 @@ const StatCard = ({ title, value, icon, color }) => (
 
 function TeacherStats({ assignedClassrooms, studentsInClassrooms, allGrades, allAbsences }) {
     const navigate = useNavigate();
+    const muiTheme = useMuiTheme();
+    const isDark = muiTheme.palette.mode === 'dark';
+    const gridColor = isDark ? '#444' : '#e0e0e0';
+    const textColor = isDark ? '#ccc' : '#555';
+    const tooltipStyle = { backgroundColor: isDark ? '#333' : '#fff', border: `1px solid ${gridColor}`, color: textColor };
 
     const studentIds = useMemo(() => new Set(studentsInClassrooms.map(s => s.id)), [studentsInClassrooms]);
     const relevantGrades = useMemo(() => allGrades.filter(g => studentIds.has(g.studentId)), [allGrades, studentIds]);
@@ -39,17 +44,10 @@ function TeacherStats({ assignedClassrooms, studentsInClassrooms, allGrades, all
             const avg = gradesInClass.length > 0
                 ? (gradesInClass.reduce((sum, g) => sum + parseFloat(g.grade), 0) / gradesInClass.length)
                 : 0;
-            return { name: classroom.classroomName, average: avg };
+            return { name: classroom.classroomName, average: parseFloat(avg.toFixed(2)) };
         });
 
-        const sortedAverages = classroomAverages.sort((a, b) => b.average - a.average);
-
-        return [{
-            x: sortedAverages.map(c => c.name),
-            y: sortedAverages.map(c => c.average.toFixed(2)),
-            type: 'bar',
-            name: 'Μ.Ο. Τμήματος',
-        }];
+        return classroomAverages.sort((a, b) => b.average - a.average);
     }, [assignedClassrooms, relevantGrades]);
 
     const studentsAtRisk = useMemo(() => {
@@ -78,9 +76,7 @@ function TeacherStats({ assignedClassrooms, studentsInClassrooms, allGrades, all
             .sort((a, b) => (a.avgGrade || 21) - (b.avgGrade || 21)); // Sort by lowest grade first
     }, [studentsInClassrooms, relevantGrades, relevantAbsences]);
 
-    const chartLayout = (title) => ({
-        title, autosize: true, margin: { l: 40, r: 20, b: 80, t: 40 }, yaxis: { range: [0, 20] }
-    });
+
 
     return (
         <Container maxWidth={false} sx={{ mt: 4 }}>
@@ -89,7 +85,7 @@ function TeacherStats({ assignedClassrooms, studentsInClassrooms, allGrades, all
                     Στατιστικά & Αναφορές
                 </Typography>
                 <Grid container spacing={3} sx={{ my: 2 }}>
-                    <Grid item xs={12} sm={6}><StatCard title="Γενικός Μέσος Όρος" value={overallStats.avgGrade} icon={<BarChart />} color="#1976d2" /></Grid>
+                    <Grid item xs={12} sm={6}><StatCard title="Γενικός Μέσος Όρος" value={overallStats.avgGrade} icon={<BarChartIcon />} color="#1976d2" /></Grid>
                     <Grid item xs={12} sm={6}><StatCard title="Σύνολο Απουσιών" value={overallStats.totalAbsences} icon={<TrendingDown />} color="#f57c00" /></Grid>
                 </Grid>
 
@@ -99,8 +95,16 @@ function TeacherStats({ assignedClassrooms, studentsInClassrooms, allGrades, all
                     <Grid item xs={12} md={7}>
                         <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
                              <Typography variant="h6" sx={{ mb: 2 }}>Συγκριτική Απόδοση Τμημάτων</Typography>
-                            {comparisonData[0].x.length > 0 ? (
-                                <Plot data={comparisonData} layout={chartLayout('')} style={{ width: '100%', height: '400px' }} useResizeHandler />
+                            {comparisonData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={400}>
+                                    <BarChart data={comparisonData} margin={{ top: 20, right: 30, left: 0, bottom: 50 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                                        <XAxis dataKey="name" tick={{ fill: textColor, fontSize: 11 }} angle={-45} textAnchor="end" />
+                                        <YAxis domain={[0, 20]} tick={{ fill: textColor }} />
+                                        <Tooltip contentStyle={tooltipStyle} />
+                                        <Bar dataKey="average" name="Μ.Ο. Τμήματος" fill="#1976d2" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
                             ) : <Typography>Δεν υπάρχουν δεδομένα.</Typography>}
                         </Paper>
                     </Grid>

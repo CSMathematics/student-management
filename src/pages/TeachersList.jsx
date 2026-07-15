@@ -6,10 +6,11 @@ import {
     CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
     Avatar, ListItemAvatar, Chip, FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Link as LinkIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Link as LinkIcon, GetApp as ImportIcon } from '@mui/icons-material';
 import { doc, deleteDoc, collection, onSnapshot, updateDoc } from 'firebase/firestore';
+import TeacherImporter from '../components/TeacherImporter.jsx';
 
-function TeachersList({ allTeachers, loading, db, appId, selectedYear }) {
+function TeachersList({ allTeachers, loading, db, appId, selectedYear, academicYears }) {
     const navigate = useNavigate();
     const [teacherToDelete, setTeacherToDelete] = useState(null);
     
@@ -17,6 +18,7 @@ function TeachersList({ allTeachers, loading, db, appId, selectedYear }) {
     const [openLinkDialog, setOpenLinkDialog] = useState(false);
     const [teacherToLink, setTeacherToLink] = useState(null);
     const [selectedUserId, setSelectedUserId] = useState('');
+    const [isImporting, setIsImporting] = useState(false);
 
     useEffect(() => {
         if (!db) return;
@@ -95,9 +97,14 @@ function TeachersList({ allTeachers, loading, db, appId, selectedYear }) {
                     <Typography variant="h4" component="h1" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                         Κατάλογος Καθηγητών
                     </Typography>
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/teacher/new')}>
-                        Νέος Καθηγητής
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button variant="outlined" startIcon={<ImportIcon />} onClick={() => setIsImporting(true)}>
+                            Εισαγωγή από Έτος
+                        </Button>
+                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/teacher/new')}>
+                            Νέος Καθηγητής
+                        </Button>
+                    </Box>
                 </Box>
 
                 {allTeachers.length === 0 ? (
@@ -187,6 +194,15 @@ function TeachersList({ allTeachers, loading, db, appId, selectedYear }) {
                     </>
                 )}
             </Dialog>
+            <TeacherImporter
+                open={isImporting}
+                onClose={() => setIsImporting(false)}
+                db={db}
+                appId={appId}
+                currentYear={selectedYear}
+                allAcademicYears={academicYears || []}
+                currentTeachers={allTeachers || []}
+            />
         </Container>
     );
 }

@@ -1,145 +1,93 @@
 // src/pages/StudentProgressChart.jsx
 import React, { useMemo, useState } from 'react';
-import { Box, Typography, ToggleButtonGroup, ToggleButton, Tooltip } from '@mui/material';
+import { Box, Typography, ToggleButtonGroup, ToggleButton, Tooltip, useTheme as useMuiTheme } from '@mui/material';
 import { ShowChart as ShowChartIcon, BarChart as BarChartIcon } from '@mui/icons-material';
-import Plot from 'react-plotly.js';
+import {
+    ResponsiveContainer, LineChart, BarChart, Line, Bar,
+    XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, Legend
+} from 'recharts';
 import dayjs from 'dayjs';
-import { useTheme, lightPalette, darkPalette } from '../context/ThemeContext.jsx'; // --- ΝΕΑ ΠΡΟΣΘΗΚΗ ---
+
+const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7f7f', '#a4de6c', '#d0ed57', '#83a6ed'];
 
 function StudentProgressChart({ studentGrades, startDate, endDate }) {
     const [chartType, setChartType] = useState('line');
-    const { mode } = useTheme(); // --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Ανάκτηση του τρέχοντος θέματος ---
+    const muiTheme = useMuiTheme();
+    const isDark = muiTheme.palette.mode === 'dark';
+    const gridColor = isDark ? '#444' : '#e0e0e0';
+    const textColor = isDark ? '#ccc' : '#555';
 
     const handleChartTypeChange = (event, newType) => {
-        if (newType !== null) {
-            setChartType(newType);
-        }
+        if (newType !== null) setChartType(newType);
     };
 
-    const plotData = useMemo(() => {
-        if (!studentGrades || studentGrades.length === 0) {
-            return [];
-        }
+    // Build flat data: one row per date, one key per grade type
+    const { chartData, gradeTypes } = useMemo(() => {
+        if (!studentGrades || studentGrades.length === 0) return { chartData: [], gradeTypes: [] };
 
-        const gradesByType = {};
-        
+        const allTypes = [...new Set(studentGrades.map(g => g.type || 'Άλλο'))];
+
+        // Group by date
+        const byDate = {};
         studentGrades.forEach(grade => {
-            const type = grade.type || 'Άλλο';
-            if (!gradesByType[type]) {
-                gradesByType[type] = [];
-            }
-            const gradeDate = dayjs(grade.date.toDate());
-            gradesByType[type].push({
-                date: gradeDate.toDate(),
-                grade: grade.grade,
-                subject: grade.subject
-            });
+            const date = dayjs(grade.date.toDate());
+            // filter by range if set
+            if (startDate && date.isBefore(dayjs(startDate), 'day')) return;
+            if (endDate && date.isAfter(dayjs(endDate), 'day')) return;
+            const key = date.format('DD/MM/YY');
+            if (!byDate[key]) byDate[key] = { date: key };
+            byDate[key][grade.type || 'Άλλο'] = grade.grade;
         });
 
-        const traces = Object.keys(gradesByType).map(type => {
-            const sortedGrades = gradesByType[type].sort((a, b) => a.date - b.date);
-            
-            return {
-                x: sortedGrades.map(g => g.date),
-                y: sortedGrades.map(g => g.grade),
-                text: sortedGrades.map(g => `${g.subject}: ${g.grade}`), 
-                hovertemplate: '<b>%{text}</b><br>%{x|%d/%m/%Y}<extra></extra>',
-                name: type,
-                type: chartType === 'line' ? 'scatter' : 'bar',
-                mode: chartType === 'line' ? 'lines+markers' : undefined,
-            };
-        });
-        
-        return traces;
+        const sorted = Object.values(byDate).sort((a, b) =>
+            dayjs(a.date, 'DD/MM/YY').valueOf() - dayjs(b.date, 'DD/MM/YY').valueOf()
+        );
 
-    }, [studentGrades, chartType]);
+        return { chartData: sorted, gradeTypes: allTypes };
+    }, [studentGrades, startDate, endDate]);
 
-    // --- ΕΝΗΜΕΡΩΣΗ: Το layout του γραφήματος προσαρμόζεται πλέον στο θέμα ---
-    const chartLayout = useMemo(() => {
-        const currentPalette = mode === 'light' ? lightPalette : darkPalette;
-
-        const baseLayout = {
-            autosize: true,
-            margin: { l: 40, r: 20, b: 40, t: 40 },
-            yaxis: {
-                title: 'Βαθμός',
-                range: [0, 21],
-                dtick: 2,
-                gridcolor: currentPalette.chartGridColor,
-                color: currentPalette.chartFontColor
-            },
-            legend: {
-                orientation: 'h',
-                yanchor: 'bottom',
-                y: 1.02,
-                xanchor: 'right',
-                x: 1,
-                font: { color: currentPalette.chartFontColor }
-            },
-            paper_bgcolor: currentPalette.chartPaperBg,
-            plot_bgcolor: currentPalette.chartPlotBg,
-            font: { color: currentPalette.chartFontColor }
-        };
-
-        const xaxisLayout = {
-            title: 'Ημερομηνία',
-            type: 'date',
-            tickformat: '%d/%m/%Y',
-            dtick: 86400000, 
-            tickfont: {
-                weight: 'bold'
-            },
-            gridcolor: currentPalette.chartGridColor,
-            color: currentPalette.chartFontColor
-        };
-
-        if (startDate && endDate) {
-            xaxisLayout.range = [startDate, endDate];
-        }
-        
-        if (chartType === 'bar') {
-            baseLayout.barmode = 'group';
-        }
-
-        return { ...baseLayout, xaxis: xaxisLayout };
-
-    }, [startDate, endDate, chartType, mode]);
-
-
-    if (plotData.length === 0) {
+    if (chartData.length === 0) {
         return <Typography>Δεν υπάρχουν αρκετά δεδομένα για τη δημιουργία γραφήματος.</Typography>;
     }
+
+    const ChartComponent = chartType === 'line' ? LineChart : BarChart;
+    const DataComponent = chartType === 'line' ? Line : Bar;
 
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-                <ToggleButtonGroup
-                    value={chartType}
-                    exclusive
-                    onChange={handleChartTypeChange}
-                    aria-label="chart type"
-                    size="small"
-                >
-                    <ToggleButton value="line" aria-label="line chart">
-                        <Tooltip title="Γράφημα Γραμμής">
-                            <ShowChartIcon />
-                        </Tooltip>
+                <ToggleButtonGroup value={chartType} exclusive onChange={handleChartTypeChange} size="small">
+                    <ToggleButton value="line">
+                        <Tooltip title="Γράφημα Γραμμής"><ShowChartIcon /></Tooltip>
                     </ToggleButton>
-                    <ToggleButton value="bar" aria-label="bar chart">
-                        <Tooltip title="Ραβδόγραμμα">
-                            <BarChartIcon />
-                        </Tooltip>
+                    <ToggleButton value="bar">
+                        <Tooltip title="Ραβδόγραμμα"><BarChartIcon /></Tooltip>
                     </ToggleButton>
                 </ToggleButtonGroup>
             </Box>
-            <Box sx={{ height: 400, width: '100%' }}>
-                <Plot
-                    data={plotData}
-                    layout={chartLayout}
-                    useResizeHandler={true}
-                    style={{ width: '100%', height: '100%' }}
-                    config={{ responsive: true }}
-                />
+            <Box sx={{ height: 380, width: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <ChartComponent data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                        <XAxis dataKey="date" tick={{ fill: textColor, fontSize: 12 }} />
+                        <YAxis domain={[0, 20]} tick={{ fill: textColor, fontSize: 12 }} />
+                        <ReTooltip
+                            contentStyle={{ backgroundColor: isDark ? '#333' : '#fff', border: `1px solid ${gridColor}`, color: textColor }}
+                        />
+                        <Legend wrapperStyle={{ color: textColor }} />
+                        {gradeTypes.map((type, i) => (
+                            <DataComponent
+                                key={type}
+                                type="monotone"
+                                dataKey={type}
+                                stroke={COLORS[i % COLORS.length]}
+                                fill={COLORS[i % COLORS.length]}
+                                dot={{ r: 4 }}
+                                activeDot={{ r: 6 }}
+                            />
+                        ))}
+                    </ChartComponent>
+                </ResponsiveContainer>
             </Box>
         </Box>
     );
